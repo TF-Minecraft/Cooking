@@ -6,5 +6,5 @@ Leave the marker below unset so a normal behavior change cannot pass by accident
 
 ```text
 docs-impact: none
-reason: Align Java imports and pinned dependency versions with the shared TFMC package convention. Gameplay behavior and configuration are unchanged. Developer package and build documentation is updated in TF-Minecraft/Docs pull request 18.
+reason: Paper marks the existing legacy text and serialization APIs deprecated. These source edits add documented method-scoped compatibility annotations only; gameplay, stored data, and configuration remain unchanged. Build changes explicitly retain annotation processing and provide an SLF4J logger for tests.
 ```

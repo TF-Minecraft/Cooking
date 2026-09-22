@@ -119,6 +119,8 @@ public class ItemBuilder {
         return item != null && item.shouldUpdate();
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static ItemStack stamp(ItemStack stack, FoodItem item, String displayName) {
         if (stack == null || item == null) {
             return stack;

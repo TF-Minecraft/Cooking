@@ -93,6 +93,8 @@ public final class HusbandryItems {
                 .get(HusbandryKeys.LINKED_ANIMAL, PersistentDataType.STRING);
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static void setLinkedAnimal(ItemStack stack, String uuid, String loreLine) {
         if (stack == null || uuid == null) {
             return;

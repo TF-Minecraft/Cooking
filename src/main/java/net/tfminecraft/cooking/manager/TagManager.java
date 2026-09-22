@@ -26,6 +26,8 @@ public class TagManager implements ItemScanHandler {
         return meta != null && meta.getPersistentDataContainer().has(Keys.FOOD_ID, PersistentDataType.STRING);
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     @Override
     public void update(Player player, Inventory inventory, int slot, ItemStack stack) {
         FoodItem food = FoodItem.fromItem(stack);

@@ -141,6 +141,8 @@ public final class HusbandryTamingListener implements Listener {
         }
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     private static void handleCoOwnLink(Player player, LivingEntity entity, ItemStack hand) {
         HusbandryRepository repository = HusbandryEntities.repository();
         if (repository == null) {

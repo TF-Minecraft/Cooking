@@ -12,6 +12,8 @@ public final class HusbandrySpawner {
 
     private HusbandrySpawner() {}
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static LivingEntity spawn(Player player, EntityType type, int genetics, int care) {
         if (player == null || type == null || type.getEntityClass() == null
                 || !LivingEntity.class.isAssignableFrom(type.getEntityClass())) {
