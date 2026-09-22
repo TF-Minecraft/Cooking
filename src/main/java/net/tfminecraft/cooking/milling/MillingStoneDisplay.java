@@ -3,10 +3,10 @@ package net.tfminecraft.cooking.milling;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.cache.ItemCache;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class MillingStoneDisplay {
     private static final String TOP_MODEL = "ia.tfmc_cooking:milling_stone_top";

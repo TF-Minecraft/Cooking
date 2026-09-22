@@ -6,9 +6,9 @@ import org.bukkit.event.Listener;
 
 import net.tfminecraft.cooking.baking.BakingTrayRegistry;
 import net.tfminecraft.cooking.heat.HeatSources;
-import net.tfminecraft.events.FurnitureSlotFurnitureAddEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.SlotType;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotFurnitureAddEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.SlotType;
 
 public final class OvenCavityHandler implements Listener {
 

@@ -6,7 +6,7 @@ import java.util.List;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 
 public class CraftingRecipe {
     private String id;

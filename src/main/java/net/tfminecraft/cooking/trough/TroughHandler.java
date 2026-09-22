@@ -9,16 +9,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.tlibs.TLibs;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.events.DishCookedEvent;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.InventoryAdder;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class TroughHandler implements Listener {
 

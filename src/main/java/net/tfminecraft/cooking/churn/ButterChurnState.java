@@ -4,7 +4,7 @@ import net.tfminecraft.cooking.cup.DairyOrigin;
 import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.item.IngredientLineageCodec;
 import net.tfminecraft.cooking.item.tag.AgeScale;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class ButterChurnState {
     public static final String VAR_CHURN_COUNT = "butter.churnCount";

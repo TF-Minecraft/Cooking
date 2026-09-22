@@ -13,7 +13,7 @@ import net.tfminecraft.cooking.item.IngredientLineageCodec;
 
 
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 
 

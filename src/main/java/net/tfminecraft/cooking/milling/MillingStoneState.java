@@ -3,7 +3,7 @@ package net.tfminecraft.cooking.milling;
 import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.item.IngredientLineageCodec;
 import net.tfminecraft.cooking.quality.QualityConfig;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class MillingStoneState {
     public static final String VAR_STAGE = "milling.stage";

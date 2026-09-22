@@ -23,7 +23,7 @@ import net.tfminecraft.cooking.cache.CategoryDictionary;
 import net.tfminecraft.cooking.enums.Tag;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.StringFormatter;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;

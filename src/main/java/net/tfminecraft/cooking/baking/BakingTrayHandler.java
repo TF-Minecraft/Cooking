@@ -8,16 +8,16 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.tlibs.TLibs;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.WarmthUtils;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class BakingTrayHandler implements Listener {
 

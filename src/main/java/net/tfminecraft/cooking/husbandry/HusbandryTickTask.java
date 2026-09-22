@@ -7,7 +7,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 
-import me.Plugins.TLibs.database.SqliteDatabaseException;
+import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 import net.tfminecraft.cooking.Cooking;
 
 public final class HusbandryTickTask {

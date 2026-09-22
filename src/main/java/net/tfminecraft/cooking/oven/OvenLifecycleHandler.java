@@ -7,11 +7,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.FurnitureCache;
-import net.tfminecraft.events.FurnitureBreakEvent;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class OvenLifecycleHandler implements Listener {
     private final OvenBurnManager burnManager;

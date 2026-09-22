@@ -22,9 +22,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.StringFormatter;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 import net.tfminecraft.cooking.cache.ItemCache;
 
@@ -60,11 +60,11 @@ import net.tfminecraft.cooking.utils.ItemBuilder;
 
 import net.tfminecraft.cooking.utils.StationAddonRules;
 
-import net.tfminecraft.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 
 

@@ -10,7 +10,7 @@ import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
 import net.tfminecraft.cooking.carve.CarveSequence;
 import net.tfminecraft.cooking.item.FoodItem;

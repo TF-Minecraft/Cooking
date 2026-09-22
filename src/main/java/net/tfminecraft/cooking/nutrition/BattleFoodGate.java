@@ -6,8 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import me.Plugins.SimpleFactions.War.battle.engine.core.Battle;
-import me.Plugins.SimpleFactions.War.battle.engine.core.BattleManager;
+import net.tfminecraft.simplefactions.war.battle.engine.core.Battle;
+import net.tfminecraft.simplefactions.war.battle.engine.core.BattleManager;
 
 public final class BattleFoodGate {
 

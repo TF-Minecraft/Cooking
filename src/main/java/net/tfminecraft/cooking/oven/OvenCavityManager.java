@@ -4,7 +4,7 @@ import java.util.Map;
 
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.baking.BakingTrayBake;
 import net.tfminecraft.cooking.baking.BakingTrayBakeApplier;
@@ -14,9 +14,9 @@ import net.tfminecraft.cooking.baking.BakingTrayState;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.TagTrack;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedFurnitureSlot;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedFurnitureSlot;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class OvenCavityManager {
 

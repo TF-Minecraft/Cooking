@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.StringFormatter;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 import net.tfminecraft.cooking.cache.NamingConfig;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.TagStep;

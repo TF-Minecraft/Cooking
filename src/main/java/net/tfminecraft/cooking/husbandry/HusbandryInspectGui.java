@@ -14,7 +14,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import me.Plugins.TLibs.Utils.TimeFormatter;
+import net.tfminecraft.tlibs.utils.TimeFormatter;
 
 public final class HusbandryInspectGui {
 

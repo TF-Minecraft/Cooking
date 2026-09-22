@@ -19,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 
 import net.tfminecraft.cooking.cache.FurnitureCache;
 
@@ -47,13 +47,13 @@ import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.QualityUtils;
 
-import net.tfminecraft.events.FurnitureBreakEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 
-import net.tfminecraft.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 
-import net.tfminecraft.events.FurnitureSlotItemTakeEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 
 

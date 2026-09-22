@@ -8,11 +8,11 @@ import org.bukkit.entity.ItemDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
-import net.tfminecraft.furniture.SlotDefinition;
-import net.tfminecraft.furniture.data.DisplayData;
-import net.tfminecraft.utils.CoordinateUtils;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.SlotDefinition;
+import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
+import net.tfminecraft.interactiblefurniture.utils.CoordinateUtils;
 
 public final class BakingTraySlots {
     private BakingTraySlots() {}

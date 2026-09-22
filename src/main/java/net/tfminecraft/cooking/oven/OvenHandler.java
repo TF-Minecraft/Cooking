@@ -8,11 +8,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class OvenHandler implements Listener {
     private final OvenBurnManager burnManager;

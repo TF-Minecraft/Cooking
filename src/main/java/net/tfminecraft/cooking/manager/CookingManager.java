@@ -16,8 +16,8 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import me.Plugins.TLibs.TLibs;
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.tlibs.TLibs;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
@@ -27,11 +27,11 @@ import net.tfminecraft.cooking.cooking.PotReference;
 import net.tfminecraft.cooking.cooking.SauceReference;
 import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.events.FurnitureBreakEvent;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.events.FurnitureSlotItemAddEvent;
-import net.tfminecraft.events.FurnitureSlotItemTakeEvent;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public class CookingManager implements Listener {
 

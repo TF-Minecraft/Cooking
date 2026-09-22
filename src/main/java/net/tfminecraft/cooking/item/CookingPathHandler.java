@@ -5,7 +5,7 @@ import java.util.Map;
 
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.ItemPathHandler;
+import net.tfminecraft.tlibs.objects.api.subapi.ItemPathHandler;
 import net.tfminecraft.cooking.item.tag.AgeScale;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.utils.FoodParser;

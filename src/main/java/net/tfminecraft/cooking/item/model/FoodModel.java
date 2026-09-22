@@ -4,7 +4,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.furniture.data.DisplayData;
+import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 import java.util.HashMap;
 import java.util.List;

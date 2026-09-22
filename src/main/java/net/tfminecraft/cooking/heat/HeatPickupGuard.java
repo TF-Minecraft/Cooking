@@ -5,9 +5,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.FurnitureType;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.FurnitureType;
 
 public final class HeatPickupGuard implements Listener {
 

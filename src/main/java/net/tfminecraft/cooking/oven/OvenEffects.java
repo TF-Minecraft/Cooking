@@ -7,7 +7,7 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class OvenEffects {
     private static final float AMBIENT_SOUND_CHANCE = 0.35f;

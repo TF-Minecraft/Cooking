@@ -1,6 +1,6 @@
 package net.tfminecraft.cooking.mixing;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public enum MixingBowlStage {
     EMPTY,

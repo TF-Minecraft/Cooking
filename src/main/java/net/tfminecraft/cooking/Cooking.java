@@ -5,7 +5,7 @@ import java.io.File;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.item.CookingPathHandler;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.ModelLoader;

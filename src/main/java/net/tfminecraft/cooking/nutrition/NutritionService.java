@@ -3,8 +3,8 @@ package net.tfminecraft.cooking.nutrition;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
-import net.tfminecraft.RPCharacters.RPCharacters;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
 
