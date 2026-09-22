@@ -1,48 +1,24 @@
 # Cooking
 
-Paper plugin for furniture cooking, food items, crop quality, livestock, and nutrition.
+> From farm and pasture to a shared table in TF-Minecraft.
 
-Java 25, Spigot/Paper API 1.21.8. Hard dependencies: TLibs, InteractibleFurniture, TFMCCore. Soft dependencies: RPCharacters, MMOCore, CustomCrops, SimpleFactions.
+Cooking makes food an interactive part of everyday life. Players grow and gather ingredients, care for livestock, prepare meals using kitchen furniture, and serve dishes whose quality, freshness, and variety matter to their character's diet.
 
-## Build
+## Features
 
-With `GH_TOKEN` set to a token that can read ServerAssets:
+- **Working kitchens** — fry, boil, prepare sauces and soups, and bake with cookware, heat sources, and fuelled ovens. Leaving food cooking too long can burn it.
+- **Food preparation** — milling stones, mixing bowls, butter churns, sausage makers, and baking trays provide different ways to transform ingredients.
+- **Serving and sharing** — plate dishes, ladle soup into bowls, and carve foods into portions for the table.
+- **Quality and freshness** — ingredient quality and composition influence finished dishes, while aging and food tags carry preparation history through the kitchen.
+- **Farming and husbandry** — crop fertility and harvest quality sit alongside animal care, breeding, genetics, and produce collection.
+- **Character nutrition** — meals feed a character's food reserve and influence diet quality, with variety rewarding a broader selection of ingredients.
 
-```sh
-python3 ../tlibs/tools/install-dependency.py --pom pom.xml
-bash .github/scripts/prepare-release.sh
-mvn clean verify
-```
+## A complete food journey
 
-The runtime JAR is written to `target/`. PR builds run unit tests and upload a UTC `DEV-YYYYMMDD-HHmm` JAR. Numeric `v*` tags create a verified draft release.
+A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
 
 ## Documentation
 
-- [Builds and releases](https://github.com/TF-Minecraft/Docs/blob/main/PIPELINES.md)
-- [Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md)
-- [Implementation guides](docs/README.md)
+[Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md)
 
-Runtime YAML lives in [src/main/resources](src/main/resources). The server copies a missing file from the JAR on first start and preserves existing configuration.
-
-TLibs uses Maven `provided` scope with a checksum-pinned version. See [TLibs dependency setup](https://github.com/TF-Minecraft/TLibs/blob/5da8e77d0e0696bbff7d7064a2644072da9c6428/DEPENDENCIES.md) for authenticated and offline installation.
-
-Builds and server runtime require Java 25. Local builds default to [TLibs 1.1.0](https://github.com/TF-Minecraft/TLibs/releases/tag/v1.1.0); CI resolves the latest published stable TLibs release for each build, verifies its checksum, and uses its exact version throughout that job.
-
-## Shared plugin dependencies
-
-Build and release workflows install checksum-verified plugin releases through
-[TLibs' shared installer](https://github.com/TF-Minecraft/TLibs/blob/main/DEPENDENCIES.md).
-CI selects the latest published versions; local builds use the explicit Maven
-version properties. Shared plugins use `provided` scope and remain separate
-server plugins. Each build records exact versions and checksums in
-`.build/plugin-dependencies.json` alongside its JAR.
-
-From this checkout, with the TLibs repository next to it:
-
-```sh
-python3 ../tlibs/tools/install-plugins.py --pom pom.xml
-```
-
-Prepare any remaining third-party inputs with `.github/scripts/prepare-release.sh`
-before running Maven. Any source-unavailable inputs remain private and checksum-pinned wherever declared; see the installer
-documentation for authentication and reproducible rebuilds.
+Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
