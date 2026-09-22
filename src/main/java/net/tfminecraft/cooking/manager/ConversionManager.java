@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.manager;
 
+import net.tfminecraft.cooking.util.LegacyModelData;
+
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -81,7 +83,7 @@ public class ConversionManager implements Listener {
             return false;
         }
         ItemMeta meta = item.getItemMeta();
-        return meta != null && meta.hasCustomModelData();
+        return meta != null && LegacyModelData.has(meta);
     }
 
     private void giveConverted(EntityPickupItemEvent event, Player player, ItemStack stack) {

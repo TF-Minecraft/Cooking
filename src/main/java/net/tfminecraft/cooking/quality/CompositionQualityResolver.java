@@ -167,6 +167,8 @@ public final class CompositionQualityResolver {
         return sum;
     }
 
+    // Exercise the retained composition compatibility entry point.
+    @SuppressWarnings("deprecation")
     private static int legacyResolve(Player player, Collection<FoodItem> inputs, CompositionContext context) {
         List<Integer> qualities = new ArrayList<>();
         if (inputs != null) {

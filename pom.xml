@@ -22,9 +22,8 @@
         <dependency>
             <groupId>local</groupId>
             <artifactId>gson</artifactId>
-            <version>2.10.1</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/gson-2.10.1.jar</systemPath>
+            <version>2.10.1-tfmc-4241c14a7727</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.spigotmc</groupId>
@@ -48,9 +47,8 @@
         <dependency>
             <groupId>local</groupId>
             <artifactId>joml</artifactId>
-            <version>1.10.8</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/joml-1.10.8.jar</systemPath>
+            <version>1.10.8-tfmc-bf1951014517</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.tfminecraft</groupId>
@@ -91,30 +89,26 @@
         <dependency>
             <groupId>local</groupId>
             <artifactId>MythicLib</artifactId>
-            <version>1.7</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/MythicLib-1.7.jar</systemPath>
+            <version>1.7-tfmc-660ff2a6ec86</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>MMOCore</artifactId>
-            <version>1.13.1</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/MMOCore-1.13.1.jar</systemPath>
+            <version>1.13.1-tfmc-14850d745437</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>CustomCrops</artifactId>
-            <version>3.6.49</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/CustomCrops-3.6.49.jar</systemPath>
+            <version>3.6.49-tfmc-0aa5d3cb6bad</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>CustomFishing</artifactId>
-            <version>2.3.27</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/libs/CustomFishing-2.3.27.jar</systemPath>
+            <version>2.3.27-tfmc-7d3083bd0599</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>net.tfminecraft</groupId>
