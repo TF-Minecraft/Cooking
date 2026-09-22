@@ -6,5 +6,5 @@ Leave the marker below unset so a normal behavior change cannot pass by accident
 
 ```text
 docs-impact: none
-reason: Upgrade the provided TLibs dependency to source-built 1.1.0 and require Java 25; no Cooking gameplay code or configuration changes.
+reason: Select the latest stable TLibs release in CI with checksum verification; local dependency defaults and Cooking gameplay code/configuration remain unchanged.
 ```
