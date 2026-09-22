@@ -6,7 +6,7 @@
 
     <groupId>net.tfminecraft</groupId>
     <artifactId>cooking</artifactId>
-    <version>0.1.5-ALPHA</version>
+    <version>0.1.6-ALPHA</version>
 
     <properties>
         <simplefactions.version>2.8.7</simplefactions.version>
