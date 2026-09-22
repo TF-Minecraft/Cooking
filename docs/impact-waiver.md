@@ -6,5 +6,5 @@ Leave the marker below unset so a normal behavior change cannot pass by accident
 
 ```text
 docs-impact: none
-reason: Resolve shared plugin APIs through checksum-verified releases using provided Maven dependencies and record build provenance; preserve the concurrent removal of repository-specific agent instructions. Gameplay code and configuration are unchanged.
+reason: Align Java imports and pinned dependency versions with the shared TFMC package convention. Gameplay behavior and configuration are unchanged. Developer package and build documentation is updated in TF-Minecraft/Docs pull request 18.
 ```
