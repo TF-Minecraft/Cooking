@@ -56,3 +56,6 @@ Desktop.ini
 # Repository-specific generated or local files
 /CustomCrops/libs/
 /CustomCrops.zip
+
+# Removed runtime snapshots or generated archives
+/ItemsAdder/tfmc_cooking.zip
