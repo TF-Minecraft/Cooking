@@ -96,6 +96,11 @@ After lerp, each weight is clamped above 0, normalized, and sampled.
 
 Cooking injects the fertility check on enable and on `/customcrops reload`. CustomCrops YAML must not mention fertility.
 
+Deploy the tracked `CustomCrops/` configuration. Downloaded libraries and the old
+configuration ZIP are not versioned; regenerate any deployment archive using the
+[external asset instructions](../reference/external-assets.md#customcrops) so old
+fertility rules cannot replace the current YAML.
+
 TLibs `c` paths: see [food-items.md](food-items.md). There is no `c.seed` path and no `/cooking crop` command.
 
 ## Edge cases
