@@ -7,8 +7,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.tlibs.TLibs;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
@@ -16,10 +16,10 @@ import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
-import net.tfminecraft.events.FurnitureBreakEvent;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.events.FurniturePlaceEvent;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurniturePlaceEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class MillingStoneHandler implements Listener {
 

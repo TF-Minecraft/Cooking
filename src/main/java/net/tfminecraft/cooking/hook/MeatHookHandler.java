@@ -11,17 +11,17 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
 import net.tfminecraft.cooking.carve.CarveHandler;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemUpdater;
-import net.tfminecraft.events.FurniturePunchEvent;
-import net.tfminecraft.events.FurnitureSlotItemAddEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.events.FurniturePunchEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class MeatHookHandler implements Listener {
 

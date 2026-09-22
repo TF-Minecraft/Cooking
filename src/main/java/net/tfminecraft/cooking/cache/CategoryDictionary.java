@@ -5,7 +5,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.WordUtils;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.StringFormatter;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 public class CategoryDictionary {
     public static HashMap<String, String> dictionary = new HashMap<>();

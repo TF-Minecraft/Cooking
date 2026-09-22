@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
 
-import me.Plugins.SimpleFactions.Map.fertility.FertilityProvinceResolver;
+import net.tfminecraft.simplefactions.map.fertility.FertilityProvinceResolver;
 
 public final class CropFertility {
 

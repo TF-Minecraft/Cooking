@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.attribute.PlayerAttributes.AttributeInstance;
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
 
 public final class NutritionAttributeBridge {
 

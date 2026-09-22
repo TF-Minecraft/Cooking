@@ -5,7 +5,7 @@ import org.bukkit.persistence.PersistentDataType;
 
 import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.utils.Keys;
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
 
 public final class VarietyService {
     private VarietyService() {}

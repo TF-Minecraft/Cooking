@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
 
 import org.bukkit.entity.Player;
 
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
 import net.tfminecraft.cooking.Cooking;
 
 public final class NutritionLog {

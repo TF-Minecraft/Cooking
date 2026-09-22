@@ -19,9 +19,9 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 
-import net.tfminecraft.InteractibleFurniture;
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
-import net.tfminecraft.RPCharacters.RPCharacters;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.baking.BakingTrayRecipe;
 import net.tfminecraft.cooking.baking.BakingTrayRegistry;
@@ -51,9 +51,9 @@ import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.NameComposer;
 
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedFurnitureSlot;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedFurnitureSlot;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public class CommandManager implements CommandExecutor, TabCompleter {
 

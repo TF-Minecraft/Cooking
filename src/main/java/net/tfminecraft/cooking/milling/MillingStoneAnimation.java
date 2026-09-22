@@ -14,8 +14,8 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import net.tfminecraft.cooking.Cooking;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class MillingStoneAnimation {
     private static final Set<UUID> animating = ConcurrentHashMap.newKeySet();

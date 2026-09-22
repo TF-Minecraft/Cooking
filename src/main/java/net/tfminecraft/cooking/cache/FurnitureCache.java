@@ -1,7 +1,7 @@
 package net.tfminecraft.cooking.cache;
 
 import net.tfminecraft.cooking.enums.Method;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public class FurnitureCache {
     public static String fryingPan;

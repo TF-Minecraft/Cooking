@@ -13,9 +13,9 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
-import me.Plugins.TLibs.database.SqliteDatabase;
-import me.Plugins.TLibs.database.SqliteDatabaseException;
-import me.Plugins.TLibs.database.SqliteProvider;
+import net.tfminecraft.tlibs.database.SqliteDatabase;
+import net.tfminecraft.tlibs.database.SqliteDatabaseException;
+import net.tfminecraft.tlibs.database.SqliteProvider;
 
 public final class HusbandryRepository {
 

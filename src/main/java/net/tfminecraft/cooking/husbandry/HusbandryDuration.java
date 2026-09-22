@@ -4,7 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 
-import me.Plugins.TLibs.Utils.TimeFormatter;
+import net.tfminecraft.tlibs.utils.TimeFormatter;
 
 final class HusbandryDuration {
 

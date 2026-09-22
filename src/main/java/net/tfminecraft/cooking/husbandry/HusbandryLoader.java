@@ -18,7 +18,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.EntityType;
 
-import me.Plugins.TLibs.Utils.TimeFormatter;
+import net.tfminecraft.tlibs.utils.TimeFormatter;
 
 public final class HusbandryLoader {
 

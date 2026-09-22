@@ -14,7 +14,7 @@ import org.bukkit.util.Vector;
 
 
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 
 import net.tfminecraft.cooking.cache.ItemCache;
 
@@ -41,9 +41,9 @@ import net.tfminecraft.cooking.utils.ItemRef;
 
 import net.tfminecraft.cooking.utils.ItemUpdater;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 
 

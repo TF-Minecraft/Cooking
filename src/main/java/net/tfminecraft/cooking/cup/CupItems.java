@@ -3,7 +3,7 @@ package net.tfminecraft.cooking.cup;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.FoodParser;

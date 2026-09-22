@@ -1,6 +1,6 @@
 package net.tfminecraft.cooking.oven;
 
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class OvenState {
     public static final String VAR_LIT = "oven.lit";

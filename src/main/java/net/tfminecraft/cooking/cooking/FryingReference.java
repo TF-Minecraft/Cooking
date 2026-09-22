@@ -22,10 +22,10 @@ import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.WarmthUtils;
-import net.tfminecraft.events.FurnitureInteractEvent;
-import net.tfminecraft.events.FurnitureSlotItemTakeEvent;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public class FryingReference extends CookingReference {
 

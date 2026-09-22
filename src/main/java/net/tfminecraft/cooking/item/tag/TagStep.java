@@ -3,7 +3,7 @@ package net.tfminecraft.cooking.item.tag;
 import org.bukkit.configuration.ConfigurationSection;
 import net.tfminecraft.cooking.enums.Tag;
 
-import me.Plugins.TLibs.Objects.API.SubAPI.StringFormatter;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 public class TagStep {
     private final String id;

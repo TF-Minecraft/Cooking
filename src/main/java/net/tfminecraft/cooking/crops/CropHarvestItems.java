@@ -3,7 +3,7 @@ package net.tfminecraft.cooking.crops;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
-import me.Plugins.TLibs.TLibs;
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.ConversionLoader;
 import net.tfminecraft.cooking.utils.FoodParser;

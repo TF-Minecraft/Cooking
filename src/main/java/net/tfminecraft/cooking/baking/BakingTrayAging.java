@@ -8,14 +8,14 @@ import java.util.UUID;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemUpdater;
-import net.tfminecraft.furniture.Furniture;
-import net.tfminecraft.furniture.PlacedFurnitureSlot;
-import net.tfminecraft.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedFurnitureSlot;
+import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 public final class BakingTrayAging {
 

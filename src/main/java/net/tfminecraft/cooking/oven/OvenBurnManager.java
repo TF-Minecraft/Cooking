@@ -8,11 +8,11 @@ import java.util.UUID;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
-import net.tfminecraft.InteractibleFurniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
-import net.tfminecraft.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
 public final class OvenBurnManager {
     private final Map<UUID, BukkitTask> activeTasks = new HashMap<>();

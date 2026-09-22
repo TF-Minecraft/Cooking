@@ -9,8 +9,8 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
-import net.tfminecraft.RPCharacters.Objects.RPCharacter;
-import net.tfminecraft.RPCharacters.lifecycle.CharacterActivatedEvent;
+import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import net.tfminecraft.rpcharacters.lifecycle.CharacterActivatedEvent;
 import net.tfminecraft.cooking.Cooking;
 
 public final class NutritionLifecycleListener implements Listener {
@@ -58,7 +58,7 @@ public final class NutritionLifecycleListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        RPCharacter character = net.tfminecraft.RPCharacters.RPCharacters.getActiveCharacter(player);
+        RPCharacter character = net.tfminecraft.rpcharacters.RPCharacters.getActiveCharacter(player);
         if (character == null) {
             NutritionLog.append("DEATH", player, null, "action=skip cause=no-active-character");
             return;
@@ -78,6 +78,6 @@ public final class NutritionLifecycleListener implements Listener {
                 + " foodBefore=" + before
                 + " foodAfter=" + after
                 + " action=respawn-food");
-        net.tfminecraft.RPCharacters.RPCharacters.getPlayerManager().savePlayer(player);
+        net.tfminecraft.rpcharacters.RPCharacters.getPlayerManager().savePlayer(player);
     }
 }

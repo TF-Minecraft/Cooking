@@ -9,7 +9,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.cooking.utils.ItemRef;
-import net.tfminecraft.furniture.data.DisplayData;
+import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 public class ModelData {
     private final int weight;
