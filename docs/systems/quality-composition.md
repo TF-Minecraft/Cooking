@@ -4,6 +4,10 @@
 
 Stars are 1-5. They come from a roll (pickup, harvest, genetics) or from mixing several inputs. Conversions turn a vanilla or ItemsAdder stack into a Cooking food at a chosen star.
 
+Conversion and composition code obtains item operations through
+`TLibs.getItemAPI()`. This is the typed accessor for the same item API; quality
+rolls, item matching, and lineage rules are unchanged.
+
 ## Vocabulary
 
 - **Pickup quality:** roll in `quality.yml` `pickup.min` / `max` (1-5).
