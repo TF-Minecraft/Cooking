@@ -9,6 +9,7 @@ Java 25, Spigot/Paper API 1.21.8. Hard dependencies: TLibs, InteractibleFurnitur
 With `GH_TOKEN` set to a token that can read ServerAssets:
 
 ```sh
+python3 ../tlibs/tools/install-dependency.py --pom pom.xml
 bash .github/scripts/prepare-release.sh
 mvn clean verify
 ```
@@ -23,3 +24,5 @@ The runtime JAR is written to `target/`. PR builds run unit tests and upload a U
 - [Agent instructions](AGENTS.md)
 
 Runtime YAML lives in [src/main/resources](src/main/resources). The server copies a missing file from the JAR on first start and preserves existing configuration.
+
+TLibs uses Maven `provided` scope with a checksum-pinned version. See [TLibs dependency setup](https://github.com/TF-Minecraft/TLibs/blob/61bd61b17fba45e5178612578805d7108596e8a0/DEPENDENCIES.md) for authenticated and offline installation.
