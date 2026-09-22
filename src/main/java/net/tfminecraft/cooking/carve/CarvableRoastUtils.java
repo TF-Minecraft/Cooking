@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.carve;
 
+import java.util.List;
+
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -61,32 +63,40 @@ public final class CarvableRoastUtils {
     }
 
     public static double getRemainingFood(FoodItem item) {
-        CarveSequence seq = getSequence(item);
+        return remainingFood(item, getSequence(item));
+    }
+
+    /** Nutrition is the batch level. Cuts left do not shrink it. */
+    public static double getRemainingNutrition(FoodItem item) {
+        return item.getBaseNutrition();
+    }
+
+    public static double remainingFood(FoodItem item, CarveSequence seq) {
         if (seq == null) return item.getBaseFood();
         if (item.hasBaseOverride()) {
-            int start = Math.max(1, seq.getStartRemaining());
-            return item.getBaseFood() * item.getCarveRemaining() / (double) start;
+            int edible = Math.max(1, countFoodCuts(seq));
+            return item.getBaseFood() * countFoodCutsFrom(seq, item.getCarveNextIndex()) / (double) edible;
         }
         return seq.sumRemainingFood(item.getCarveNextIndex());
     }
 
-    public static double getRemainingNutrition(FoodItem item) {
-        CarveSequence seq = getSequence(item);
-        if (seq == null) return item.getBaseNutrition();
-        if (item.hasBaseOverride()) {
-            int start = Math.max(1, seq.getStartRemaining());
-            return item.getBaseNutrition() * item.getCarveRemaining() / (double) start;
-        }
-        return seq.sumRemainingNutrition(item.getCarveNextIndex());
+    public static double portionFood(double totalFood, int edibleCuts) {
+        return totalFood / Math.max(1, edibleCuts);
     }
 
     public static int countFoodCuts(CarveSequence seq) {
+        return countFoodCutsFrom(seq, 0);
+    }
+
+    public static int countFoodCutsFrom(CarveSequence seq, int fromIndex) {
         if (seq == null) {
             return 0;
         }
+        int start = Math.max(0, fromIndex);
         int count = 0;
-        for (CarveCut cut : seq.getCuts()) {
-            if (cut.isFoodCut()) {
+        List<CarveCut> cuts = seq.getCuts();
+        for (int i = start; i < cuts.size(); i++) {
+            if (cuts.get(i).isFoodCut()) {
                 count++;
             }
         }
@@ -140,6 +150,7 @@ public final class CarvableRoastUtils {
         if (parent.getOrigin() != null) {
             child.setOrigin(parent.getOrigin());
         }
+        child.setLineage(parent.getLineage());
         child.setQualityRange(parent.getQualityMin(), parent.getQualityMax());
     }
 }

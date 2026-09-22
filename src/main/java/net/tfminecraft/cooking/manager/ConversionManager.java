@@ -9,8 +9,12 @@ import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import net.tfminecraft.cooking.crops.CropsConfig;
+import net.tfminecraft.cooking.fishing.LegacyFishConversion;
+import net.tfminecraft.cooking.fishing.SeafoodWholeItems;
+import net.tfminecraft.cooking.fishing.VanillaFishAdapter;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.ConversionLoader;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
@@ -27,6 +31,12 @@ public class ConversionManager implements Listener {
         if (!(e.getEntity() instanceof Player)) return;
 
         Player p = (Player) e.getEntity();
+        if (replaceLegacyFish(e, p, item)) {
+            return;
+        }
+        if (replaceVanillaFish(e, p, item)) {
+            return;
+        }
         String result = ConversionLoader.getByItem(item);
 
         if (result != null) {
@@ -37,16 +47,52 @@ public class ConversionManager implements Listener {
             int quality = CropsConfig.isFarmFood(result)
                     ? 1
                     : OriginQualityResolver.resolve(p, parsed.template);
-            ItemStack stack = ItemBuilder.buildSingleWithQuality(parsed.template, item, quality);
-            stack.setAmount(item.getAmount());
-            e.setCancelled(true);
-            e.getItem().remove();
-            ItemStack leftover = InventoryAdder.addItem(p, stack);
-            if (leftover == null) {
-                p.playSound(p.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
-            } else {
-                p.getWorld().dropItemNaturally(p.getLocation(), leftover);
-            }
+            giveConverted(e, p, ItemBuilder.buildSingleWithQuality(parsed.template, item, quality));
+        }
+    }
+
+    private boolean replaceLegacyFish(EntityPickupItemEvent event, Player player, ItemStack item) {
+        ItemStack stack = LegacyFishConversion.convert(player, item);
+        if (stack == null) {
+            return false;
+        }
+        giveConverted(event, player, stack);
+        return true;
+    }
+
+    private boolean replaceVanillaFish(EntityPickupItemEvent event, Player player, ItemStack item) {
+        VanillaFishAdapter.Decision decision = VanillaFishAdapter.decide(
+                item.getType().name(),
+                hasCustomModelData(item));
+        if (!decision.replaces()) {
+            return false;
+        }
+        int quality = OriginQualityResolver.resolve(player, null);
+        ItemStack stack = SeafoodWholeItems.build(item, decision.fish(), quality);
+        if (stack == null) {
+            return false;
+        }
+        giveConverted(event, player, stack);
+        return true;
+    }
+
+    private static boolean hasCustomModelData(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) {
+            return false;
+        }
+        ItemMeta meta = item.getItemMeta();
+        return meta != null && meta.hasCustomModelData();
+    }
+
+    private void giveConverted(EntityPickupItemEvent event, Player player, ItemStack stack) {
+        stack.setAmount(event.getItem().getItemStack().getAmount());
+        event.setCancelled(true);
+        event.getItem().remove();
+        ItemStack leftover = InventoryAdder.addItem(player, stack);
+        if (leftover == null) {
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+        } else {
+            player.getWorld().dropItemNaturally(player.getLocation(), leftover);
         }
     }
 

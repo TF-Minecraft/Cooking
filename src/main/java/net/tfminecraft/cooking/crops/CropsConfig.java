@@ -20,8 +20,7 @@ public final class CropsConfig {
             "v.carrot",
             "v.potato",
             "v.beetroot",
-            "v.apple",
-            "v.nether_wart");
+            "v.apple");
     private static final Set<String> NON_FARM_COOKING_IDS = Set.of(
             "dough",
             "salt",

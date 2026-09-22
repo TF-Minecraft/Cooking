@@ -11,6 +11,7 @@ import me.Plugins.TLibs.TLibs;
 import net.tfminecraft.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.InventoryAdder;
@@ -109,6 +110,7 @@ public final class MillingStoneHandler implements Listener {
 
         hand.setAmount(hand.getAmount() - recipe.getInputCount());
         MillingStoneState.setOutputQuality(furniture, match.quality);
+        MillingStoneState.setLineage(furniture, match.lineage);
         MillingStoneState.setStage(furniture, MillingStoneStage.LOADED);
         MillingStoneDisplay.syncVisuals(furniture, MillingStoneStage.LOADED);
 
@@ -133,7 +135,8 @@ public final class MillingStoneHandler implements Listener {
     }
 
     private void handleTake(Furniture furniture, MillingRecipe recipe, Player player) {
-        ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture));
+        ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture),
+                MillingStoneState.getLineage(furniture));
         if (flour == null) {
             player.sendMessage("§cFailed to create flour.");
             return;
@@ -152,14 +155,16 @@ public final class MillingStoneHandler implements Listener {
     }
 
     private void dropFlour(Furniture furniture, MillingRecipe recipe) {
-        ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture));
+        ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture),
+                MillingStoneState.getLineage(furniture));
         if (flour != null) {
             furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), flour);
         }
     }
 
     private void dropWheatRefund(Furniture furniture, MillingRecipe recipe) {
-        ItemStack wheat = buildWheat(MillingStoneState.getOutputQuality(furniture));
+        ItemStack wheat = buildWheat(MillingStoneState.getOutputQuality(furniture),
+                MillingStoneState.getLineage(furniture));
         if (wheat == null) {
             return;
         }
@@ -167,7 +172,7 @@ public final class MillingStoneHandler implements Listener {
         furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), wheat);
     }
 
-    private static ItemStack buildFlour(MillingRecipe recipe, int quality) {
+    private static ItemStack buildFlour(MillingRecipe recipe, int quality, IngredientLineage lineage) {
         FoodItem template = FoodLoader.getByString(recipe.getOutputFood());
         if (template == null) {
             return null;
@@ -175,10 +180,11 @@ public final class MillingStoneHandler implements Listener {
         FoodItem flour = new FoodItem(template);
         flour.setCategory("grain");
         flour.setOrigin("Wheat");
+        flour.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain("Wheat") : lineage);
         return ItemBuilder.buildSingleWithQuality(flour, quality);
     }
 
-    private static ItemStack buildWheat(int quality) {
+    private static ItemStack buildWheat(int quality, IngredientLineage lineage) {
         FoodItem template = FoodLoader.getByString("wheat");
         if (template == null) {
             return null;
@@ -186,6 +192,7 @@ public final class MillingStoneHandler implements Listener {
         FoodItem wheat = new FoodItem(template);
         wheat.setCategory("grain");
         wheat.setOrigin("Wheat");
+        wheat.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain("Wheat") : lineage);
         return ItemBuilder.buildSingleWithQuality(wheat, quality);
     }
 
@@ -218,11 +225,11 @@ public final class MillingStoneHandler implements Listener {
         if (foodItem != null) {
             if (recipe.getInputFood() != null
                     && foodItem.getId().equalsIgnoreCase(recipe.getInputFood())) {
-                return new InputMatch(true, foodItem.getQualityMin());
+                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem));
             }
             if (recipe.getInputMatcher() != null
                     && TLibs.getItemAPI().getChecker().checkItemWithPath(hand, recipe.getInputMatcher())) {
-                return new InputMatch(true, foodItem.getQualityMin());
+                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem));
             }
         }
 
@@ -232,15 +239,26 @@ public final class MillingStoneHandler implements Listener {
             int quality = wheatTemplate != null
                     ? OriginQualityResolver.resolve(player, wheatTemplate)
                     : OriginQualityResolver.resolve(player, null);
-            return new InputMatch(true, quality);
+            return new InputMatch(true, quality, IngredientLineage.ofMain("Wheat"));
         }
 
-        return new InputMatch(false, 1);
+        return new InputMatch(false, 1, IngredientLineage.empty());
+    }
+
+    private static IngredientLineage lineageOf(FoodItem foodItem) {
+        if (foodItem.getLineage() != null && !foodItem.getLineage().isEmpty()) {
+            return foodItem.getLineage();
+        }
+        String origin = foodItem.getOrigin();
+        if (origin == null || origin.isBlank()) {
+            origin = "Wheat";
+        }
+        return IngredientLineage.ofMain(origin);
     }
 
     private static void markDirty(Furniture furniture) {
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(furniture);
     }
 
-    private record InputMatch(boolean accepted, int quality) {}
+    private record InputMatch(boolean accepted, int quality, IngredientLineage lineage) {}
 }

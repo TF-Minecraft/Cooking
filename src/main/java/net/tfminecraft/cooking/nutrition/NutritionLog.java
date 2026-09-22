@@ -66,7 +66,8 @@ public final class NutritionLog {
             line.append(" character=").append(clean(character.getName()))
                     .append(" characterId=").append(clean(character.getId()))
                     .append(" pool=").append(character.getFoodValue())
-                    .append(" diet=").append(character.getDietScore());
+                    .append(" diet=").append(character.getDietScore())
+                    .append(" rawDiet=").append(character.getRawDietScore());
         }
         if (details != null && !details.isBlank()) {
             line.append(' ').append(details.replace('\r', ' ').replace('\n', ' '));

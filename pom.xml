@@ -94,6 +94,13 @@
         </dependency>
         <dependency>
             <groupId>local</groupId>
+            <artifactId>CustomFishing</artifactId>
+            <version>2.3.27</version>
+            <scope>system</scope>
+            <systemPath>${tfmc.refs}/CustomFishing-2.3.27.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>local</groupId>
             <artifactId>SimpleFactions</artifactId>
             <version>2.8.7</version>
             <scope>system</scope>

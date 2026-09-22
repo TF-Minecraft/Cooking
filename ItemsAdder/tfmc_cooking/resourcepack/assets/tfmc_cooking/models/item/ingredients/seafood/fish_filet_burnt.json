@@ -1,0 +1,70 @@
+{
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"textures": {
+		"0": "tfmc_cooking:item/ingredients/seafood/fish_burnt",
+		"particle": "tfmc_cooking:item/ingredients/seafood/fish_burnt"
+	},
+	"elements": [
+		{
+			"from": [11, 0, 7],
+			"to": [13, 1.5, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [2, 0, 6]},
+			"faces": {
+				"north": {"uv": [0.5, 0.25, 1.5, 2], "texture": "#0"},
+				"east": {"uv": [0.5, 0.25, 2, 1], "texture": "#0"},
+				"south": {"uv": [2, 0.25, 3, 1], "texture": "#0"},
+				"west": {"uv": [0.5, 0.25, 2, 1], "texture": "#0"},
+				"up": {"uv": [1, 2.5, 3, 5], "texture": "#0"},
+				"down": {"uv": [1, 2.5, 3, 5], "texture": "#0"}
+			}
+		},
+		{
+			"from": [3, 0, 6],
+			"to": [11, 1.5, 10],
+			"rotation": {"angle": 0, "axis": "y", "origin": [0, 0, 6]},
+			"faces": {
+				"north": {"uv": [0, 2, 8, 3.5], "texture": "#0"},
+				"east": {"uv": [2.5, 3.5, 6.5, 5], "texture": "#0"},
+				"south": {"uv": [0, 2, 8, 3.5], "texture": "#0"},
+				"west": {"uv": [0, 2, 4, 3.5], "texture": "#0"},
+				"up": {"uv": [0, 1.25, 8, 5.25], "texture": "#0"},
+				"down": {"uv": [0, 1.25, 8, 5.25], "texture": "#0"}
+			}
+		}
+	],
+	"display": {
+		"thirdperson_righthand": {
+			"rotation": [50, 0, 0],
+			"translation": [0, 3.25, 1.75],
+			"scale": [0.5, 0.5, 0.5]
+		},
+		"thirdperson_lefthand": {
+			"rotation": [50, 0, 0],
+			"translation": [0, 3.25, 1.75],
+			"scale": [0.5, 0.5, 0.5]
+		},
+		"firstperson_righthand": {
+			"translation": [0, 5.75, 0],
+			"scale": [0.6, 0.6, 0.6]
+		},
+		"firstperson_lefthand": {
+			"translation": [0, 5.75, 0],
+			"scale": [0.6, 0.6, 0.6]
+		},
+		"ground": {
+			"translation": [0, 3.75, 0],
+			"scale": [0.5, 0.5, 0.5]
+		},
+		"gui": {
+			"rotation": [29, -143, 0],
+			"translation": [0, 1.75, 0],
+			"scale": [0.5, 0.5, 0.5]
+		},
+		"fixed": {
+			"rotation": [-90, 0, 0],
+			"translation": [0, -10, -14],
+			"scale": [2, 2, 2]
+		}
+	}
+}

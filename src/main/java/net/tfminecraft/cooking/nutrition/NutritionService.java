@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import net.tfminecraft.RPCharacters.Objects.RPCharacter;
 import net.tfminecraft.RPCharacters.RPCharacters;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.IngredientLineage;
 
 public final class NutritionService {
 
@@ -32,6 +33,7 @@ public final class NutritionService {
         int gained = (int) Math.ceil(food.getFinalFood());
         int foodBefore = character.getFoodValue();
         int dietBefore = character.getDietScore();
+        int rawBefore = character.getRawDietScore();
         int actualGain = applyFoodGain(character, gained);
         if (actualGain <= 0) {
             NutritionLog.append("EAT_SKIP", player, character,
@@ -43,9 +45,19 @@ public final class NutritionService {
             return;
         }
 
-        boolean dietChanged = applyDietLerp(character, food, actualGain);
+        int rawAfter = DietMath.lerpRaw(
+                rawBefore,
+                food.getFinalNutrition(),
+                actualGain,
+                NutritionConfig.maxFood(),
+                NutritionConfig.lerpStepRate());
+        character.setRawDietScore(rawAfter);
+        VarietyService.recordMeal(player, IngredientLineage.forEat(food));
+        VarietyService.applyEffective(player, character);
+        VarietyScore variety = VarietyService.current(player);
+        boolean dietChanged = character.getDietScore() != dietBefore;
         if (dietChanged) {
-            DietTierService.checkAndNotify(player, character);
+            DietTierService.checkAndNotify(player, character, variety);
         }
 
         NutritionLog.append("EAT", player, character,
@@ -55,9 +67,17 @@ public final class NutritionService {
                 + " foodBefore=" + foodBefore
                 + " foodAfter=" + character.getFoodValue()
                 + " foodNutrition=" + food.getFinalNutrition()
+                + " rawBefore=" + rawBefore
+                + " rawAfter=" + character.getRawDietScore()
                 + " dietBefore=" + dietBefore
                 + " dietAfter=" + character.getDietScore()
-                + " dietChanged=" + dietChanged);
+                + " dietChanged=" + dietChanged
+                + " varietyMeals=" + variety.meals()
+                + " varietyIngredients=" + variety.effectiveIngredients()
+                + " varietyTier=" + variety.tierId()
+                + " varietyProgress=" + variety.progressPercent()
+                + " varietyDivisor=" + variety.divisor()
+                + " varietyPenalty=" + variety.penaltyPercent());
         RPCharacters.getPlayerManager().savePlayer(player);
         NutritionLog.append("SAVE", player, character, "reason=eat");
         NutritionDisplayService.sync(player, character, "eat");
@@ -80,24 +100,6 @@ public final class NutritionService {
 
         character.setFoodValue(newValue);
         return newValue - priorFood;
-    }
-
-    private static boolean applyDietLerp(RPCharacter character, FoodItem food, int actualFoodGain) {
-        double foodNutrition = food.getFinalNutrition();
-        double currentDiet = character.getDietScore();
-        double weight = actualFoodGain / (double) NutritionConfig.maxFood();
-        double delta = (foodNutrition - currentDiet) * weight * NutritionConfig.lerpStepRate();
-        if (Math.abs(delta) < 1e-9) {
-            return false;
-        }
-
-        int newDiet = Math.round((float) (currentDiet + delta));
-        if (newDiet == character.getDietScore()) {
-            return false;
-        }
-
-        character.setDietScore(newDiet);
-        return true;
     }
 
     static int foodAfterDeath(int current, int respawnFood, boolean inBattle) {

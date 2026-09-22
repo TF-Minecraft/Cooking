@@ -82,6 +82,9 @@ public final class HusbandryLoader {
                 config.getDouble("breeding.genetic-slowdown-divisor", 0.4),
                 config.getDouble("breeding.care-influence", 0.02));
         HusbandryConfig.setStatsRevision(config.getString("stats-revision", "1"));
+        HusbandryConfig.setProfessionExp(
+                config.getString("profession", "farming"),
+                parseExpBracket(config.getConfigurationSection("exp"), 6, 8));
     }
 
     private static Set<EntityType> parseEntityTypes(List<String> raw) {
@@ -127,7 +130,8 @@ public final class HusbandryLoader {
                     section.getString(key + ".egg", ""),
                     parseSpeciesGrowUp(section, key),
                     parseSpeciesDuration(section, key, "wool-timer"),
-                    parseSpeciesDuration(section, key, "milk-timer")));
+                    parseSpeciesDuration(section, key, "milk-timer"),
+                    parseOptionalExp(section.getConfigurationSection(key + ".exp"))));
         }
         return species;
     }
@@ -266,6 +270,20 @@ public final class HusbandryLoader {
         return fallback;
     }
 
+    private static HusbandryExpBracket parseExpBracket(ConfigurationSection section, int defaultMin, int defaultMax) {
+        if (section == null) {
+            return HusbandryExpBracket.of(defaultMin, defaultMax);
+        }
+        return HusbandryExpBracket.of(section.getInt("min", defaultMin), section.getInt("max", defaultMax));
+    }
+
+    private static HusbandryExpBracket parseOptionalExp(ConfigurationSection section) {
+        if (section == null) {
+            return null;
+        }
+        return HusbandryExpBracket.of(section.getInt("min", 6), section.getInt("max", 8));
+    }
+
     private static void applyDefaults() {
         HusbandryConfig.apply(
                 15,
@@ -311,5 +329,6 @@ public final class HusbandryLoader {
         HusbandryConfig.setMountSpeedShares(0.40, 0.30, 0.20);
         HusbandryConfig.setBreeding(0.4, 0.4, 0.02);
         HusbandryConfig.setStatsRevision("1");
+        HusbandryConfig.setProfessionExp("farming", HusbandryExpBracket.of(6, 8));
     }
 }

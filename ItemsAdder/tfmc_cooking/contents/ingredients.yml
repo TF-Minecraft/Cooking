@@ -190,3 +190,106 @@ items:
       generate: false
       model_path: item/ingredients/cherry/cherry
 
+  fish_filet_raw:
+    display_name: "Fish Filet"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/fish_filet_raw
+  fish_filet_rotten:
+    display_name: "Rotten Fish Filet"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/fish_filet_rotten
+  fish_filet_cooked:
+    display_name: "Fish Filet Cooked"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/fish_filet_cooked
+  fish_filet_burnt:
+    display_name: "Fish Filet Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/fish_filet_burnt
+  fish_filet_boiled:
+    display_name: "Fish Filet Boiled"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/fish_filet_boiled
+  jellyfish_cubes_raw:
+    display_name: "Jellyfish Cubes"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_cubes_raw
+  jellyfish_cubes_rotten:
+    display_name: "Rotten Jellyfish Cubes"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_cubes_rotten
+  jellyfish_cubes_cooked:
+    display_name: "Jellyfish Cubes Cooked"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_cubes_cooked
+  jellyfish_cubes_burnt:
+    display_name: "Jellyfish Cubes Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_cubes_burnt
+  jellyfish_cubes_boiled:
+    display_name: "Jellyfish Cubes Boiled"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_cubes_boiled
+  octopus_raw:
+    display_name: "Octopus"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/octopus_raw
+  octopus_rotten:
+    display_name: "Rotten Octopus"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/octopus_rotten
+  octopus_cooked:
+    display_name: "Octopus Cooked"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/octopus_cooked
+  octopus_burnt:
+    display_name: "Octopus Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/octopus_burnt
+  octopus_boiled:
+    display_name: "Octopus Boiled"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/octopus_boiled
+  red_meat_steak_boiled:
+    display_name: "Red Meat Steak boiled"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_steak_boiled
+  poultry_roast_filet_boiled:
+    display_name: "Poultry Roast Filet boiled"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_filet_boiled
+

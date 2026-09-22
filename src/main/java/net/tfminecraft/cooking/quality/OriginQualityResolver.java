@@ -18,7 +18,6 @@ public final class OriginQualityResolver {
     }
 
     public static int applyPickupPermissions(Player player, int rolled) {
-        int quality = rolled;
         int bestMinQuality = QualityConfig.getPickupMin();
         int bestRollBias = 0;
 
@@ -34,8 +33,12 @@ public final class OriginQualityResolver {
             }
         }
 
-        quality += bestRollBias;
-        quality = Math.max(quality, bestMinQuality);
+        return adjust(rolled, bestMinQuality, bestRollBias);
+    }
+
+    public static int adjust(int rolled, int minQuality, int rollBias) {
+        int quality = rolled + rollBias;
+        quality = Math.max(quality, minQuality);
         return QualityUtils.clamp(quality);
     }
 }

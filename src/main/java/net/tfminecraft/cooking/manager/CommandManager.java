@@ -425,6 +425,8 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         player.sendMessage("§7Mains (" + composed.getMains().size() + "): §f" + formatFoodList(composed.getMains()));
         player.sendMessage("§7Extras (" + composed.getExtras().size() + "): §f" + formatFoodList(composed.getExtras()));
         player.sendMessage("§7Neutral (" + composed.getNeutral().size() + "): §f" + formatFoodList(composed.getNeutral()));
+        player.sendMessage("§7Lineage mains: §f" + formatOrigins(composed.getLineage().mains()));
+        player.sendMessage("§7Lineage extras: §f" + formatOrigins(composed.getLineage().extras()));
         if (!composed.getFreshnessTracks().isEmpty()) {
             StringBuilder freshness = new StringBuilder();
             for (Map.Entry<String, Integer> entry : composed.getFreshnessTracks().entrySet()) {
@@ -456,6 +458,13 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                     .append(')');
         }
         return builder.toString();
+    }
+
+    private static String formatOrigins(List<String> origins) {
+        if (origins == null || origins.isEmpty()) {
+            return "-";
+        }
+        return String.join(", ", origins);
     }
 
     private boolean handleNameTest(Player player, String[] args) {

@@ -16,7 +16,7 @@ import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.data.CookData;
 import net.tfminecraft.cooking.quality.CompositionContext;
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.IngredientConverter;
@@ -201,9 +201,7 @@ public class FryingReference extends CookingReference {
             inputs.add(butterExtra);
             CompositionResult composed = CompositionQualityResolver.compose(
                     e.getPlayer(), inputs, CompositionContext.FRYING_PAN);
-            int quality = composed.getFinalQuality();
-            fi.setQualityRange(quality, quality);
-            CompositionFreshnessApplier.applyTracks(fi, composed.getFreshnessTracks());
+            CompositionApplier.apply(fi, composed);
         }
 
         item = ItemUpdater.applyItemUpdate(item, fi, f.getId());

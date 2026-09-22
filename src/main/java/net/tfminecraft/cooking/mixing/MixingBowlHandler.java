@@ -29,6 +29,8 @@ import net.tfminecraft.cooking.cup.CupItems;
 
 import net.tfminecraft.cooking.item.FoodItem;
 
+import net.tfminecraft.cooking.item.IngredientLineage;
+
 import net.tfminecraft.cooking.item.tag.TagTrack;
 
 import net.tfminecraft.cooking.loader.FoodLoader;
@@ -36,7 +38,7 @@ import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 
 import net.tfminecraft.cooking.quality.CompositionContext;
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.DoughMixinRules;
@@ -352,6 +354,8 @@ public class MixingBowlHandler implements Listener {
 
             MixingBowlState.setSugarQuality(furniture, quality);
             MixingBowlState.setSugarFreshness(furniture, readFreshness(foodItem));
+            MixingBowlState.setSugarOrigin(furniture, originOr(foodItem, "Sugar"));
+            MixingBowlState.setSugarLineage(furniture, foodItem.getLineage());
 
         } else if (DoughMixinRules.isFruitCategory(category)) {
 
@@ -377,7 +381,7 @@ public class MixingBowlHandler implements Listener {
 
             hand.setAmount(hand.getAmount() - 1);
 
-            MixingBowlState.addFruit(furniture, origin, quality, readFreshness(foodItem));
+            MixingBowlState.addFruit(furniture, origin, quality, readFreshness(foodItem), foodItem.getLineage());
 
         } else {
 
@@ -420,9 +424,13 @@ public class MixingBowlHandler implements Listener {
         if (MixingBowlSlots.FLOUR.equals(slotId)) {
             MixingBowlState.setFlourQuality(furniture, quality);
             MixingBowlState.setFlourFreshness(furniture, freshness);
+            MixingBowlState.setFlourOrigin(furniture, originOr(foodItem, "Wheat"));
+            MixingBowlState.setFlourLineage(furniture, foodItem.getLineage());
         } else if (MixingBowlSlots.YEAST.equals(slotId)) {
             MixingBowlState.setYeastQuality(furniture, quality);
             MixingBowlState.setYeastFreshness(furniture, freshness);
+            MixingBowlState.setYeastOrigin(furniture, originOr(foodItem, "Yeast"));
+            MixingBowlState.setYeastLineage(furniture, foodItem.getLineage());
         }
 
     }
@@ -522,28 +530,47 @@ public class MixingBowlHandler implements Listener {
         Integer flourQuality = MixingBowlState.getFlourQuality(furniture);
         Integer flourFreshness = MixingBowlState.getFlourFreshness(furniture);
         if (flourQuality != null) {
-            inputs.add(ingredientStub("grain", flourQuality, flourFreshness));
+            inputs.add(ingredientStub(
+                    "grain",
+                    flourQuality,
+                    flourFreshness,
+                    MixingBowlState.getFlourOrigin(furniture),
+                    MixingBowlState.getFlourLineage(furniture)));
         }
 
         Integer yeastQuality = MixingBowlState.getYeastQuality(furniture);
         Integer yeastFreshness = MixingBowlState.getYeastFreshness(furniture);
         if (yeastQuality != null) {
-            inputs.add(ingredientStub("ingredient", yeastQuality, yeastFreshness));
+            inputs.add(ingredientStub(
+                    "ingredient",
+                    yeastQuality,
+                    yeastFreshness,
+                    MixingBowlState.getYeastOrigin(furniture),
+                    MixingBowlState.getYeastLineage(furniture)));
         }
 
         if (MixingBowlState.hasSugar(furniture)) {
             Integer sugarQuality = MixingBowlState.getSugarQuality(furniture);
             Integer sugarFreshness = MixingBowlState.getSugarFreshness(furniture);
             if (sugarQuality != null) {
-                inputs.add(ingredientStub("sweetener", sugarQuality, sugarFreshness));
+                inputs.add(ingredientStub(
+                        "sweetener",
+                        sugarQuality,
+                        sugarFreshness,
+                        MixingBowlState.getSugarOrigin(furniture),
+                        MixingBowlState.getSugarLineage(furniture)));
             }
         }
 
         List<Integer> fruitQualities = MixingBowlState.getFruitQualities(furniture);
         List<Integer> fruitFreshness = MixingBowlState.getFruitFreshness(furniture);
+        List<String> fruitOrigins = MixingBowlState.getFruitOrigins(furniture);
+        List<IngredientLineage> fruitLineages = MixingBowlState.getFruitLineages(furniture);
         for (int i = 0; i < fruitQualities.size(); i++) {
             Integer freshness = i < fruitFreshness.size() ? fruitFreshness.get(i) : null;
-            inputs.add(ingredientStub("fruit", fruitQualities.get(i), freshness));
+            String origin = i < fruitOrigins.size() ? fruitOrigins.get(i) : null;
+            IngredientLineage lineage = i < fruitLineages.size() ? fruitLineages.get(i) : IngredientLineage.empty();
+            inputs.add(ingredientStub("fruit", fruitQualities.get(i), freshness, origin, lineage));
         }
 
         CompositionResult composed = CompositionQualityResolver.compose(player, inputs, CompositionContext.MIXING_BOWL);
@@ -552,8 +579,6 @@ public class MixingBowlHandler implements Listener {
 
 
         boolean hasSugar = MixingBowlState.hasSugar(furniture);
-
-        List<String> fruitOrigins = MixingBowlState.getFruitOrigins(furniture);
 
 
 
@@ -570,10 +595,18 @@ public class MixingBowlHandler implements Listener {
         }
 
         DoughMixinRules.applyDoughTags(dough, hasSugar, fruitOrigins);
-        CompositionFreshnessApplier.applyTracks(dough, composed.getFreshnessTracks());
+        CompositionApplier.apply(dough, composed);
 
         return ItemBuilder.buildComposedWithQuality(dough, quality);
 
+    }
+
+    private static String originOr(FoodItem foodItem, String fallback) {
+        String origin = foodItem.getOrigin();
+        if (origin == null || origin.isBlank()) {
+            return fallback;
+        }
+        return origin;
     }
 
     private static int readFreshness(FoodItem foodItem) {
@@ -581,10 +614,21 @@ public class MixingBowlHandler implements Listener {
         return track == null ? 0 : track.getValue();
     }
 
-    private static FoodItem ingredientStub(String category, int quality, Integer freshness) {
+    private static FoodItem ingredientStub(
+            String category,
+            int quality,
+            Integer freshness,
+            String origin,
+            IngredientLineage lineage) {
         FoodItem template = FoodLoader.getByString("dough");
         FoodItem stub = new FoodItem(template);
         stub.setCategory(category);
+        if (origin != null && !origin.isBlank()) {
+            stub.setOrigin(origin);
+        }
+        if (lineage != null && !lineage.isEmpty()) {
+            stub.setLineage(lineage);
+        }
         stub.setQualityRange(quality, quality);
         if (freshness != null && freshness >= 0) {
             TagTrack fresh = new TagTrack(TrackLoader.getByString("freshness"));

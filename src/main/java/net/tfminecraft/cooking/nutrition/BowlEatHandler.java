@@ -32,6 +32,9 @@ public final class BowlEatHandler implements Listener {
         }
 
         Player player = event.getPlayer();
+        if (player.isSneaking()) {
+            return;
+        }
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand != null && hand.getType() != Material.AIR) {
             return;

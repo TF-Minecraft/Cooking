@@ -91,6 +91,10 @@ public final class ButterChurnHandler implements Listener {
                 MilkBucketSnapshot.readQuality(player, milkItem),
                 MilkBucketSnapshot.readDairyFreshness(player, milkItem),
                 MilkBucketSnapshot.readOrigin(player, milkItem));
+        FoodItem milkFood = FoodItem.fromItem(milkItem);
+        if (milkFood != null) {
+            ButterChurnState.setMilkLineage(furniture, milkFood.getLineage());
+        }
         ButterChurnState.setChurnCount(furniture, 0);
         ButterChurnAging.start(furniture);
         markDirty(furniture);
@@ -242,7 +246,10 @@ public final class ButterChurnHandler implements Listener {
                 ButterChurnState.getSaltQuality(churn),
                 ButterChurnState.getSpiceOrigin(churn),
                 ButterChurnState.getSpiceQuality(churn),
-                ButterChurnState.getSpiceFreshness(churn));
+                ButterChurnState.getSpiceFreshness(churn),
+                ButterChurnState.getMilkLineage(churn),
+                ButterChurnState.getSaltLineage(churn),
+                ButterChurnState.getSpiceLineage(churn));
         if (butter == null) {
             player.sendMessage("Could not create butter.");
             return;
@@ -284,6 +291,7 @@ public final class ButterChurnHandler implements Listener {
         }
 
         ButterChurnState.setSalt(furniture, QualityUtils.clamp(salt.getQualityMin()));
+        ButterChurnState.setSaltLineage(furniture, salt.getLineage());
         consumeOne(player, hand);
         markDirty(furniture);
         furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ENTITY_ITEM_FRAME_ADD_ITEM, 1f, 1.2f);
@@ -310,6 +318,7 @@ public final class ButterChurnHandler implements Listener {
                 spice.getOrigin(),
                 QualityUtils.clamp(spice.getQualityMin()),
                 ChurnExtras.readFreshness(spice));
+        ButterChurnState.setSpiceLineage(furniture, spice.getLineage());
         consumeOne(player, hand);
         markDirty(furniture);
         furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ENTITY_ITEM_FRAME_ADD_ITEM, 1f, 1f);

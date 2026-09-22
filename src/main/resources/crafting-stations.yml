@@ -14,6 +14,16 @@ cutting_board:
       inputs:
         - c.vegetable(type=vegetable_cut)
       output: garnish(type=vegetable_chopped;origin={origin};tags=cut.1)
+    cut_vegetables_2:
+      ratio: 2
+      inputs:
+        - c.vegetable(type=vegetable_2)
+      output: vegetable(type=vegetable_cut_2;origin={origin};tags=cut.0)
+    chop_vegetables_2:
+      ratio: 1
+      inputs:
+        - c.vegetable(type=vegetable_cut_2)
+      output: garnish(type=vegetable_chopped_2;origin={origin};tags=cut.1)
     chop_olive:
       ratio: 1
       inputs:
@@ -34,3 +44,8 @@ cutting_board:
       inputs:
         - c.vegetable(type=vegetable_chop_only;origin=Garlic)
       output: garnish(type=garnish_chopped;origin={origin};tags=cut.1)
+    cut_seafood:
+      ratio: 1
+      inputs:
+        - c.seafood(type=seafood_whole)
+      output: seafood(type=seafood_fish_filet;origin={origin};tags=freshness.0)

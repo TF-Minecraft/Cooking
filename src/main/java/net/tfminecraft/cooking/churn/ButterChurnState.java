@@ -1,6 +1,8 @@
 package net.tfminecraft.cooking.churn;
 
 import net.tfminecraft.cooking.cup.DairyOrigin;
+import net.tfminecraft.cooking.item.IngredientLineage;
+import net.tfminecraft.cooking.item.IngredientLineageCodec;
 import net.tfminecraft.cooking.item.tag.AgeScale;
 import net.tfminecraft.furniture.Furniture;
 
@@ -16,6 +18,9 @@ public final class ButterChurnState {
     public static final String VAR_SPICE_ORIGIN = "butter.spiceOrigin";
     public static final String VAR_SPICE_QUALITY = "butter.spiceQuality";
     public static final String VAR_SPICE_FRESHNESS = "butter.spiceFreshness";
+    public static final String VAR_MILK_LINEAGE = "butter.milkLineage";
+    public static final String VAR_SALT_LINEAGE = "butter.saltLineage";
+    public static final String VAR_SPICE_LINEAGE = "butter.spiceLineage";
 
     private ButterChurnState() {}
 
@@ -111,7 +116,32 @@ public final class ButterChurnState {
         furniture.getVariables().put(VAR_MILK_QUALITY, quality);
         furniture.getVariables().put(VAR_MILK_ORIGIN, DairyOrigin.orCow(origin));
         furniture.getVariables().put(VAR_DAIRY_FRESHNESS, Math.max(0, dairyFreshness));
+        furniture.getVariables().remove(VAR_MILK_LINEAGE);
         touchLastUpdate(furniture);
+    }
+
+    public static void setMilkLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_MILK_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getMilkLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_MILK_LINEAGE));
+    }
+
+    public static void setSaltLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_SALT_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getSaltLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_SALT_LINEAGE));
+    }
+
+    public static void setSpiceLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_SPICE_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getSpiceLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_SPICE_LINEAGE));
     }
 
     public static void setSalt(Furniture furniture, int quality) {
@@ -171,18 +201,26 @@ public final class ButterChurnState {
         return 0;
     }
 
+    private static String readString(Furniture furniture, String key) {
+        Object value = furniture.getVariables().get(key);
+        return value instanceof String text ? text : "";
+    }
+
     public static void clearExtras(Furniture furniture) {
         furniture.getVariables().remove(VAR_HAS_SALT);
         furniture.getVariables().remove(VAR_SALT_QUALITY);
         furniture.getVariables().remove(VAR_SPICE_ORIGIN);
         furniture.getVariables().remove(VAR_SPICE_QUALITY);
         furniture.getVariables().remove(VAR_SPICE_FRESHNESS);
+        furniture.getVariables().remove(VAR_SALT_LINEAGE);
+        furniture.getVariables().remove(VAR_SPICE_LINEAGE);
     }
 
     public static void clear(Furniture furniture) {
         furniture.getVariables().remove(VAR_CHURN_COUNT);
         furniture.getVariables().remove(VAR_MILK_QUALITY);
         furniture.getVariables().remove(VAR_MILK_ORIGIN);
+        furniture.getVariables().remove(VAR_MILK_LINEAGE);
         furniture.getVariables().remove(VAR_DAIRY_FRESHNESS);
         furniture.getVariables().remove(VAR_FRESHNESS_REMAINDER);
         furniture.getVariables().remove(VAR_LAST_UPDATE);

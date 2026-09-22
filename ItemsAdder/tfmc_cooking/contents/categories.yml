@@ -158,6 +158,7 @@ categories:
       - tfmc_cooking:red_meat_steak_raw
       - tfmc_cooking:red_meat_steak_cooked
       - tfmc_cooking:red_meat_steak_burnt
+      - tfmc_cooking:red_meat_steak_boiled
       - tfmc_cooking:red_meat_steak_rotten
       - tfmc_cooking:red_meat_roast_raw_8
       - tfmc_cooking:red_meat_roast_raw_7
@@ -254,6 +255,7 @@ categories:
       - tfmc_cooking:poultry_roast_filet_raw
       - tfmc_cooking:poultry_roast_filet_cooked
       - tfmc_cooking:poultry_roast_filet_burnt
+      - tfmc_cooking:poultry_roast_filet_boiled
       - tfmc_cooking:poultry_roast_filet_rotten
       - tfmc_cooking:butter
       - tfmc_cooking:butter_pan
@@ -311,3 +313,18 @@ categories:
       - tfmc_cooking:tomato_sauce
       - tfmc_cooking:bag
       - tfmc_cooking:bag_on_stand
+      - tfmc_cooking:fish_filet_raw
+      - tfmc_cooking:fish_filet_cooked
+      - tfmc_cooking:fish_filet_burnt
+      - tfmc_cooking:fish_filet_boiled
+      - tfmc_cooking:fish_filet_rotten
+      - tfmc_cooking:jellyfish_cubes_raw
+      - tfmc_cooking:jellyfish_cubes_cooked
+      - tfmc_cooking:jellyfish_cubes_burnt
+      - tfmc_cooking:jellyfish_cubes_boiled
+      - tfmc_cooking:jellyfish_cubes_rotten
+      - tfmc_cooking:octopus_raw
+      - tfmc_cooking:octopus_cooked
+      - tfmc_cooking:octopus_burnt
+      - tfmc_cooking:octopus_boiled
+      - tfmc_cooking:octopus_rotten

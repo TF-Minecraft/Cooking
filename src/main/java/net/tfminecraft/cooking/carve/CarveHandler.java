@@ -24,6 +24,7 @@ import java.util.List;
 
 
 
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionContext;
 
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
@@ -167,12 +168,13 @@ public final class CarveHandler {
         CarvableRoastUtils.copyInheritedTracks(roast, partTemplate);
 
         if (roast.hasBaseOverride()) {
-            int edible = Math.max(1, CarvableRoastUtils.countFoodCuts(sequence));
-            partTemplate.setBaseFood(roast.getBaseFood() / edible);
-            partTemplate.setBaseNutrition(roast.getBaseNutrition() / edible);
+            int edible = CarvableRoastUtils.countFoodCuts(sequence);
+            partTemplate.setBaseFood(CarvableRoastUtils.portionFood(roast.getBaseFood(), edible));
+            partTemplate.setBaseNutrition(roast.getBaseNutrition());
         }
 
         CompositionResult composed = CompositionQualityResolver.compose(player, List.of(roast), CompositionContext.CARVE);
+        CompositionApplier.apply(partTemplate, composed);
 
         return ItemBuilder.buildSingleWithQuality(partTemplate, stack, composed.getFinalQuality());
 

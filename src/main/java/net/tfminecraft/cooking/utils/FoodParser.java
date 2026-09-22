@@ -1,6 +1,7 @@
 package net.tfminecraft.cooking.utils;
 
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.IngredientLineageCodec;
 import net.tfminecraft.cooking.item.tag.AgeScale;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
@@ -187,6 +188,10 @@ public class FoodParser {
                     }
                     break;
 
+                case "lineage":
+                    item.setLineage(IngredientLineageCodec.decode(value));
+                    break;
+
                 case "sauce":
                     // recursive parse
                     Result sr = parse(value);
@@ -263,6 +268,11 @@ public class FoodParser {
                 sb.append(ing);
             }
             sb.append(";");
+        }
+
+        String lineage = IngredientLineageCodec.encode(f.getLineage());
+        if (!lineage.isEmpty()) {
+            sb.append("lineage=").append(lineage).append(";");
         }
 
         // Sauce (nested)
