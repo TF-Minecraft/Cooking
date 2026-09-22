@@ -6,14 +6,14 @@
 
     <groupId>net.tfminecraft</groupId>
     <artifactId>cooking</artifactId>
-    <version>0.2.0-ALPHA</version>
+    <version>0.2.1-ALPHA</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <interactiblefurniture.version>0.2.0-BETA</interactiblefurniture.version>
-        <rpcharacters.version>2.0.0</rpcharacters.version>
-        <simplefactions.version>3.0.0</simplefactions.version>
+        <rpcharacters.version>2.0.1</rpcharacters.version>
+        <simplefactions.version>3.0.1</simplefactions.version>
         <tfmccore.version>2.0.0</tfmccore.version>
         <tlibs.version>2.0.0</tlibs.version>
     </properties>
