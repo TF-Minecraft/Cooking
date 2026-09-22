@@ -30,6 +30,8 @@ public final class HusbandryInspectGui {
 
     private HusbandryInspectGui() {}
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static void open(Player player, LivingEntity entity, HusbandryAnimal animal) {
         if (player == null || entity == null || animal == null) {
             return;
@@ -160,6 +162,8 @@ public final class HusbandryInspectGui {
         return String.format("%.1f", value);
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     private static ItemStack named(Material material, String name, List<String> lore) {
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();

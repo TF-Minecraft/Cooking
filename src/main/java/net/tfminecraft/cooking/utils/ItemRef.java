@@ -19,6 +19,8 @@ public class ItemRef {
         return out;
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static void mergeMeta(ItemStack out, ItemStack source) {
         if (source == null) return;
         out.setAmount(source.getAmount());

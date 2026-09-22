@@ -185,6 +185,8 @@ public class PotReference extends CookingReference {
         return temperature >= MAX_TEMPERATURE;
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public void scoop(Player p, ItemStack ladle) {
         if (!isSoup()) return;
 
@@ -512,6 +514,8 @@ public class PotReference extends CookingReference {
         }
     }
 
+    // Preserve the existing serialized item format so previously saved graves remain readable.
+    @SuppressWarnings("deprecation")
     static String encodeStack(ItemStack stack) {
         if (stack == null) return null;
         try {
@@ -525,6 +529,8 @@ public class PotReference extends CookingReference {
         }
     }
 
+    // Preserve the existing serialized item format so previously saved graves remain readable.
+    @SuppressWarnings("deprecation")
     static ItemStack decodeStack(String payload) {
         if (payload == null || payload.isBlank()) return null;
         try {

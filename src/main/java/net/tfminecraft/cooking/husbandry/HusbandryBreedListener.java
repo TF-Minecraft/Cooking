@@ -127,6 +127,8 @@ public final class HusbandryBreedListener implements Listener {
         return BlockReason.NONE;
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     private static void persistBaby(LivingEntity child, LivingEntity mother, LivingEntity father) {
         if (child == null) {
             return;

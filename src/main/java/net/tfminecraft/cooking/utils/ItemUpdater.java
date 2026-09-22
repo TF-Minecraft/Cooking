@@ -88,6 +88,8 @@ public class ItemUpdater {
         return updateItem(stack, fi, furniture, false);
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static ItemStack updateItem(ItemStack stack, FoodItem fi, String furniture, boolean held) {
         if (stack == null || fi == null) {
             return null;
@@ -174,6 +176,8 @@ public class ItemUpdater {
         return !nutrition || !food;
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     private static String existingDisplayName(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) {
             return null;

@@ -18,6 +18,8 @@ public final class HusbandryStateDisplay {
 
     private HusbandryStateDisplay() {}
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public static void sync(LivingEntity entity, HusbandryAnimal animal) {
         if (entity == null || !entity.isValid() || animal == null) {
             return;

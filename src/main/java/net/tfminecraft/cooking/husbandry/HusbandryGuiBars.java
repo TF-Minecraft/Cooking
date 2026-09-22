@@ -31,6 +31,8 @@ final class HusbandryGuiBars {
         return Math.max(0, Math.min(BAR_SLOTS, (int) Math.round(BAR_SLOTS * value / (double) max)));
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     static ItemStack barSegment(String label, int value, int max, boolean filled) {
         Material material = filled ? Material.GREEN_CONCRETE : Material.GRAY_CONCRETE;
         ItemStack stack = new ItemStack(material);

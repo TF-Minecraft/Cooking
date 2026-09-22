@@ -95,6 +95,8 @@ public class PlateManager implements Listener{
         return false;
     }
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public void addSauce(Player p, Furniture f, FoodItem sauce, ItemStack base) {
         if (hasSauce(f)) return;
 

@@ -198,6 +198,8 @@ public class SauceReference extends CookingReference {
 
 
 
+    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
+    @SuppressWarnings("deprecation")
     public void scoop(Player p, ItemStack ladle) {
 
         if (!secondaries.containsKey("liquid")) return;
