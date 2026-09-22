@@ -19,7 +19,7 @@ The runtime JAR is written to `target/`. PR builds run unit tests and upload a U
 ## Documentation
 
 - [Builds and releases](https://github.com/TF-Minecraft/Docs/blob/main/PIPELINES.md)
-- [Project documentation](https://github.com/TF-Minecraft/Docs/tree/main/projects/Cooking)
+- [Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md)
 - [Implementation guides](docs/README.md)
 
 Runtime YAML lives in [src/main/resources](src/main/resources). The server copies a missing file from the JAR on first start and preserves existing configuration.
