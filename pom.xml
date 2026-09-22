@@ -6,7 +6,7 @@
 
     <groupId>net.tfminecraft</groupId>
     <artifactId>cooking</artifactId>
-    <version>0.2.1-ALPHA</version>
+    <version>0.2.1</version>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>
