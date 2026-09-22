@@ -25,4 +25,6 @@ The runtime JAR is written to `target/`. PR builds run unit tests and upload a U
 
 Runtime YAML lives in [src/main/resources](src/main/resources). The server copies a missing file from the JAR on first start and preserves existing configuration.
 
-TLibs uses Maven `provided` scope with a checksum-pinned version. See [TLibs dependency setup](https://github.com/TF-Minecraft/TLibs/blob/61bd61b17fba45e5178612578805d7108596e8a0/DEPENDENCIES.md) for authenticated and offline installation.
+TLibs uses Maven `provided` scope with a checksum-pinned version. See [TLibs dependency setup](https://github.com/TF-Minecraft/TLibs/blob/v1.1.0/DEPENDENCIES.md) for authenticated and offline installation.
+
+Builds and server runtime require Java 25 and [TLibs 1.1.0](https://github.com/TF-Minecraft/TLibs/releases/tag/v1.1.0).
