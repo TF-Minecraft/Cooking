@@ -53,6 +53,8 @@ public final class HusbandryConfig {
     private static double mountSpeedMinPct = 0.40;
     private static double mountSpeedGeneticsPct = 0.30;
     private static double mountSpeedCarePct = 0.20;
+    private static String professionId = "farming";
+    private static HusbandryExpBracket defaultExp = HusbandryExpBracket.of(6, 8);
 
     private HusbandryConfig() {}
 
@@ -153,6 +155,26 @@ public final class HusbandryConfig {
 
     public static void setStatsRevision(String revision) {
         statsRevision = revision == null ? "" : revision.trim();
+    }
+
+    public static void setProfessionExp(String profession, HusbandryExpBracket bracket) {
+        professionId = profession == null ? "" : profession.trim();
+        defaultExp = bracket == null ? HusbandryExpBracket.of(6, 8) : bracket;
+    }
+
+    public static String professionId() {
+        return professionId;
+    }
+
+    public static HusbandryExpBracket expFor(EntityType type) {
+        if (type == null) {
+            return defaultExp;
+        }
+        HusbandrySpecies configured = species(type);
+        if (configured != null && configured.exp() != null) {
+            return configured.exp();
+        }
+        return defaultExp;
     }
 
     public static String statsRevision() {

@@ -8,6 +8,9 @@ import java.util.Collections;
 
 import java.util.List;
 
+import net.tfminecraft.cooking.item.IngredientLineage;
+import net.tfminecraft.cooking.item.IngredientLineageCodec;
+
 
 
 import net.tfminecraft.furniture.Furniture;
@@ -39,6 +42,20 @@ public final class MixingBowlState {
     public static final String VAR_SUGAR_FRESHNESS = "mixing.sugarFreshness";
 
     public static final String VAR_FRUIT_FRESHNESS = "mixing.fruitFreshness";
+
+    public static final String VAR_FLOUR_ORIGIN = "mixing.flourOrigin";
+
+    public static final String VAR_FLOUR_LINEAGE = "mixing.flourLineage";
+
+    public static final String VAR_YEAST_ORIGIN = "mixing.yeastOrigin";
+
+    public static final String VAR_YEAST_LINEAGE = "mixing.yeastLineage";
+
+    public static final String VAR_SUGAR_ORIGIN = "mixing.sugarOrigin";
+
+    public static final String VAR_SUGAR_LINEAGE = "mixing.sugarLineage";
+
+    public static final String VAR_FRUIT_LINEAGE = "mixing.fruitLineage";
 
 
 
@@ -278,18 +295,77 @@ public final class MixingBowlState {
         furniture.getVariables().put(VAR_SUGAR_FRESHNESS, freshness);
     }
 
-    public static void addFruit(Furniture furniture, String origin, int quality, int freshness) {
+    public static void addFruit(Furniture furniture, String origin, int quality, int freshness, IngredientLineage lineage) {
         List<String> origins = new ArrayList<>(getFruitOrigins(furniture));
         List<Integer> qualities = new ArrayList<>(getFruitQualities(furniture));
         List<Integer> freshnessValues = new ArrayList<>(getFruitFreshness(furniture));
+        List<String> lineages = new ArrayList<>(readStringList(furniture, VAR_FRUIT_LINEAGE));
 
         origins.add(origin);
         qualities.add(quality);
         freshnessValues.add(freshness);
+        lineages.add(IngredientLineageCodec.encode(lineage));
 
         furniture.getVariables().put(VAR_FRUIT_ORIGINS, joinColon(origins));
         furniture.getVariables().put(VAR_FRUIT_QUALITIES, joinColonInts(qualities));
         furniture.getVariables().put(VAR_FRUIT_FRESHNESS, joinColonInts(freshnessValues));
+        furniture.getVariables().put(VAR_FRUIT_LINEAGE, joinPipe(lineages));
+    }
+
+    public static void setFlourOrigin(Furniture furniture, String origin) {
+        furniture.getVariables().put(VAR_FLOUR_ORIGIN, origin);
+    }
+
+    public static String getFlourOrigin(Furniture furniture) {
+        return readString(furniture, VAR_FLOUR_ORIGIN, "Wheat");
+    }
+
+    public static void setFlourLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_FLOUR_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getFlourLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_FLOUR_LINEAGE, ""));
+    }
+
+    public static void setYeastOrigin(Furniture furniture, String origin) {
+        furniture.getVariables().put(VAR_YEAST_ORIGIN, origin);
+    }
+
+    public static String getYeastOrigin(Furniture furniture) {
+        return readString(furniture, VAR_YEAST_ORIGIN, "Yeast");
+    }
+
+    public static void setYeastLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_YEAST_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getYeastLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_YEAST_LINEAGE, ""));
+    }
+
+    public static void setSugarOrigin(Furniture furniture, String origin) {
+        furniture.getVariables().put(VAR_SUGAR_ORIGIN, origin);
+    }
+
+    public static String getSugarOrigin(Furniture furniture) {
+        return readString(furniture, VAR_SUGAR_ORIGIN, "Sugar");
+    }
+
+    public static void setSugarLineage(Furniture furniture, IngredientLineage lineage) {
+        furniture.getVariables().put(VAR_SUGAR_LINEAGE, IngredientLineageCodec.encode(lineage));
+    }
+
+    public static IngredientLineage getSugarLineage(Furniture furniture) {
+        return IngredientLineageCodec.decode(readString(furniture, VAR_SUGAR_LINEAGE, ""));
+    }
+
+    public static List<IngredientLineage> getFruitLineages(Furniture furniture) {
+        List<IngredientLineage> lineages = new ArrayList<>();
+        for (String encoded : readStringList(furniture, VAR_FRUIT_LINEAGE)) {
+            lineages.add(IngredientLineageCodec.decode(encoded));
+        }
+        return lineages;
     }
 
 
@@ -315,6 +391,13 @@ public final class MixingBowlState {
         furniture.getVariables().remove(VAR_YEAST_FRESHNESS);
         furniture.getVariables().remove(VAR_SUGAR_FRESHNESS);
         furniture.getVariables().remove(VAR_FRUIT_FRESHNESS);
+        furniture.getVariables().remove(VAR_FLOUR_ORIGIN);
+        furniture.getVariables().remove(VAR_FLOUR_LINEAGE);
+        furniture.getVariables().remove(VAR_YEAST_ORIGIN);
+        furniture.getVariables().remove(VAR_YEAST_LINEAGE);
+        furniture.getVariables().remove(VAR_SUGAR_ORIGIN);
+        furniture.getVariables().remove(VAR_SUGAR_LINEAGE);
+        furniture.getVariables().remove(VAR_FRUIT_LINEAGE);
 
     }
 
@@ -343,6 +426,39 @@ public final class MixingBowlState {
             }
         }
         return values;
+    }
+
+    private static String readString(Furniture furniture, String key, String fallback) {
+        Object value = furniture.getVariables().get(key);
+        if (value instanceof String text && !text.isBlank()) {
+            return text;
+        }
+        return fallback;
+    }
+
+    private static List<String> readStringList(Furniture furniture, String key) {
+        Object value = furniture.getVariables().get(key);
+        if (!(value instanceof String raw) || raw.isBlank()) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (String part : raw.split("\u001e", -1)) {
+            values.add(part);
+        }
+        return values;
+    }
+
+    private static String joinPipe(List<String> values) {
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (String value : values) {
+            if (!first) {
+                sb.append('\u001e');
+            }
+            sb.append(value == null ? "" : value);
+            first = false;
+        }
+        return sb.toString();
     }
 
 

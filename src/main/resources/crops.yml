@@ -25,7 +25,7 @@ crops:
     source: vanilla
     block: WHEAT
     seed: v.wheat_seeds
-    affection: 0.90
+    affection: 0.7
   potatoes:
     source: vanilla
     block: POTATOES
@@ -40,7 +40,7 @@ crops:
     source: vanilla
     block: BEETROOTS
     seed: v.beetroot_seeds
-    affection: 0.80
+    affection: 0.50
   nether_wart:
     source: vanilla
     block: NETHER_WART

@@ -44,7 +44,7 @@ import net.tfminecraft.cooking.loader.TrackLoader;
 
 import net.tfminecraft.cooking.quality.CompositionContext;
 
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 
@@ -248,6 +248,8 @@ public class SauceReference extends CookingReference {
 
         StationAddonRules.applyAddonTags(sauce, slots);
 
+        StationAddonRules.applyFlavourfulTag(sauce, slots);
+
         StationAddonRules.applySweetTag(sauce, slots);
 
 
@@ -295,7 +297,7 @@ public class SauceReference extends CookingReference {
         inputs.addAll(slots.values());
 
         CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SAUCE_SCOOP);
-        CompositionFreshnessApplier.applyTracks(sauce, composed.getFreshnessTracks());
+        CompositionApplier.apply(sauce, composed);
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(sauce, ladle, quality);

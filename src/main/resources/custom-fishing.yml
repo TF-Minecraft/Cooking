@@ -1,0 +1,132 @@
+# Live CustomFishing 2.3.27 loot ids. Cooking rolls its own 1-5 quality from the rod.
+# CustomFishing silver and golden star groups are ignored.
+# legacy-size-cm is used when a leftover fish has no readable size.
+# model-data is base, silver, then golden. Stars do not set Cooking quality.
+
+legacy-size-cm: 45
+
+unknown-rod:
+  min: 1
+  max: 5
+
+rods:
+  fishing_rod:
+    min: 1
+    max: 2
+  steel_rod:
+    min: 2
+    max: 3
+  abyssalite_rod:
+    min: 3
+    max: 4
+  mythril_rod:
+    min: 4
+    max: 5
+
+catches:
+  tfmc_tuna_fish:
+    origin: Tuna
+    cut: fish
+    model-data: 50001, 50002, 50003
+  tfmc_pike_fish:
+    origin: Pike
+    cut: fish
+    model-data: 50004, 50005, 50006
+  tfmc_sardine_fish:
+    origin: Sardine
+    cut: fish
+    model-data: 50016, 50017, 50018
+  tfmc_sunfish:
+    origin: Sunfish
+    cut: fish
+    model-data: 50028, 50029, 50030
+  tfmc_cat_fish:
+    origin: Catfish
+    cut: fish
+    model-data: 50022, 50023, 50024
+  tfmc_salmon_void_fish:
+    origin: Void Salmon
+    cut: fish
+    model-data: 50034, 50035, 50036
+  tfmc_woodskip_fish:
+    origin: Woodskip
+    cut: fish
+    model-data: 50037, 50038, 50039
+  tfmc_sturgeon_fish:
+    origin: Sturgeon
+    cut: fish
+    model-data: 50040, 50041, 50042
+  tfmc_red_snapper_fish:
+    origin: Red Snapper
+    cut: fish
+    model-data: 50031, 50032, 50033
+  tfmc_octopus:
+    origin: Octopus
+    cut: octopus
+    model-data: 50025, 50026, 50027
+  tfmc_blue_jellyfish:
+    origin: Blue Jellyfish
+    cut: jellyfish
+    model-data: 50043, 50044, 50045
+  tfmc_pink_jellyfish:
+    origin: Pink Jellyfish
+    cut: jellyfish
+    model-data: 50046, 50047, 50048
+  tfmc_gold_fish:
+    origin: Goldfish
+    cut: fish
+    model-data: 50007, 50008, 50009
+  tfmc_perch_fish:
+    origin: Perch
+    cut: fish
+    model-data: 50010, 50011, 50012
+  tfmc_mullet_fish:
+    origin: Mullet
+    cut: fish
+    model-data: 50013, 50014, 50015
+  tfmc_carp_fish:
+    origin: Carp
+    cut: fish
+    model-data: 50019, 50020, 50021
+
+# Plain vanilla fish have no measured size. Custom model data stays with CustomFishing.
+vanilla:
+  COD:
+    origin: Cod
+    cut: fish
+    size-cm: 45
+  SALMON:
+    origin: Salmon
+    cut: fish
+    size-cm: 60
+  TROPICAL_FISH:
+    origin: Tropical Fish
+    cut: fish
+    size-cm: 12
+  PUFFERFISH:
+    origin: Pufferfish
+    cut: fish
+    size-cm: 15
+
+cutting:
+  fish:
+    output: seafood_fish_filet
+    food-per-cm: 0.25
+    min-total: 4
+    max-total: 40
+    cm-per-portion: 25
+    max-portions: 6
+  jellyfish:
+    output: seafood_jellyfish
+    food-per-cm: 0.25
+    min-total: 4
+    max-total: 40
+    cm-per-portion: 25
+    max-portions: 6
+  octopus:
+    output: seafood_octopus
+    food-per-cm: 0.25
+    min-total: 4
+    max-total: 40
+    cm-per-portion: 25
+    max-portions: 6

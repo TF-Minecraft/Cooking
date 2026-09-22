@@ -28,7 +28,7 @@ public final class DietTierService {
         return true;
     }
 
-    public static void checkAndNotify(Player player, RPCharacter character) {
+    public static void checkAndNotify(Player player, RPCharacter character, VarietyScore variety) {
         if (player == null || character == null) {
             return;
         }
@@ -42,6 +42,13 @@ public final class DietTierService {
         player.sendMessage(
                 StringFormatter.formatHex("#d4ad77Your diet is now ")
                 + StringFormatter.formatHex(current.getLabel()));
+        if (NutritionConfig.varietyEnabled() && variety != null) {
+            DietTierDefinition varietyTier = NutritionConfig.resolveTierPercent(variety.progressPercent());
+            player.sendMessage(
+                    StringFormatter.formatHex("#d4ad77Variety: ")
+                    + StringFormatter.formatHex(varietyTier.getLabel())
+                    + StringFormatter.formatHex("#d4ad77 (" + variety.penaltyPercent() + "% nutrition penalty)"));
+        }
         character.setLastDietTierId(current.getId());
     }
 }

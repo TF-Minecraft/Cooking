@@ -29,6 +29,9 @@ import net.tfminecraft.cooking.husbandry.HusbandryMountListener;
 import net.tfminecraft.cooking.husbandry.HusbandryNeuterListener;
 import net.tfminecraft.cooking.husbandry.HusbandryTamingListener;
 import net.tfminecraft.cooking.crops.CropCustomCropsBridge;
+import net.tfminecraft.cooking.fishing.CustomFishingBridge;
+import net.tfminecraft.cooking.fishing.LegacyFishScan;
+import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
 import net.tfminecraft.cooking.crops.CropGrowthListener;
 import net.tfminecraft.cooking.crops.CropsLoader;
 import net.tfminecraft.cooking.husbandry.HusbandryLoader;
@@ -97,6 +100,7 @@ public class Cooking extends JavaPlugin {
     private HusbandryRepository husbandryRepository;
 
     private final TagManager tagManager = new TagManager();
+    private final LegacyFishScan legacyFishScan = new LegacyFishScan();
     private final CookingManager cookingManager = new CookingManager();
     private final PlateManager plateManager = new PlateManager();
     private final MixingBowlHandler mixingBowlHandler = new MixingBowlHandler();
@@ -152,6 +156,7 @@ public class Cooking extends JavaPlugin {
         getCommand("cooking").setTabCompleter(commands);
         if (ItemScanService.get() != null) {
             ItemScanService.get().subscribe(tagManager);
+            ItemScanService.get().subscribe(legacyFishScan);
         }
     }
 
@@ -166,6 +171,7 @@ public class Cooking extends JavaPlugin {
         ButterChurnAging.stopAll();
         if (ItemScanService.get() != null) {
             ItemScanService.get().unsubscribe(tagManager);
+            ItemScanService.get().unsubscribe(legacyFishScan);
         }
         closeHusbandryDatabase();
         TLibs.getItemAPI().unregisterPathHandler("c");
@@ -191,6 +197,7 @@ public class Cooking extends JavaPlugin {
         cropsLoader.load(new File(getDataFolder(), "crops.yml"));
         husbandryLoader.load(new File(getDataFolder(), "husbandry.yml"));
         carveSequenceLoader.load(new File(getDataFolder(), "carve-sequences.yml"));
+        CustomFishingCatalog.load(new File(getDataFolder(), "custom-fishing.yml"));
     }
 
     public void reloadAll() {
@@ -227,6 +234,8 @@ public class Cooking extends JavaPlugin {
         CropCustomCropsBridge customCropsBridge = new CropCustomCropsBridge();
         getServer().getPluginManager().registerEvents(customCropsBridge, this);
         CropCustomCropsBridge.tryRegister(this);
+        getServer().getPluginManager().registerEvents(new CustomFishingBridge(), this);
+        CustomFishingBridge.tryRegister(this);
         getServer().getPluginManager().registerEvents(new HusbandryLifecycleListener(), this);
         getServer().getPluginManager().registerEvents(new HusbandryCareListener(), this);
         getServer().getPluginManager().registerEvents(new HusbandryTamingListener(), this);
@@ -313,7 +322,8 @@ public class Cooking extends JavaPlugin {
                 "permission_effects.yml",
                 "farming.yml",
                 "crops.yml",
-                "husbandry.yml"
+                "husbandry.yml",
+                "custom-fishing.yml"
         };
 
         for (String s : files) {

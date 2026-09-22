@@ -10,7 +10,7 @@ import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.CompositionContext;
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.ItemBuilder;
@@ -31,26 +31,36 @@ public final class SausageItems {
         FoodItem chain = new FoodItem(template);
         chain.setCategory("meat");
         chain.setOrigin("Mixed");
-        double totalFood = 0;
-        double totalNutrition = 0;
-        for (FoodItem meat : meats) {
-            if (meat == null) {
-                continue;
-            }
-            totalFood += meat.getBaseFood();
-            totalNutrition += meat.getBaseNutrition();
-        }
-        chain.setBaseFood(totalFood);
-        chain.setBaseNutrition(totalNutrition);
-        CompositionFreshnessApplier.applyTracks(chain, composed.getFreshnessTracks());
-
+        applyBatchTotals(chain, meats);
         TagTrack cookedTemplate = TrackLoader.getByString("cooked");
         if (cookedTemplate != null) {
             TagTrack cooked = new TagTrack(cookedTemplate);
             cooked.setValue(0);
             chain.addOrModifyTrack(cooked);
         }
+        CompositionApplier.apply(chain, composed);
 
         return ItemBuilder.buildComposedWithQuality(chain, composed.getFinalQuality());
+    }
+
+    /** Food is the summed amount. Nutrition is the average level, left unchanged when there are no meats. */
+    public static void applyBatchTotals(FoodItem chain, Collection<FoodItem> meats) {
+        double totalFood = 0;
+        double nutritionSum = 0;
+        int counted = 0;
+        if (meats != null) {
+            for (FoodItem meat : meats) {
+                if (meat == null) {
+                    continue;
+                }
+                totalFood += meat.getBaseFood();
+                nutritionSum += meat.getBaseNutrition();
+                counted++;
+            }
+        }
+        chain.setBaseFood(totalFood);
+        if (counted > 0) {
+            chain.setBaseNutrition(nutritionSum / counted);
+        }
     }
 }

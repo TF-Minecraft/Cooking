@@ -1,0 +1,164 @@
+{
+  "generated_excludes": [
+    "target/**"
+  ],
+  "known_unloaded": [
+    "src/main/resources/cookware.yml"
+  ],
+  "satisfy": "any-owner",
+  "documents": [
+    {
+      "id": "bootstrap",
+      "document": "docs/architecture/bootstrap.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/Cooking.java",
+        "src/main/java/net/tfminecraft/cooking/loader/**",
+        "src/main/java/net/tfminecraft/cooking/cache/**",
+        "src/main/java/net/tfminecraft/cooking/manager/CommandManager.java"
+      ]
+    },
+    {
+      "id": "persistence",
+      "document": "docs/architecture/persistence.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/husbandry/HusbandryRepository.java"
+      ]
+    },
+    {
+      "id": "integrations",
+      "document": "docs/architecture/integrations.md",
+      "paths": [
+        "src/main/resources/plugin.yml",
+        "src/main/resources/custom-fishing.yml",
+        "src/main/java/net/tfminecraft/cooking/fishing/**",
+        "src/main/java/net/tfminecraft/cooking/crops/CropCustomCropsBridge.java",
+        "src/main/java/net/tfminecraft/cooking/crops/CropFertility.java"
+      ]
+    },
+    {
+      "id": "food-items",
+      "document": "docs/systems/food-items.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/item/**",
+        "src/main/java/net/tfminecraft/cooking/utils/FoodParser.java",
+        "src/main/java/net/tfminecraft/cooking/utils/ItemBuilder.java",
+        "src/main/java/net/tfminecraft/cooking/utils/ItemUpdater.java",
+        "src/main/java/net/tfminecraft/cooking/utils/Keys.java",
+        "src/main/java/net/tfminecraft/cooking/enums/**",
+        "src/main/resources/types.yml",
+        "src/main/resources/models.yml",
+        "src/main/resources/naming.yml"
+      ]
+    },
+    {
+      "id": "freshness-tags",
+      "document": "docs/systems/freshness-tags.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/manager/TagManager.java",
+        "src/main/java/net/tfminecraft/cooking/utils/WarmthUtils.java",
+        "src/main/resources/tags.yml"
+      ]
+    },
+    {
+      "id": "quality-composition",
+      "document": "docs/systems/quality-composition.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/quality/**",
+        "src/main/java/net/tfminecraft/cooking/manager/ConversionManager.java",
+        "src/main/resources/quality.yml",
+        "src/main/resources/composition.yml",
+        "src/main/resources/conversions.yml",
+        "src/main/resources/permission_effects.yml"
+      ]
+    },
+    {
+      "id": "cooking-stations",
+      "document": "docs/systems/cooking-stations.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/cooking/**",
+        "src/main/java/net/tfminecraft/cooking/heat/**",
+        "src/main/java/net/tfminecraft/cooking/oven/**",
+        "src/main/java/net/tfminecraft/cooking/liquid/**",
+        "src/main/java/net/tfminecraft/cooking/manager/PlateManager.java",
+        "src/main/java/net/tfminecraft/cooking/events/**",
+        "src/main/resources/config.yml"
+      ]
+    },
+    {
+      "id": "processing-stations",
+      "document": "docs/systems/processing-stations.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/crafting/**",
+        "src/main/java/net/tfminecraft/cooking/baking/**",
+        "src/main/java/net/tfminecraft/cooking/milling/**",
+        "src/main/java/net/tfminecraft/cooking/mixing/**",
+        "src/main/java/net/tfminecraft/cooking/churn/**",
+        "src/main/java/net/tfminecraft/cooking/sausagemaker/**",
+        "src/main/java/net/tfminecraft/cooking/hook/**",
+        "src/main/java/net/tfminecraft/cooking/trough/**",
+        "src/main/resources/crafting-stations.yml",
+        "src/main/resources/baking-trays.yml",
+        "src/main/resources/milling-recipes.yml",
+        "src/main/resources/config.yml"
+      ]
+    },
+    {
+      "id": "portions",
+      "document": "docs/systems/portions-and-servings.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/carve/**",
+        "src/main/resources/carve-sequences.yml"
+      ]
+    },
+    {
+      "id": "nutrition",
+      "document": "docs/systems/nutrition.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/nutrition/**",
+        "src/main/java/net/tfminecraft/cooking/cup/**",
+        "src/main/resources/config.yml"
+      ]
+    },
+    {
+      "id": "crops",
+      "document": "docs/systems/crops-and-farming.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/crops/**",
+        "src/main/java/net/tfminecraft/cooking/farming/**",
+        "src/main/resources/crops.yml",
+        "src/main/resources/farming.yml",
+        "src/main/resources/conversions.yml",
+        "CustomCrops/**"
+      ]
+    },
+    {
+      "id": "husbandry",
+      "document": "docs/systems/husbandry.md",
+      "paths": [
+        "src/main/java/net/tfminecraft/cooking/husbandry/**",
+        "src/main/resources/husbandry.yml"
+      ]
+    },
+    {
+      "id": "configuration-reference",
+      "document": "docs/reference/configuration.md",
+      "paths": [
+        "src/main/resources/plugin.yml"
+      ]
+    },
+    {
+      "id": "commands",
+      "document": "docs/reference/commands-permissions.md",
+      "paths": [
+        "src/main/resources/plugin.yml"
+      ]
+    },
+    {
+      "id": "external-assets",
+      "document": "docs/reference/external-assets.md",
+      "paths": [
+        "ItemsAdder/tfmc_cooking/contents/**"
+      ]
+    }
+  ]
+}

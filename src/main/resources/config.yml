@@ -214,3 +214,10 @@ nutrition:
     - id: fantastic
       min-percent: 85
       label: "#ff55ffFantastic"
+  variety:
+    enabled: true
+    history-meals: 32
+    target-ingredients: 8
+    max-penalty-percent: 60
+    main-weight: 1.0
+    extra-weight: 0.25

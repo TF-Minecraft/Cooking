@@ -34,6 +34,8 @@ public final class BakingTrayTransform {
 
         loaf.setQualityRange(dough.getQualityMin(), dough.getQualityMax());
 
+        loaf.setLineage(dough.getLineage());
+
         for (String ingredient : dough.getIngredients()) {
             loaf.addIngredient(ingredient);
         }

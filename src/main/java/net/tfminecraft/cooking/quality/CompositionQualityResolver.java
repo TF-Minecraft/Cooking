@@ -10,6 +10,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.utils.QualityUtils;
@@ -41,13 +42,15 @@ public final class CompositionQualityResolver {
             quality = applyChefBoost(player, quality);
         }
 
+        IngredientLineage lineage = IngredientLineage.from(inputs, context);
         return new CompositionResult(
                 baseline,
                 QualityUtils.clamp(quality),
                 freshnessTracks,
                 mains,
                 extras,
-                partition.getNeutral()
+                partition.getNeutral(),
+                lineage
         );
     }
 

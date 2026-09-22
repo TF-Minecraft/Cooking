@@ -29,6 +29,12 @@ public final class FoodConsumeListener implements Listener {
             return;
         }
 
+        if (!food.isEdible()) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cThis needs to be prepared before you can eat it.");
+            return;
+        }
+
         food.updateAge();
         NutritionService.tryApplyEat(event.getPlayer(), food);
     }

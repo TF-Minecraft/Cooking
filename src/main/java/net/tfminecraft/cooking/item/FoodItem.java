@@ -30,6 +30,12 @@ public class FoodItem {
     private final String name;
     private long lastUpdate;
     private boolean update = true;
+    private boolean valuable = false;
+    private boolean mashable = false;
+    private boolean edible = true;
+    private Integer catchSizeCm;
+    private String seafoodCutType;
+    private String customFishingId;
     private String category = "";
 
     private Map<String, TagTrack> tags = new HashMap<>();
@@ -51,6 +57,7 @@ public class FoodItem {
     private Map<String, Double> ageRemainder = new HashMap<>();
     private Map<String, Map<String, String>> tagLabels = new HashMap<>();
     private List<String> ingredients = new ArrayList<>();
+    private IngredientLineage lineage = IngredientLineage.empty();
     public CookData cookData;
 
     private String typeLevelCarveSequence;
@@ -73,6 +80,9 @@ public class FoodItem {
         this.baseFood = config.getDouble("food", 1.0);
         this.baseNutrition = config.getDouble("nutrition", 1.0);
         this.update = config.getBoolean("update", true);
+        this.valuable = config.getBoolean("valuable", false);
+        this.mashable = config.getBoolean("mashable", false);
+        this.edible = config.getBoolean("edible", true);
         this.typeLevelCarveSequence = config.getString("carve-sequence", null);
 
         String modelId = config.getString("model", null);
@@ -142,6 +152,12 @@ public class FoodItem {
         this.name = other.name;
         this.category = other.category;
         this.update = other.update;
+        this.valuable = other.valuable;
+        this.mashable = other.mashable;
+        this.edible = other.edible;
+        this.catchSizeCm = other.catchSizeCm;
+        this.seafoodCutType = other.seafoodCutType;
+        this.customFishingId = other.customFishingId;
 
         this.origin = other.origin;
 
@@ -164,6 +180,7 @@ public class FoodItem {
         this.carveNextIndex = other.carveNextIndex;
         this.carveRemaining = other.carveRemaining;
         this.ingredients = new ArrayList<>(other.ingredients);
+        this.lineage = other.lineage == null ? IngredientLineage.empty() : other.lineage;
 
         this.model = (other.model == null ? null : new FoodModel(other.model));
 
@@ -246,6 +263,24 @@ public class FoodItem {
     public String getId() { return id; }
     public String getName() { return name; }
     public boolean shouldUpdate() { return update; }
+    public boolean isValuable() { return valuable; }
+    public boolean isMashable() { return mashable; }
+    public void setMashable(boolean mashable) { this.mashable = mashable; }
+    public boolean isEdible() { return edible; }
+    public void setEdible(boolean edible) { this.edible = edible; }
+    public Integer getCatchSizeCm() { return catchSizeCm; }
+    public void setCatchSizeCm(Integer catchSizeCm) { this.catchSizeCm = catchSizeCm; }
+    public String getSeafoodCutType() { return seafoodCutType; }
+    public void setSeafoodCutType(String seafoodCutType) { this.seafoodCutType = blankToNull(seafoodCutType); }
+    public String getCustomFishingId() { return customFishingId; }
+    public void setCustomFishingId(String customFishingId) { this.customFishingId = blankToNull(customFishingId); }
+
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value;
+    }
 
     public String getTagLabel(String trackId, String stepId) {
         if (trackId == null || stepId == null) return null;
@@ -325,6 +360,12 @@ public class FoodItem {
 
     public Map<String, OverrideData> getOverrides() { return overrides; }
     public List<String> getIngredients() { return ingredients; }
+    public IngredientLineage getLineage() {
+        return lineage == null ? IngredientLineage.empty() : lineage;
+    }
+    public void setLineage(IngredientLineage lineage) {
+        this.lineage = lineage == null ? IngredientLineage.empty() : lineage;
+    }
 
     public void addIngredient(String ingredient) {
         if(ingredients.contains(ingredient)) return;
@@ -682,6 +723,11 @@ public class FoodItem {
         if (sauceNameData != null && !sauceNameData.isEmpty()) {
             out.setSauceName(sauceNameData);
         }
+
+        out.setLineage(IngredientLineageCodec.decode(pdc.get(Keys.LINEAGE, PersistentDataType.STRING)));
+        out.setCatchSizeCm(pdc.get(Keys.CATCH_SIZE_CM, PersistentDataType.INTEGER));
+        out.setSeafoodCutType(pdc.get(Keys.SEAFOOD_CUT_TYPE, PersistentDataType.STRING));
+        out.setCustomFishingId(pdc.get(Keys.CUSTOM_FISHING_ID, PersistentDataType.STRING));
 
         String ingredientsData = pdc.get(Keys.INGREDIENTS, PersistentDataType.STRING);
         if (ingredientsData != null && !ingredientsData.isEmpty()) {

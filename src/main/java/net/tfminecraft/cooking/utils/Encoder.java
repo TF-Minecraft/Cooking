@@ -6,8 +6,6 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import net.tfminecraft.cooking.enums.Tag;
-import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.furniture.Furniture;
 import net.tfminecraft.furniture.PlacedSlot;
 
@@ -19,10 +17,6 @@ public class Encoder {
         for (Map.Entry<String, PlacedSlot> entry : f.getActiveSlots().entrySet()) {
             ItemStack item = entry.getValue().getCurrentItem();
             if (item == null) continue;
-            FoodItem fi = FoodItem.fromItem(item);
-            if(fi != null) {
-                if(fi.hasTag(Tag.MASHED)) continue;
-            }
 
             ItemMeta meta = item.getItemMeta();
             int model = (meta != null && meta.hasCustomModelData()) ? meta.getCustomModelData() : 0;

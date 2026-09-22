@@ -136,22 +136,22 @@ soup_thickness:
   light:
     name: "#9c95cfLight"
     value: 300
-    nutrition-mult: 1.2
+    nutrition-mult: 1.05
     food-mult: 1.2
   creamy:
     name: "#dbb886Creamy"
     value: 900
-    nutrition-mult: 1.4
+    nutrition-mult: 1.1
     food-mult: 1.4
   velvety:
     name: "#eb844dVelvety"
     value: 1800
-    nutrition-mult: 1.75
+    nutrition-mult: 1.15
     food-mult: 1.75
   thick:
     name: "#a6a18aThick"
     value: 3600
-    nutrition-mult: 2.0
+    nutrition-mult: 1.2
     food-mult: 2.0
 
 sweet:
@@ -187,3 +187,10 @@ rounded:
     value: 0
     food-mult: 1.22
     nutrition-mult: 1.22
+
+flavourful:
+  flavourful:
+    name: "#d4a017Flavourful"
+    value: 0
+    food-mult: 1.0
+    nutrition-mult: 1.1

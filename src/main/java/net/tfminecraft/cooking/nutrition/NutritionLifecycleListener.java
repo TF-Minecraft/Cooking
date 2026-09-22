@@ -40,7 +40,9 @@ public final class NutritionLifecycleListener implements Listener {
         }
         NutritionLog.append("ACTIVATE", owner, character,
                 "hud=" + owner.getFoodLevel() + " saturation=" + owner.getSaturation());
+        VarietyService.applyEffective(owner, character);
         DietTierService.seedIfAbsent(owner, character);
+        DietTierService.checkAndNotify(owner, character, VarietyService.current(owner));
         NutritionDisplayService.sync(owner, character, "activate");
         NutritionAttributeBridge.apply(owner, character);
     }

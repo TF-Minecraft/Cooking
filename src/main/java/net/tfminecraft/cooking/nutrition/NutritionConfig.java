@@ -27,6 +27,12 @@ public final class NutritionConfig {
     private static int drainAmount = DEFAULT_DRAIN_AMOUNT;
     private static int drainIntervalSeconds = DEFAULT_DRAIN_INTERVAL_SECONDS;
     private static double lerpStepRate = DEFAULT_LERP_STEP_RATE;
+    private static boolean varietyEnabled = true;
+    private static int varietyHistoryMeals = 32;
+    private static int varietyTargetIngredients = 8;
+    private static double varietyMaxPenaltyPercent = 60;
+    private static double varietyMainWeight = 1.0;
+    private static double varietyExtraWeight = 0.25;
     private static List<DietTierDefinition> dietTiers = defaultTiers();
 
     private NutritionConfig() {}
@@ -45,6 +51,7 @@ public final class NutritionConfig {
         drainAmount = section.getInt("drain-amount", DEFAULT_DRAIN_AMOUNT);
         drainIntervalSeconds = readDrainIntervalSeconds(section);
         lerpStepRate = section.getDouble("lerp-step-rate", DEFAULT_LERP_STEP_RATE);
+        loadVariety(section.getConfigurationSection("variety"));
         dietTiers = parseTiers(section);
     }
 
@@ -86,16 +93,45 @@ public final class NutritionConfig {
         return lerpStepRate;
     }
 
+    public static boolean varietyEnabled() {
+        return varietyEnabled;
+    }
+
+    public static int varietyHistoryMeals() {
+        return varietyHistoryMeals;
+    }
+
+    public static int varietyTargetIngredients() {
+        return varietyTargetIngredients;
+    }
+
+    public static double varietyMaxPenaltyPercent() {
+        return varietyMaxPenaltyPercent;
+    }
+
+    public static double varietyMainWeight() {
+        return varietyMainWeight;
+    }
+
+    public static double varietyExtraWeight() {
+        return varietyExtraWeight;
+    }
+
     public static List<DietTierDefinition> dietTiers() {
         return dietTiers;
     }
 
     public static DietTierDefinition resolveTier(int dietScore) {
         int clamped = Math.max(0, Math.min(dietScore, maxDiet));
+        int percent = maxDiet <= 0 ? 0 : (int) Math.floor(clamped * 100.0 / maxDiet);
+        return resolveTierPercent(percent);
+    }
+
+    public static DietTierDefinition resolveTierPercent(int percent) {
+        int clamped = Math.max(0, Math.min(100, percent));
         DietTierDefinition best = null;
         for (DietTierDefinition tier : dietTiers) {
-            int threshold = (int) Math.floor(maxDiet * tier.getMinPercent() / 100.0);
-            if (clamped >= threshold) {
+            if (clamped >= tier.getMinPercent()) {
                 best = tier;
             }
         }
@@ -114,7 +150,31 @@ public final class NutritionConfig {
         drainAmount = DEFAULT_DRAIN_AMOUNT;
         drainIntervalSeconds = DEFAULT_DRAIN_INTERVAL_SECONDS;
         lerpStepRate = DEFAULT_LERP_STEP_RATE;
+        varietyEnabled = true;
+        varietyHistoryMeals = 32;
+        varietyTargetIngredients = 8;
+        varietyMaxPenaltyPercent = 60;
+        varietyMainWeight = 1.0;
+        varietyExtraWeight = 0.25;
         dietTiers = defaultTiers();
+    }
+
+    private static void loadVariety(ConfigurationSection section) {
+        if (section == null) {
+            varietyEnabled = true;
+            varietyHistoryMeals = 32;
+            varietyTargetIngredients = 8;
+            varietyMaxPenaltyPercent = 60;
+            varietyMainWeight = 1.0;
+            varietyExtraWeight = 0.25;
+            return;
+        }
+        varietyEnabled = section.getBoolean("enabled", true);
+        varietyHistoryMeals = Math.max(1, section.getInt("history-meals", 32));
+        varietyTargetIngredients = Math.max(2, section.getInt("target-ingredients", 8));
+        varietyMaxPenaltyPercent = Math.max(0, Math.min(99, section.getDouble("max-penalty-percent", 60)));
+        varietyMainWeight = Math.max(0, section.getDouble("main-weight", 1.0));
+        varietyExtraWeight = Math.max(0, section.getDouble("extra-weight", 0.25));
     }
 
     private static List<DietTierDefinition> parseTiers(ConfigurationSection section) {

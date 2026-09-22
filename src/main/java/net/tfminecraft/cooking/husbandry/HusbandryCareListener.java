@@ -69,5 +69,6 @@ public final class HusbandryCareListener implements Listener {
         }
         repository.upsertAnimal(animal);
         HusbandryStateDisplay.sync(living, animal);
+        HusbandryProfessionXp.tryGive(player, living.getType());
     }
 }

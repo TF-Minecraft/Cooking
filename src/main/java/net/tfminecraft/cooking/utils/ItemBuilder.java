@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.utils;
 
 import net.tfminecraft.cooking.item.CookingPathHandler;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.IngredientLineageCodec;
 import net.tfminecraft.cooking.carve.CarveSequence;
 import net.tfminecraft.cooking.loader.CarveSequenceLoader;
 import net.tfminecraft.cooking.item.model.FoodModel;
@@ -207,6 +208,29 @@ public class ItemBuilder {
             pdc.set(Keys.INGREDIENTS, PersistentDataType.STRING, ingSb.toString());
         } else {
             pdc.remove(Keys.INGREDIENTS);
+        }
+
+        String lineage = IngredientLineageCodec.encode(item.getLineage());
+        if (!lineage.isEmpty()) {
+            pdc.set(Keys.LINEAGE, PersistentDataType.STRING, lineage);
+        } else {
+            pdc.remove(Keys.LINEAGE);
+        }
+
+        if (item.getCatchSizeCm() != null) {
+            pdc.set(Keys.CATCH_SIZE_CM, PersistentDataType.INTEGER, item.getCatchSizeCm());
+        } else {
+            pdc.remove(Keys.CATCH_SIZE_CM);
+        }
+        if (item.getSeafoodCutType() != null) {
+            pdc.set(Keys.SEAFOOD_CUT_TYPE, PersistentDataType.STRING, item.getSeafoodCutType());
+        } else {
+            pdc.remove(Keys.SEAFOOD_CUT_TYPE);
+        }
+        if (item.getCustomFishingId() != null) {
+            pdc.set(Keys.CUSTOM_FISHING_ID, PersistentDataType.STRING, item.getCustomFishingId());
+        } else {
+            pdc.remove(Keys.CUSTOM_FISHING_ID);
         }
 
         if (!indexMap.isEmpty()) {

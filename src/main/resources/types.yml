@@ -64,11 +64,16 @@ meat_poultry:
   model: meat_poultry
   food: 18
   nutrition: 8
+  mashable: true
   cooking-options:
     frying_pan:
       tag: 1
       time: 12
       burn: 25
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
 
 meat_poultry_leg:
   name: "#d9baa5{inherit} Leg"
@@ -97,9 +102,14 @@ meat_red_meat:
   model: meat_red_meat
   food: 18
   nutrition: 8
+  mashable: true
   cooking-options:
     frying_pan:
       tag: 1
+      time: 15
+      burn: 30
+    pot:
+      tag: 3
       time: 15
       burn: 30
 
@@ -132,7 +142,7 @@ sausage_chain:
   nutrition: 8
   carve-sequence: sausage
 
-###Veggies — raw (full pipeline: cut → chop)
+###Veggies — raw vanilla (full pipeline: cut → chop)
 vegetable_1:
   name: "#5dad58{inherit}"
   overrides:
@@ -140,6 +150,21 @@ vegetable_1:
       model: carrot
     POTATO:
       model: potato
+    BEETROOT:
+      model: beetroot
+    PUMPKIN:
+      model: pumpkin
+  model: carrot
+  food: 6
+  nutrition: 4.5
+  age:
+    freshness: 2.33
+
+###Veggies — raw CustomCrops
+vegetable_2:
+  name: "#5dad58{inherit}"
+  valuable: true
+  overrides:
     TOMATO:
       model: tomato
     ONION:
@@ -150,13 +175,9 @@ vegetable_1:
       model: cucumber
     CORN:
       model: corn
-    BEETROOT:
-      model: beetroot
-    PUMPKIN:
-      model: pumpkin
   model: tomato
-  food: 8
-  nutrition: 6
+  food: 10
+  nutrition: 7.5
   age:
     freshness: 2.33
 
@@ -178,7 +199,7 @@ vegetable_chop_only:
   age:
     freshness: 2.33
 
-###Veggies — cut (pan + pot)
+###Veggies — cut vanilla (pan + pot)
 vegetable_cut:
   name: "#5dad58{inherit} (Cut)"
   overrides:
@@ -186,23 +207,14 @@ vegetable_cut:
       model: carrot_cut
     POTATO:
       model: potato_cut
-    TOMATO:
-      model: tomato_cut
-    ONION:
-      model: onion_cut
-    LETTUCE:
-      model: lettuce_cut
-    CUCUMBER:
-      model: cucumber_cut
-    CORN:
-      model: corn_cut
     BEETROOT:
       model: beetroot_cut
     PUMPKIN:
       model: pumpkin_cut
   model: carrot_cut
-  food: 8
-  nutrition: 6
+  food: 6
+  nutrition: 4.5
+  mashable: true
   cooking-options:
     frying_pan:
       tag: 1
@@ -215,7 +227,38 @@ vegetable_cut:
   age:
     freshness: 1.67
 
-###Veggies — chopped garnish (no cooking; cook on cut stage)
+###Veggies — cut CustomCrops (pan + pot)
+vegetable_cut_2:
+  name: "#5dad58{inherit} (Cut)"
+  valuable: true
+  overrides:
+    TOMATO:
+      model: tomato_cut
+    ONION:
+      model: onion_cut
+    LETTUCE:
+      model: lettuce_cut
+    CUCUMBER:
+      model: cucumber_cut
+    CORN:
+      model: corn_cut
+  model: tomato_cut
+  food: 10
+  nutrition: 7.5
+  mashable: true
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+  age:
+    freshness: 1.67
+
+###Veggies — chopped garnish vanilla (no cooking; cook on cut stage)
 vegetable_chopped:
   name: "#5dad58{inherit} (Chopped)"
   overrides:
@@ -223,6 +266,21 @@ vegetable_chopped:
       model: carrot_chopped
     POTATO:
       model: potato_chopped
+    BEETROOT:
+      model: beetroot_chopped
+    PUMPKIN:
+      model: pumpkin_chopped
+  model: carrot_chopped
+  food: 6
+  nutrition: 4.5
+  age:
+    freshness: 1.33
+
+###Veggies — chopped garnish CustomCrops
+vegetable_chopped_2:
+  name: "#5dad58{inherit} (Chopped)"
+  valuable: true
+  overrides:
     TOMATO:
       model: tomato_chopped
     ONION:
@@ -233,13 +291,9 @@ vegetable_chopped:
       model: cucumber_chopped
     CORN:
       model: corn_chopped
-    BEETROOT:
-      model: beetroot_chopped
-    PUMPKIN:
-      model: pumpkin_chopped
-  model: carrot_chopped
-  food: 8
-  nutrition: 6
+  model: tomato_chopped
+  food: 10
+  nutrition: 7.5
   age:
     freshness: 1.33
 
@@ -323,9 +377,26 @@ dry_ration:
   age:
     freshness: 10
 
-###Fruits — raw (no cut step)
+###Fruits — raw vanilla (no cut step)
 fruit_1:
   name: "#e06666{inherit}"
+  overrides:
+    APPLE:
+      model: apple
+    MELON:
+      model: melon
+    MELON SLICE:
+      model: melon_slice
+  model: apple
+  food: 6
+  nutrition: 5.25
+  age:
+    freshness: 0.67
+
+###Fruits — raw CustomCrops
+fruit_2:
+  name: "#e06666{inherit}"
+  valuable: true
   overrides:
     STRAWBERRY:
       model: strawberry
@@ -347,15 +418,9 @@ fruit_1:
       model: pineapple
     CHERRY:
       model: cherry
-    APPLE:
-      model: apple
-    MELON:
-      model: melon
-    MELON SLICE:
-      model: melon_slice
   model: strawberry
-  food: 8
-  nutrition: 7
+  food: 10
+  nutrition: 8.75
   age:
     freshness: 0.67
 
@@ -437,6 +502,67 @@ milk_bucket:
     freshness:
       stale: "#c3db81Sour"
       rotten: "#8B7355Spoiled"
+
+seafood_whole:
+  name: "#6fa8dc{inherit}"
+  food: 6
+  nutrition: 6
+  age:
+    freshness: 2.33
+
+seafood_fish_filet:
+  name: "#6fa8dc{inherit} Filet"
+  model: seafood_fish_filet
+  food: 6
+  nutrition: 6
+  mashable: true
+  cooking-options:
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+  age:
+    freshness: 2.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+seafood_jellyfish:
+  name: "#87cefa{inherit} Cubes"
+  model: seafood_jellyfish
+  food: 5
+  nutrition: 5
+  mashable: true
+  cooking-options:
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+  age:
+    freshness: 2.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+seafood_octopus:
+  name: "#d2691e{inherit}"
+  model: seafood_octopus
+  food: 7
+  nutrition: 7
+  mashable: true
+  cooking-options:
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+  age:
+    freshness: 2.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
 
 butter:
   name: "#f5f5f5{prefixes}Butter"

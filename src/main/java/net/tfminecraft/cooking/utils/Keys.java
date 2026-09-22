@@ -53,9 +53,24 @@ public class Keys {
     public static final NamespacedKey INGREDIENTS =
             new NamespacedKey(Cooking.plugin, "food_ingredients");
 
+    public static final NamespacedKey LINEAGE =
+            new NamespacedKey(Cooking.plugin, "food_lineage");
+
     public static final NamespacedKey COOK_METHOD =
             new NamespacedKey(Cooking.plugin, "cook_method");
 
     public static final NamespacedKey COOK_TIME =
             new NamespacedKey(Cooking.plugin, "cook_time");
+
+    public static final NamespacedKey VARIETY_HISTORY =
+            new NamespacedKey(Cooking.plugin, "variety_history");
+
+    public static final NamespacedKey CATCH_SIZE_CM =
+            new NamespacedKey(Cooking.plugin, "catch_size_cm");
+
+    public static final NamespacedKey SEAFOOD_CUT_TYPE =
+            new NamespacedKey(Cooking.plugin, "seafood_cut_type");
+
+    public static final NamespacedKey CUSTOM_FISHING_ID =
+            new NamespacedKey(Cooking.plugin, "custom_fishing_id");
 }

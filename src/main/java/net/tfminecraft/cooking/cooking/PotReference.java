@@ -1,5 +1,10 @@
 package net.tfminecraft.cooking.cooking;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.bukkit.Bukkit;
@@ -10,6 +15,8 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -28,7 +35,7 @@ import net.tfminecraft.cooking.item.data.CookData;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.CompositionContext;
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.DisplayUtils;
@@ -48,6 +55,10 @@ import net.tfminecraft.furniture.data.DisplayData;
 
 public class PotReference extends CookingReference {
     private static final String VAR_SOUP_SERVINGS = "pot.soupServings";
+    private static final String VAR_EXTRAS = "pot.extras";
+    static final int MAX_MAINS = 5;
+
+    private final Map<String, ItemStack> extraItems = new HashMap<>();
 
     private int temperature = 0;          // 0–20
     private final int MAX_TEMPERATURE = 20;
@@ -185,6 +196,7 @@ public class PotReference extends CookingReference {
 
         StationAddonRules.applySeasoningTag(soup, slots);
         StationAddonRules.applyAddonTags(soup, slots);
+        StationAddonRules.applyFlavourfulTag(soup, slots);
         FoodItem mi = getMain();
         if(mi != null && mi.hasTagTrack("soup_thickness")) {
             soup.addOrModifyTrack(mi.getTagTrack("soup_thickness"));
@@ -193,7 +205,8 @@ public class PotReference extends CookingReference {
 
         // ---------- BUILD RESULT ----------
         CompositionResult composed = CompositionQualityResolver.compose(p, slots.values(), CompositionContext.SOUP_SCOOP);
-        CompositionFreshnessApplier.applyTracks(soup, composed.getFreshnessTracks());
+        CompositionApplier.apply(soup, composed);
+        soup.setBaseFood(scoopFood(soup.getBaseFood(), soupScoops()));
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
@@ -232,6 +245,7 @@ public class PotReference extends CookingReference {
         }
         for (Map.Entry<String, FoodItem> entry : slots.entrySet()) {
             String slot = entry.getKey();
+            if (isExtraSlot(slot)) continue;
             FoodItem item = entry.getValue();
             CookData data = item.getCookData();
             if (!item.canBeCooked()) continue;
@@ -263,24 +277,27 @@ public class PotReference extends CookingReference {
 
         String cat = fi.getCategory().toLowerCase();
 
-        if (StationAddonRules.isSeasoningCategory(cat) || StationAddonRules.isAddonCategory(cat)) {
+        if (extraSlotKey(cat) != null) {
             if (!isSoup()) {
-                p.sendMessage("§cMash the pot into soup first.");
+                if (p != null) p.sendMessage("§cMash the pot into soup first.");
                 return false;
             }
-            if (StationAddonRules.isSeasoningCategory(cat)) {
-                return !hasSlot(cat);
+            if (hasSlot(cat)) {
+                if (p != null) p.sendMessage("§cThat is already in the pot.");
+                return false;
             }
-            return StationAddonRules.canAcceptAddon(slots, fi, p);
+            return true;
         }
 
         if(!fi.canBeCooked()) return false;
-        
-        CookData data = fi.getCookData();
-        if(data.hasMethod(method)) return true;
 
-        // Unknown category
-        return false;
+        CookData data = fi.getCookData();
+        if(!data.hasMethod(method)) return false;
+        if (mainCount() >= MAX_MAINS) {
+            if (p != null) p.sendMessage("§cThe pot is full.");
+            return false;
+        }
+        return true;
     }
 
     public void take(Player p) {
@@ -303,20 +320,44 @@ public class PotReference extends CookingReference {
         }
     }
 
+    public static boolean canMash(FoodItem item) {
+        return item != null && item.isMashable();
+    }
+
+    /** Mash marks the piece boiled so the bowl snapshot uses the boiled model. */
+    public static void markBoiled(FoodItem item) {
+        TagTrack cooked = item.getTagTrack("cooked");
+        if (cooked == null) {
+            TagTrack template = TrackLoader.getByString("cooked");
+            if (template == null) {
+                return;
+            }
+            cooked = new TagTrack(template);
+            cooked.forceSetValue(3);
+            item.addOrModifyTrack(cooked);
+            return;
+        }
+        cooked.forceSetValue(3);
+    }
+
     public void mash(Player p) {
         boolean found = false;
         for(Map.Entry<String, FoodItem> entry : slots.entrySet()) {
+            if (isExtraSlot(entry.getKey())) continue;
             FoodItem item = entry.getValue();
-            if(!item.getCategory().equalsIgnoreCase("vegetable")) continue;
+            if(!canMash(item)) continue;
+            markBoiled(item);
+            item.getCookData().stop();
             item.addOrModifyTrack(new TagTrack(TrackLoader.getByString("mashed")));
+            applySlotUpdate(entry.getKey(), item);
             updateModel();
             DisplayData mashed = new DisplayData();
             mashed.setxScale(0);
             mashed.setyScale(0);
             mashed.setzScale(0);
             mashed.setyPos(-0.4f);
+            if (!f.hasActiveSlot(entry.getKey())) continue;
             PlacedSlot slot = f.getActiveSlot(entry.getKey()).get();
-            if(slot == null) continue;
             slot.applyDisplayData(mashed);
             found = true;
         }
@@ -366,42 +407,138 @@ public class PotReference extends CookingReference {
             }
         }
         if(canAdd(p, item)) {
+            FoodItem incoming = FoodItem.fromItem(item);
+            String extraKey = incoming == null ? null : extraSlotKey(incoming.getCategory());
+            if (extraKey != null) {
+                acceptExtra(p, item, extraKey);
+                return;
+            }
             for(String slot : f.getType().getSlots().keySet()) {
                 if(add(slot, item)) {
-                    FoodItem added = slots.get(slot);
-                    if (added != null && isHiddenSoupExtra(added.getCategory())) {
-                        hideSlot(slot);
-                    }
                     updateModel();
                     p.swingMainHand();
-                    FoodItem main = getMain();
-                    if(main != null && slots.size() > 1) {
-                        TagTrack track = main.getTagTrack("soup_thickness");
-                        if(track != null) {
-                            track.setValue(track.getValue()+600);
-                        }
-                        setMain(main);
-                    }
+                    thickenSoup();
                     break;
                 }
             }
         }
     }
-    
-    private static boolean isHiddenSoupExtra(String category) {
-        return StationAddonRules.isSeasoningCategory(category)
-                || StationAddonRules.isAddonCategory(category);
+
+    private void acceptExtra(Player p, ItemStack item, String extraKey) {
+        ItemStack stored = item.clone();
+        stored.setAmount(1);
+        FoodItem food = FoodItem.fromItem(stored);
+        if (food == null) return;
+        extraItems.put(extraKey, stored);
+        slots.put(extraKey, food);
+        saveExtras();
+        item.setAmount(item.getAmount() - 1);
+        p.swingMainHand();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+        thickenSoup();
     }
 
-    private void hideSlot(String slotId) {
-        if (!f.hasActiveSlot(slotId)) {
-            return;
+    private void thickenSoup() {
+        FoodItem main = getMain();
+        if(main != null && slots.size() > 1) {
+            TagTrack track = main.getTagTrack("soup_thickness");
+            if(track != null) {
+                track.setValue(track.getValue()+600);
+            }
+            setMain(main);
         }
-        DisplayData hidden = new DisplayData();
-        hidden.setxScale(0);
-        hidden.setyScale(0);
-        hidden.setzScale(0);
-        f.getActiveSlot(slotId).get().applyDisplayData(hidden);
+    }
+
+    public static String extraSlotKey(String category) {
+        if (category == null) return null;
+        String cat = category.toLowerCase();
+        if (cat.equals("salt") || cat.equals("pepper") || cat.equals("garnish") || cat.equals("spice")) {
+            return "extra_" + cat;
+        }
+        return null;
+    }
+
+    public static boolean isExtraSlot(String slotId) {
+        return slotId != null && slotId.startsWith("extra_");
+    }
+
+    private int mainCount() {
+        int count = 0;
+        for (String key : slots.keySet()) {
+            if (key.contains("input")) count++;
+        }
+        return count;
+    }
+
+    private void saveExtras() {
+        if (f == null) return;
+        if (extraItems.isEmpty()) {
+            f.getVariables().remove(VAR_EXTRAS);
+        } else {
+            StringBuilder encoded = new StringBuilder();
+            boolean first = true;
+            for (Map.Entry<String, ItemStack> entry : extraItems.entrySet()) {
+                String payload = encodeStack(entry.getValue());
+                if (payload == null) continue;
+                if (!first) encoded.append('|');
+                first = false;
+                encoded.append(entry.getKey()).append('.').append(payload);
+            }
+            if (encoded.isEmpty()) {
+                f.getVariables().remove(VAR_EXTRAS);
+            } else {
+                f.getVariables().put(VAR_EXTRAS, encoded.toString());
+            }
+        }
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+    }
+
+    private void restoreExtras() {
+        extraItems.clear();
+        if (f == null) return;
+        Object raw = f.getVariables().get(VAR_EXTRAS);
+        if (!(raw instanceof String text) || text.isBlank()) return;
+        for (String part : text.split("\\|")) {
+            int dot = part.indexOf('.');
+            if (dot <= 0 || dot >= part.length() - 1) continue;
+            String key = part.substring(0, dot);
+            if (!isExtraSlot(key)) continue;
+            ItemStack stack = decodeStack(part.substring(dot + 1));
+            if (stack == null) continue;
+            FoodItem food = FoodItem.fromItem(stack);
+            if (food == null) continue;
+            extraItems.put(key, stack);
+            slots.put(key, food);
+        }
+    }
+
+    static String encodeStack(ItemStack stack) {
+        if (stack == null) return null;
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (BukkitObjectOutputStream out = new BukkitObjectOutputStream(bytes)) {
+                out.writeObject(stack);
+            }
+            return Base64.getEncoder().encodeToString(bytes.toByteArray());
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    static ItemStack decodeStack(String payload) {
+        if (payload == null || payload.isBlank()) return null;
+        try {
+            byte[] bytes = Base64.getDecoder().decode(payload);
+            try (BukkitObjectInputStream in = new BukkitObjectInputStream(new ByteArrayInputStream(bytes))) {
+                Object read = in.readObject();
+                if (read instanceof ItemStack stack) {
+                    return stack;
+                }
+            }
+        } catch (IOException | ClassNotFoundException ignored) {
+            return null;
+        }
+        return null;
     }
 
     public void updateModel() {
@@ -415,10 +552,16 @@ public class PotReference extends CookingReference {
     @Override
     public void rebuildFromFurniture() {
         super.rebuildFromFurniture();
+        restoreExtras();
         if (f != null && f.hasActiveSlot("liquid")) {
             secondaries.put("liquid", -1);
         }
         applySoupLevel();
+    }
+
+    /** Whole-pot food split across scoops. Nutrition stays the template level. */
+    public static double scoopFood(double templateFood, int scoops) {
+        return templateFood / Math.max(1, scoops);
     }
 
     private static int soupScoops() {
@@ -489,7 +632,9 @@ public class PotReference extends CookingReference {
     
     @Override
     public void clear() {
+        extraItems.clear();
         f.getVariables().remove(VAR_SOUP_SERVINGS);
+        f.getVariables().remove(VAR_EXTRAS);
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
         if(isSoup()) super.clear();
         else super.remove();

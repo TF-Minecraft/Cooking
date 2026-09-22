@@ -2214,6 +2214,14 @@ meat_red_meat:
       item: ia.tfmc_cooking:red_meat_steak_burnt
     display:
       item: ia.tfmc_cooking:red_meat_steak_burnt
+  boiled:
+    weight: 1
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:red_meat_steak_boiled
+    display:
+      item: ia.tfmc_cooking:red_meat_steak_boiled
   rotten:
     weight: 1
     tags:
@@ -2829,6 +2837,14 @@ meat_poultry:
       item: ia.tfmc_cooking:poultry_roast_filet_burnt
     display:
       item: ia.tfmc_cooking:poultry_roast_filet_burnt
+  boiled:
+    weight: 1
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_filet_boiled
+    display:
+      item: ia.tfmc_cooking:poultry_roast_filet_boiled
   rotten:
     weight: 1
     tags:
@@ -3309,3 +3325,153 @@ sausage_chain:
       item: ia.tfmc_cooking:sausage_chain_rotten_1
     display:
       item: ia.tfmc_cooking:sausage_chain_rotten_1
+
+seafood_fish_filet:
+  fresh:
+    weight: 1
+    tags:
+      - fresh
+    gui:
+      item: ia.tfmc_cooking:fish_filet_raw
+    display:
+      item: ia.tfmc_cooking:fish_filet_raw
+  stale:
+    weight: 1
+    tags:
+      - stale
+    gui:
+      item: ia.tfmc_cooking:fish_filet_raw
+    display:
+      item: ia.tfmc_cooking:fish_filet_raw
+  cooked:
+    weight: 2
+    tags:
+      - cooked
+    gui:
+      item: ia.tfmc_cooking:fish_filet_cooked
+    display:
+      item: ia.tfmc_cooking:fish_filet_cooked
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:fish_filet_burnt
+    display:
+      item: ia.tfmc_cooking:fish_filet_burnt
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:fish_filet_boiled
+    display:
+      item: ia.tfmc_cooking:fish_filet_boiled
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:fish_filet_rotten
+    display:
+      item: ia.tfmc_cooking:fish_filet_rotten
+
+seafood_jellyfish:
+  fresh:
+    weight: 1
+    tags:
+      - fresh
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_raw
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_raw
+  stale:
+    weight: 1
+    tags:
+      - stale
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_raw
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_raw
+  cooked:
+    weight: 2
+    tags:
+      - cooked
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_cooked
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_cooked
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_burnt
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_burnt
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_boiled
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_boiled
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:jellyfish_cubes_rotten
+    display:
+      item: ia.tfmc_cooking:jellyfish_cubes_rotten
+
+seafood_octopus:
+  fresh:
+    weight: 1
+    tags:
+      - fresh
+    gui:
+      item: ia.tfmc_cooking:octopus_raw
+    display:
+      item: ia.tfmc_cooking:octopus_raw
+  stale:
+    weight: 1
+    tags:
+      - stale
+    gui:
+      item: ia.tfmc_cooking:octopus_raw
+    display:
+      item: ia.tfmc_cooking:octopus_raw
+  cooked:
+    weight: 2
+    tags:
+      - cooked
+    gui:
+      item: ia.tfmc_cooking:octopus_cooked
+    display:
+      item: ia.tfmc_cooking:octopus_cooked
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:octopus_burnt
+    display:
+      item: ia.tfmc_cooking:octopus_burnt
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:octopus_boiled
+    display:
+      item: ia.tfmc_cooking:octopus_boiled
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:octopus_rotten
+    display:
+      item: ia.tfmc_cooking:octopus_rotten

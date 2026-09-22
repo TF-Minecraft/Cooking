@@ -14,10 +14,14 @@ import org.bukkit.util.Vector;
 
 import me.Plugins.TLibs.TLibs;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
+import net.tfminecraft.cooking.events.DishCookedEvent;
+import net.tfminecraft.cooking.fishing.SeafoodCutting;
+import net.tfminecraft.cooking.fishing.SeafoodPortions;
+import net.tfminecraft.cooking.fishing.SeafoodYield;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.CompositionContext;
-import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
+import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -192,6 +196,10 @@ public class CraftingStation {
         if(currentRecipe == null) return;
         if(slots.isEmpty()) return;
         if(slots.size() < currentRecipe.getRatio()) return;
+        if ("cut_seafood".equals(currentRecipe.getId())) {
+            craftSeafood(p);
+            return;
+        }
 
         String origin = "none";
         List<FoodItem> consumedInputs = new ArrayList<>();
@@ -248,7 +256,7 @@ public class CraftingStation {
         currentRecipe = null;
 
         CompositionResult composed = CompositionQualityResolver.compose(p, consumedInputs, CompositionContext.CUTTING_BOARD);
-        CompositionFreshnessApplier.applyTracks(item, composed.getFreshnessTracks());
+        CompositionApplier.apply(item, composed);
         ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
         output.setAmount(outputAmount);
 
@@ -286,6 +294,86 @@ public class CraftingStation {
         if(p != null) {
             org.bukkit.Bukkit.getPluginManager().callEvent(
                     new net.tfminecraft.cooking.events.DishCookedEvent(p, output, "craft"));
+        }
+    }
+
+    private void craftSeafood(Player player) {
+        String sourceId = null;
+        ItemStack source = null;
+        FoodItem whole = null;
+        SeafoodYield yield = null;
+        for (Map.Entry<String, ItemStack> entry : new ArrayList<>(slots.entrySet())) {
+            FoodItem food = FoodItem.fromItem(entry.getValue());
+            if (food == null || !"seafood_whole".equalsIgnoreCase(food.getId())) {
+                continue;
+            }
+            SeafoodYield planned = SeafoodCutting.plan(food.getSeafoodCutType(), food.getCatchSizeCm());
+            if (planned == null) {
+                continue;
+            }
+            sourceId = entry.getKey();
+            source = entry.getValue();
+            whole = food;
+            yield = planned;
+            break;
+        }
+        if (sourceId == null) {
+            return;
+        }
+        final String slotId = sourceId;
+        final ItemStack held = source;
+        ItemStack output = SeafoodPortions.build(whole, yield);
+        if (output == null) {
+            return;
+        }
+
+        if (source.getAmount() > 1) {
+            source.setAmount(source.getAmount() - 1);
+            slots.put(slotId, held);
+            f.getActiveSlot(slotId).ifPresent(slot -> slot.setCurrentItem(held));
+        } else {
+            slots.remove(slotId);
+            f.getActiveSlot(slotId).ifPresent(slot -> {
+                slot.clearModel();
+                f.removeActiveSlot(slotId);
+            });
+        }
+
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
+        FoodItem portion = FoodItem.fromItem(output);
+        boolean onBoard = false;
+        for (SlotDefinition def : f.getType().getSlots().values()) {
+            if (f.hasActiveSlot(def.getId())) continue;
+            if (!def.getId().contains("input")) continue;
+            PlacedSlot slot = f.getOrCreatePlacedSlot(def.getId());
+            slot.forceModel(output);
+            onBoard = true;
+            if (portion != null && portion.getModelData() != null) {
+                slot.applyDisplayData(portion.getModelData().getDisplayData(f.getId()));
+            }
+            slots.put(def.getId(), output);
+            break;
+        }
+        if (!onBoard) {
+            f.getLoc().getWorld().dropItem(f.getLoc(), output)
+                    .setVelocity(new Vector(Math.random() * 0.2 - 0.1, 0.1, Math.random() * 0.2 - 0.1));
+        }
+
+        currentRecipe = null;
+        for (ItemStack stack : slots.values()) {
+            for (CraftingRecipe recipe : recipes) {
+                if (recipe.canAdd(stack)) {
+                    currentRecipe = recipe;
+                    break;
+                }
+            }
+            if (currentRecipe != null) {
+                break;
+            }
+        }
+
+        if (player != null) {
+            org.bukkit.Bukkit.getPluginManager().callEvent(new DishCookedEvent(player, output, "craft"));
         }
     }
 

@@ -140,6 +140,30 @@ public final class StationAddonRules {
         return AddonProfile.AROMATIC;
     }
 
+    public static boolean hasValuable(Map<String, FoodItem> slots) {
+        if (slots == null) {
+            return false;
+        }
+        for (FoodItem item : slots.values()) {
+            if (item != null && item.isValuable()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void applyFlavourfulTag(FoodItem product, Map<String, FoodItem> slots) {
+        if (product == null || !hasValuable(slots)) {
+            return;
+        }
+        TagTrack track = new TagTrack(TrackLoader.getByString("flavourful"));
+        if (track == null) {
+            return;
+        }
+        track.setValue(0);
+        product.addOrModifyTrack(track);
+    }
+
     public static void applyAddonTags(FoodItem product, Map<String, FoodItem> slots) {
         AddonProfile profile = classifyAddons(slots);
         if (profile == AddonProfile.AROMATIC) {
