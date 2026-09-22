@@ -6,15 +6,13 @@ Cooking owns food items, station behavior, crop quality math, and livestock reco
 
 ## Platform contract
 
-Cooking 0.1.6-ALPHA targets **Minecraft 1.21.10 and Java 21**. Maven compiles with
+Cooking on `main` targets **Minecraft 1.21.10 and Java 21**. Maven compiles with
 `maven.compiler.release=21` against the provided Spigot 1.21.10 API, and
 `plugin.yml` declares `api-version: 1.21.10`.
 
-Use the coordinated Java 21 integration releases: TLibs **1.1.1** and
-InteractibleFurniture **0.1.4-BETA**. The other declared plugin versions remain
-explicit in `pom.xml`. Resolve published artifacts through the pinned dependency
-setup action and its checksum verification. Earlier Java 25 dependency jars
-cannot be loaded by the Java 21 runtime.
+Use the TLibs and InteractibleFurniture versions declared in `pom.xml`.
+Resolve the committed dependency versions through the shared installer in pinned
+mode and its checksum verification. The source POM defines the build inputs.
 
 The build and its tests verify compilation and covered behavior. Validate the
 configured integrations below on the intended Minecraft 1.21.10 server before
