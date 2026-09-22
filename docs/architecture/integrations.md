@@ -18,6 +18,11 @@ The build and its tests verify compilation and covered behavior. Validate the
 configured integrations below on the intended Minecraft 1.21.10 server before
 deployment.
 
+Legacy integer item models are read through `LegacyModelData`, using the first
+custom-model-data float. String-only, flag-only, and color-only components do
+not identify a legacy fish model. The model IDs and fish-conversion rules stay
+the same.
+
 ## Vocabulary
 
 - **TLibs path:** a string such as `v.wheat`, `ia.tfmc_cooking:tomato`, `m.materials.leather`, or `c.grain(type=wheat)`.

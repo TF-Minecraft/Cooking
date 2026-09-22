@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.utils;
 
+import net.tfminecraft.cooking.util.LegacyModelData;
+
 import java.util.Map;
 
 import org.bukkit.Material;
@@ -19,7 +21,7 @@ public class Encoder {
             if (item == null) continue;
 
             ItemMeta meta = item.getItemMeta();
-            int model = (meta != null && meta.hasCustomModelData()) ? meta.getCustomModelData() : 0;
+            int model = (meta != null && LegacyModelData.has(meta)) ? LegacyModelData.get(meta) : 0;
 
             if (!first) result.append(":");
             first = false;
@@ -68,7 +70,7 @@ public class Encoder {
             ItemStack item = new ItemStack(mat, 1);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                meta.setCustomModelData(model);
+                LegacyModelData.set(meta, model);
                 item.setItemMeta(meta);
             }
 

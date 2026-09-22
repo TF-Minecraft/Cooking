@@ -25,9 +25,10 @@ public final class HusbandryTamingListener implements Listener {
         if (result == null || !HusbandryItems.matches(result, HusbandryConfig.tameItem())) {
             return;
         }
-        String rename = event.getView() instanceof AnvilView anvil
-                ? anvil.getRenameText()
-                : event.getInventory().getRenameText();
+        if (!(event.getView() instanceof AnvilView anvil)) {
+            return;
+        }
+        String rename = anvil.getRenameText();
         if (rename == null || rename.isBlank()) {
             return;
         }

@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.fishing;
 
+import net.tfminecraft.cooking.util.LegacyModelData;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -37,9 +39,9 @@ public final class LegacyFishConversion {
             return null;
         }
         ItemMeta meta = stack.getItemMeta();
-        if (meta == null || !meta.hasCustomModelData()) {
+        if (meta == null || !LegacyModelData.has(meta)) {
             return null;
         }
-        return meta.getCustomModelData();
+        return LegacyModelData.get(meta);
     }
 }

@@ -8,6 +8,10 @@ Numbers below that name a committed value were read from `src/main/resources/hus
 
 If this document and the code disagree, stop and reconcile them.
 
+The anvil naming listener reads rename text from `AnvilView` on the supported
+1.21.10 API. Blank names leave the result unchanged; a matching tame item keeps
+the entered name through its existing persistent-data field.
+
 ## Vocabulary
 
 | Stat | What it is | What it is not |
