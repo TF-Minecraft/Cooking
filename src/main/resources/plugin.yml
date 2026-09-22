@@ -1,7 +1,7 @@
 main: net.tfminecraft.cooking.Cooking
 api-version: 1.21
 name: Cooking
-version: 1.0
+version: ${project.version}
 author: Drefvelin
 
 depend: [TLibs, InteractibleFurniture, TFMCCore]

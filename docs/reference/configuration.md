@@ -24,10 +24,11 @@ Repo source: `src/main/resources`. Server copies are created only if missing. Lo
 | `custom-fishing.yml` | `CustomFishingCatalog` | live catch ids, cut class, rod quality bands, vanilla fish default sizes, seafood cutting yield, `model-data`, `legacy-size-cm` |
 | `cookware.yml` | none | shipped, not loaded. Heat lives in `config.yml` |
 
-## Known drift
+## Packaging
 
-- `plugin.yml` `version` is `1.0`. `pom.xml` `<version>` is `0.1.5-ALPHA`. Do not change either as a drive-by.
-- `cookware.yml` is listed in `Cooking.createConfigs()` and is absent from `loadConfigs()`.
+Maven filters `plugin.yml`'s `${project.version}` into the embedded plugin version. CI development builds use `DEV-YYYYMMDD-HHmm` in UTC; numeric release tags must match the POM version. Other resource files are copied without Maven filtering.
+
+Private compile dependencies are pinned in `.github/scripts/prepare-release.sh` and `.github/dependencies.sha256`. See the [shared pipeline guide](https://github.com/TF-Minecraft/Docs/blob/main/PIPELINES.md) for dependency access and release artifacts.
 
 ## Adding a key
 

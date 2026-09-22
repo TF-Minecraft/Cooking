@@ -17,7 +17,7 @@ mvn test
 mvn package
 ```
 
-`mvn test` needs the local system jars declared in `pom.xml`. GitHub Actions does not have those jars, so CI runs the documentation checks only.
+Run `GH_TOKEN=<read-token> bash .github/scripts/prepare-release.sh` to fetch the pinned build inputs. GitHub Actions uses `DEPS_TOKEN` to prepare dependencies and runs `mvn clean verify` with unit tests enabled, alongside the documentation checks.
 
 ```text
 python scripts/test_doc_manifest.py
@@ -42,5 +42,5 @@ A change that truly has no behavior impact must update [docs/impact-waiver.md](d
 
 - Food is an amount and splits across portions. Nutrition is a level and stays on every piece and scoop. See [docs/systems/portions-and-servings.md](docs/systems/portions-and-servings.md) and [docs/decisions/0001-food-vs-nutrition.md](docs/decisions/0001-food-vs-nutrition.md).
 - `cookware.yml` is shipped and not loaded.
-- `plugin.yml` version and `pom.xml` version currently differ. Do not "fix" that inside an unrelated change.
+- `plugin.yml` uses `${project.version}`; Maven resource filtering supplies the development or release version.
 - Player-facing strings must not use an em dash.
