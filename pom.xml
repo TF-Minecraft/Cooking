@@ -11,14 +11,6 @@
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <tfmc.refs>D:/Dokumenter/My Plugins/Reference Libs</tfmc.refs>
-        <tfmc.builds>D:/Dokumenter/My Plugins/TFMC/Cooking</tfmc.builds>
-        <tfmc.tlibs>D:/Dokumenter/My Plugins/TFMC/TLibs</tfmc.tlibs>
-        <tfmc.if>D:/Dokumenter/My Plugins/TFMC/InteractibleFurniture</tfmc.if>
-        <tfmc.tfmccore>D:/Dokumenter/My Plugins/TFMC/TFMCCore</tfmc.tfmccore>
-        <tfmc.plugins>D:/Dokumenter/My Plugins/Reference Libs</tfmc.plugins>
-        <tfmc.sf>D:/Dokumenter/My Plugins/TFMC/SimpleFactions</tfmc.sf>
-        <tfmc.rpcharacters>D:/Dokumenter/My Plugins/TFMC/RPCharacters</tfmc.rpcharacters>
     </properties>
 
     <dependencies>
@@ -27,84 +19,84 @@
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/gson-2.10.1.jar</systemPath>
+            <systemPath>${project.basedir}/libs/gson-2.10.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.21.8</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/spigot-api.jar</systemPath>
+            <systemPath>${project.basedir}/libs/spigot-api.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>TLibs</artifactId>
             <version>1.0</version>
             <scope>system</scope>
-            <systemPath>${tfmc.tlibs}/TLibs.jar</systemPath>
+            <systemPath>${project.basedir}/libs/TLibs.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>joml</artifactId>
             <version>1.10.8</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/joml-1.10.8.jar</systemPath>
+            <systemPath>${project.basedir}/libs/joml-1.10.8.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>InteractibleFurniture</artifactId>
             <version>1.0</version>
             <scope>system</scope>
-            <systemPath>${tfmc.if}/interactiblefurniture-0.1.3-BETA.jar</systemPath>
+            <systemPath>${project.basedir}/libs/interactiblefurniture-0.1.3-BETA.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>TFMCCore</artifactId>
-            <version>1.0</version>
+            <version>1.0-SNAPSHOT</version>
             <scope>system</scope>
-            <systemPath>${tfmc.tfmccore}/TFMCCore.jar</systemPath>
+            <systemPath>${project.basedir}/libs/tfmccore-1.0-SNAPSHOT.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>RPCharacters</artifactId>
             <version>1.1.7</version>
             <scope>system</scope>
-            <systemPath>${tfmc.rpcharacters}/rpcharacters-1.1.7.jar</systemPath>
+            <systemPath>${project.basedir}/libs/rpcharacters-1.1.7.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>MythicLib</artifactId>
             <version>1.7</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/MythicLib-1.7.jar</systemPath>
+            <systemPath>${project.basedir}/libs/MythicLib-1.7.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>MMOCore</artifactId>
             <version>1.13.1</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/MMOCore-1.13.1.jar</systemPath>
+            <systemPath>${project.basedir}/libs/MMOCore-1.13.1.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>CustomCrops</artifactId>
             <version>3.6.49</version>
             <scope>system</scope>
-            <systemPath>${tfmc.plugins}/CustomCrops-3.6.49.jar</systemPath>
+            <systemPath>${project.basedir}/libs/CustomCrops-3.6.49.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>CustomFishing</artifactId>
             <version>2.3.27</version>
             <scope>system</scope>
-            <systemPath>${tfmc.refs}/CustomFishing-2.3.27.jar</systemPath>
+            <systemPath>${project.basedir}/libs/CustomFishing-2.3.27.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>SimpleFactions</artifactId>
             <version>2.8.7</version>
             <scope>system</scope>
-            <systemPath>${tfmc.sf}/simplefactions-2.8.7.jar</systemPath>
+            <systemPath>${project.basedir}/libs/simplefactions-2.8.7.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -126,6 +118,18 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <includes><include>plugin.yml</include></includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <excludes><exclude>plugin.yml</exclude></excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -137,25 +141,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.5.2</version>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals><goal>run</goal></goals>
-                        <configuration>
-                            <target>
-                                <mkdir dir="${tfmc.builds}"/>
-                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                    tofile="${tfmc.builds}/${project.build.finalName}.jar"/>
-                            </target>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
+</plugins>
     </build>
 
 </project>
