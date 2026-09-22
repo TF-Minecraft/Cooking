@@ -6,5 +6,5 @@ Leave the marker below unset so a normal behavior change cannot pass by accident
 
 ```text
 docs-impact: none
-reason: Select the latest stable TLibs release in CI with checksum verification; local dependency defaults and Cooking gameplay code/configuration remain unchanged.
+reason: Resolve shared plugin APIs through checksum-verified releases using provided Maven dependencies and record build provenance; this migration does not change Cooking gameplay code or configuration.
 ```
