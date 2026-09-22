@@ -6,5 +6,5 @@ Leave the marker below unset so a normal behavior change cannot pass by accident
 
 ```text
 docs-impact: none
-reason: Select the latest stable TLibs release in CI with checksum verification; local dependency defaults and Cooking gameplay code/configuration remain unchanged.
+reason: Remove repository-specific agent instructions and their documentation references; update the link checker to scan the remaining documentation. Gameplay code and configuration are unchanged.
 ```
