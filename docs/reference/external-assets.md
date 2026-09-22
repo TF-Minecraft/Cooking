@@ -32,6 +32,16 @@ Crop ids in `crops.yml` `source: customcrops` match `CustomCrops/contents/crops/
 
 Do not put fertility keys in those YAML files.
 
+Keep downloaded CustomCrops libraries out of Git. To distribute the current
+tracked configuration, create an archive from the commit you are deploying:
+
+```sh
+git archive --format=zip --output=CustomCrops.zip HEAD CustomCrops
+```
+
+The generated ZIP and `CustomCrops/libs/` are ignored; the YAML files in
+`CustomCrops/` are the source of truth.
+
 ## Vanilla TLibs
 
 `v.water_bucket`, `v.wheat_seeds`, `v.shears`, `v.bone`, and similar. `m.` paths are the materials plugin, used by husbandry drops.
