@@ -27,3 +27,18 @@ The player guide is the ProvinceSystem wiki page `/wiki/cooking`, plus the anima
 
 - `plugin.yml` says version `1.0`. `pom.xml` says `0.1.5-ALPHA`.
 - `cookware.yml` is saved into the plugin folder and is not read by a loader.
+
+## TLibs build dependency
+
+TLibs is a versioned Maven `provided` dependency. From this repository, prepare
+it once with the shared installer, then build as usual:
+
+```sh
+python3 ../tlibs/tools/install-dependency.py --pom pom.xml
+mvn clean verify
+```
+
+See [TLibs dependency setup](https://github.com/TF-Minecraft/TLibs/blob/804728d2c0d62d64e3194bcdeffc3708acfbc514/DEPENDENCIES.md)
+for private-source access, offline installation and the pinned binary versions.
+Other declared build dependencies still need their usual preparation.
+Use JDK 25 for this TLibs binary; the server must also run Java 25.

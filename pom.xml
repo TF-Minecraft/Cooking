@@ -9,11 +9,12 @@
     <version>0.1.5-ALPHA</version>
 
     <properties>
+        <tlibs.version>1.0-tfmc-bbac27e3055d</tlibs.version>
         <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <tfmc.refs>D:/Dokumenter/My Plugins/Reference Libs</tfmc.refs>
         <tfmc.builds>D:/Dokumenter/My Plugins/TFMC/Cooking</tfmc.builds>
-        <tfmc.tlibs>D:/Dokumenter/My Plugins/TFMC/TLibs</tfmc.tlibs>
+
         <tfmc.if>D:/Dokumenter/My Plugins/TFMC/InteractibleFurniture</tfmc.if>
         <tfmc.tfmccore>D:/Dokumenter/My Plugins/TFMC/TFMCCore</tfmc.tfmccore>
         <tfmc.plugins>D:/Dokumenter/My Plugins/Reference Libs</tfmc.plugins>
@@ -37,11 +38,14 @@
             <systemPath>${tfmc.refs}/spigot-api.jar</systemPath>
         </dependency>
         <dependency>
-            <groupId>local</groupId>
-            <artifactId>TLibs</artifactId>
-            <version>1.0</version>
-            <scope>system</scope>
-            <systemPath>${tfmc.tlibs}/TLibs.jar</systemPath>
+            <groupId>me.plugins</groupId>
+            <artifactId>tlibs</artifactId>
+            <version>${tlibs.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <!-- The server supplies TLibs and its integrations. -->
+                <exclusion><groupId>*</groupId><artifactId>*</artifactId></exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>local</groupId>
