@@ -7,7 +7,7 @@ Cooking owns food items, station behavior, crop quality math, and livestock reco
 ## Platform contract
 
 Cooking on `main` targets **Minecraft 1.21.10 and Java 21**. Maven compiles with
-`maven.compiler.release=21` against the provided Spigot 1.21.10 API, and
+`maven.compiler.release=21` against the provided Paper 1.21.10 API, and
 `plugin.yml` declares `api-version: 1.21.10`.
 
 Use the TLibs and InteractibleFurniture versions declared in `pom.xml`.
