@@ -13,7 +13,7 @@ LINK = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
 def main() -> int:
     root = repo_root()
-    files = [root / "README.md", root / "AGENTS.md", * (root / "docs").rglob("*.md")]
+    files = [root / "README.md", * (root / "docs").rglob("*.md")]
     errors: list[str] = []
     for path in files:
         text = path.read_text(encoding="utf-8")
