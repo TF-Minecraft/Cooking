@@ -5,6 +5,7 @@ import net.tfminecraft.cooking.util.LegacyModelData;
 import java.util.Map;
 
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -22,15 +23,15 @@ public class Encoder {
 
             ItemMeta meta = item.getItemMeta();
             int model = (meta != null && LegacyModelData.has(meta)) ? LegacyModelData.get(meta) : 0;
+            String itemModel = null;
+            if (meta != null && meta.hasItemModel() && meta.getItemModel() != null) {
+                itemModel = meta.getItemModel().toString();
+            }
 
             if (!first) result.append(":");
             first = false;
 
-            result.append(entry.getKey())
-                .append(".")
-                .append(item.getType().toString())
-                .append(".")
-                .append(model);
+            result.append(formatSlot(entry.getKey(), item.getType().toString(), model, itemModel));
         }
 
         return result.toString();
@@ -47,37 +48,63 @@ public class Encoder {
         for (String part : parts) {
             if (part.isEmpty()) continue;
 
-            // Split into slot, type, model
-            String[] data = part.split("\\."); 
-            if (data.length < 3) continue; // invalid format
+            ParsedSlot parsed = parseSlot(part);
+            if (parsed == null) continue;
 
-            String slotId = data[0];                // "slot_1"
-            String materialName = data[1];          // "IRON_INGOT"
-            String modelStr = data[2];              // "5"
+            Material mat = Material.matchMaterial(parsed.material());
+            if (mat == null) continue;
 
-            // Convert material
-            Material mat = Material.matchMaterial(materialName);
-            if (mat == null) continue; // ignore invalid material names
-
-            int model;
-            try {
-                model = Integer.parseInt(modelStr);
-            } catch (NumberFormatException e) {
-                model = 0; // fallback
-            }
-
-            // Build item
             ItemStack item = new ItemStack(mat, 1);
             ItemMeta meta = item.getItemMeta();
             if (meta != null) {
-                LegacyModelData.set(meta, model);
+                LegacyModelData.set(meta, parsed.customModelData());
+                if (parsed.itemModel() != null) {
+                    NamespacedKey key = NamespacedKey.fromString(parsed.itemModel());
+                    if (key != null) {
+                        meta.setItemModel(key);
+                    }
+                }
                 item.setItemMeta(meta);
             }
 
-            // Add to result
-            result.put(slotId, item);
+            result.put(parsed.slotId(), item);
         }
 
         return result;
     }
+
+    /** slot.MATERIAL.customModelData[.namespace~key]. ':' in the key is stored as '~'. */
+    static String formatSlot(String slotId, String material, int customModelData, String itemModel) {
+        StringBuilder result = new StringBuilder();
+        result.append(slotId).append('.').append(material).append('.').append(customModelData);
+        if (itemModel != null && !itemModel.isEmpty()) {
+            // Slot records are separated by ':'. Resource locations use ':' too.
+            result.append('.').append(itemModel.replace(':', '~'));
+        }
+        return result.toString();
+    }
+
+    static ParsedSlot parseSlot(String part) {
+        if (part == null || part.isEmpty()) return null;
+        String[] data = part.split("\\.", 4);
+        if (data.length < 3 || data[0].isEmpty() || data[1].isEmpty()) return null;
+        int model;
+        try {
+            model = Integer.parseInt(data[2]);
+        } catch (NumberFormatException e) {
+            model = 0;
+        }
+        String itemModel = null;
+        if (data.length >= 4 && !data[3].isEmpty()) {
+            int tilde = data[3].indexOf('~');
+            if (tilde > 0) {
+                itemModel = data[3].substring(0, tilde) + ":" + data[3].substring(tilde + 1);
+            } else {
+                itemModel = data[3];
+            }
+        }
+        return new ParsedSlot(data[0], data[1], model, itemModel);
+    }
+
+    record ParsedSlot(String slotId, String material, int customModelData, String itemModel) {}
 }
