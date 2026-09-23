@@ -38,6 +38,8 @@ See [../decisions/0001-food-vs-nutrition.md](../decisions/0001-food-vs-nutrition
 
 `carve_sequence`, `carve_next_index`, `carve_remaining` on the roast. Initialized from the sequence when the roast is built.
 
+A slaughter roast keeps the configured number of edible cuts, taken from the end of the sequence. The bone remains after the last meat. One cut is that last portion of meat, with that cut's food, on the model stage just before the skeleton. It is not the bone by itself. The model stage is `carve_next_index + 1`. The edible-cut count is not a model stage.
+
 ## Runtime flow
 
 ```text

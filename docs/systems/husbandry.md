@@ -42,7 +42,7 @@ The old 6-arg constructor bug that forced the name `???` must not return. Persis
 
 Owned mature death: `slaughter.meat` plus star-gated `slaughter.drops`. Immature: no Cooking roast. Unowned `remove-unowned` types: no drops.
 
-Stars from raw genetics. Amount from effective genetics, including `carve_remaining` on roasts. Counted drop tables use that yield. Minimum roast cuts still apply.
+Stars from raw genetics. Amount from effective genetics. Roast cuts count edible meat left on the carcass. The trailing bone stays after that meat, so `min-roast-cuts` (committed 1) still has food and is not the skeleton model. The dropped model stage is the first remaining cut (`raw_1` is whole, the last stage is the skeleton). Counted drop tables use hide and wool yield.
 
 Sheep: vanilla wool always on shear. If `wool_ready_at` is due, also roll `shear.drops`, then reset the timer. Committed global `wool-timer` is 4h. A species may override it.
 

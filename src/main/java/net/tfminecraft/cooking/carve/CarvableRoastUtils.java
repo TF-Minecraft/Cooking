@@ -103,6 +103,39 @@ public final class CarvableRoastUtils {
         return count;
     }
 
+    /**
+     * Window that still has {@code edibleCuts} food cuts, taken from the end of the sequence.
+     * Trailing non-food cuts stay after the meat. One edible cut is the last portion of meat,
+     * not the bone that follows it.
+     */
+    public record EdibleWindow(int nextIndex, int remaining) {}
+
+    public static EdibleWindow keepEdibleCuts(CarveSequence seq, int edibleCuts) {
+        if (seq == null || seq.getCuts().isEmpty()) {
+            return new EdibleWindow(0, 0);
+        }
+        List<CarveCut> cuts = seq.getCuts();
+        int wanted = Math.max(1, edibleCuts);
+        int foodSeen = 0;
+        int start = 0;
+        boolean foundFood = false;
+        for (int i = cuts.size() - 1; i >= 0; i--) {
+            if (!cuts.get(i).isFoodCut()) {
+                continue;
+            }
+            foundFood = true;
+            start = i;
+            foodSeen++;
+            if (foodSeen >= wanted) {
+                break;
+            }
+        }
+        if (!foundFood) {
+            return new EdibleWindow(0, cuts.size());
+        }
+        return new EdibleWindow(start, cuts.size() - start);
+    }
+
     /** Visual stage for IA models: raw_1 = whole bird, raw_6 = mostly carved. */
     public static int getVisualCarveStage(FoodItem item) {
         return item.getCarveNextIndex() + 1;
