@@ -12,9 +12,9 @@ import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
+import net.tfminecraft.cooking.carve.CarvableRoastUtils.EdibleWindow;
 import net.tfminecraft.cooking.carve.CarveSequence;
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.cooking.item.model.ModelData;
 import net.tfminecraft.cooking.loader.CarveSequenceLoader;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.InventoryAdder;
@@ -190,20 +190,16 @@ public final class HusbandryHarvest {
         if (seq == null) {
             return stack;
         }
-        int maxCuts = Math.max(1, seq.getStartRemaining());
-        int cuts = Math.min(maxCuts, HusbandryConfig.roastCutsFor(HusbandryConfig.effectiveGenetics(animal)));
-        int nextIndex = Math.max(0, maxCuts - cuts);
-        item.setCarveState(seqId, nextIndex, cuts);
+        int edible = CarvableRoastUtils.countFoodCuts(seq);
+        int cuts = edible == 0
+                ? 1
+                : Math.min(edible, HusbandryConfig.roastCutsFor(HusbandryConfig.effectiveGenetics(animal)));
+        EdibleWindow window = CarvableRoastUtils.keepEdibleCuts(seq, cuts);
+        item.setCarveState(seqId, window.nextIndex(), window.remaining());
         CarvableRoastUtils.writeCarveState(stack, item);
         ItemStack updated = ItemUpdater.applyItemUpdate(stack, item, null);
         if (updated != null) {
             stack = updated;
-        }
-        ModelData staged = item.getModel() == null
-                ? null
-                : item.getModel().getModelByStageAndTag(cuts, CarvableRoastUtils.resolveCookTag(item));
-        if (staged != null) {
-            stack = staged.apply(null, stack);
         }
         return stack;
     }

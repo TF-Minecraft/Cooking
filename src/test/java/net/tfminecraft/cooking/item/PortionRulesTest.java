@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.item;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -58,6 +59,28 @@ class PortionRulesTest {
     }
 
     @Test
+    void slaughterYieldKeepsMeatInsteadOfTheBone() {
+        CarveSequence redMeat = redMeatSequence();
+        CarvableRoastUtils.EdibleWindow one = CarvableRoastUtils.keepEdibleCuts(redMeat, 1);
+        assertEquals(6, one.nextIndex());
+        assertEquals(2, one.remaining());
+        assertEquals(18, redMeat.sumRemainingFood(one.nextIndex()));
+        assertEquals(7, one.nextIndex() + 1);
+
+        CarvableRoastUtils.EdibleWindow full = CarvableRoastUtils.keepEdibleCuts(redMeat, 8);
+        assertEquals(0, full.nextIndex());
+        assertEquals(8, full.remaining());
+        assertEquals(126, redMeat.sumRemainingFood(full.nextIndex()));
+
+        CarveSequence poultry = poultrySequence();
+        CarvableRoastUtils.EdibleWindow drumstick = CarvableRoastUtils.keepEdibleCuts(poultry, 1);
+        assertEquals(4, drumstick.nextIndex());
+        assertEquals(2, drumstick.remaining());
+        assertEquals(18, poultry.sumRemainingFood(drumstick.nextIndex()));
+        assertTrue(poultry.getCut(drumstick.nextIndex()).isFoodCut());
+    }
+
+    @Test
     void soupScoopDividesFoodOnly() {
         FoodItem soup = new FoodItem("soup", "Soup", true);
         soup.setBaseNutrition(8);
@@ -85,6 +108,28 @@ class PortionRulesTest {
         setTemplateNutrition(untouched, 7);
         SausageItems.applyBatchTotals(untouched, List.of());
         assertEquals(7, untouched.getBaseNutrition());
+    }
+
+    private static CarveSequence redMeatSequence() {
+        return new CarveSequence("red_meat", 8, List.of(
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.food("meat(type=meat_red_meat;origin=Beef)", 18, 8),
+                CarveCut.item("v.bone", 4, 0, 0)));
+    }
+
+    private static CarveSequence poultrySequence() {
+        return new CarveSequence("poultry", 6, List.of(
+                CarveCut.food("meat(type=meat_poultry_leg;origin=Chicken)", 20, 8),
+                CarveCut.food("meat(type=meat_poultry_leg;origin=Chicken)", 20, 8),
+                CarveCut.food("meat(type=meat_poultry;origin=Chicken)", 18, 8),
+                CarveCut.food("meat(type=meat_poultry;origin=Chicken)", 18, 8),
+                CarveCut.food("meat(type=meat_poultry;origin=Chicken)", 18, 8),
+                CarveCut.item("v.bone", 2, 0, 0)));
     }
 
     private static CarveSequence chainWithBone() {
