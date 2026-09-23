@@ -33,7 +33,8 @@ final class CasingPaper {
         if (meta == null) {
             return false;
         }
-        if (meta.hasDisplayName() || meta.hasItemModel() || LegacyModelData.has(meta)) {
+        if (meta.hasDisplayName() || meta.hasItemName() || meta.hasItemModel()
+                || meta.hasCustomModelDataComponent() || LegacyModelData.has(meta)) {
             return true;
         }
         return !meta.getPersistentDataContainer().isEmpty();
