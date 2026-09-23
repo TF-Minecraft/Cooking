@@ -99,24 +99,30 @@ public class PotReference extends CookingReference {
     }
 
     public FoodItem getMain() {
-        for(PlacedSlot slot : f.getActiveSlots().values()) {
-            ItemStack stack = slot.getCurrentItem();
-            if(stack == null) continue;
-            FoodItem item = FoodItem.fromItem(stack);
-            if(item == null) continue;
-            return item;
-        }
-        return null;
+        PlacedSlot slot = firstFoodSlot();
+        if (slot == null) return null;
+        return FoodItem.fromItem(slot.getCurrentItem());
     }
 
+    /** Thickness lives on the first ingredient. Later pieces keep the model of what was held. */
     public void setMain(FoodItem fi) {
-        for(PlacedSlot slot : f.getActiveSlots().values()) {
+        if (fi == null) return;
+        PlacedSlot slot = firstFoodSlot();
+        if (slot == null) return;
+        ItemStack stack = slot.getCurrentItem();
+        ItemStack updated = ItemUpdater.applyItemUpdate(stack, fi, f.getId());
+        if (updated == null) return;
+        slot.forceModel(updated);
+    }
+
+    private PlacedSlot firstFoodSlot() {
+        for (PlacedSlot slot : f.getActiveSlots().values()) {
             ItemStack stack = slot.getCurrentItem();
-            if(stack == null) continue;
-            FoodItem item = FoodItem.fromItem(stack);
-            if(item == null) continue;
-            slot.forceModel(ItemUpdater.applyItemUpdate(stack, fi, f.getId()));
+            if (stack == null) continue;
+            if (FoodItem.fromItem(stack) == null) continue;
+            return slot;
         }
+        return null;
     }
     
     private void handleParticles() {

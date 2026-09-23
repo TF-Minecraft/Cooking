@@ -33,6 +33,7 @@ import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 public class PlateManager implements Listener{
 
@@ -144,7 +145,12 @@ public class PlateManager implements Listener{
         for(Map.Entry<String, ItemStack> entry : map.entrySet()) {
             if(f.hasActiveSlot(entry.getKey())) continue;
             if (f.getType() == null || f.getType().getSlot(entry.getKey()) == null) continue;
-            f.getOrCreatePlacedSlot(entry.getKey()).forceModel(entry.getValue());
+            PlacedSlot placed = f.getOrCreatePlacedSlot(entry.getKey());
+            placed.forceModel(entry.getValue());
+            DisplayData spread = BowlIngredientLayout.offsetFor(entry.getKey());
+            if (spread != null) {
+                placed.applyDisplayData(spread);
+            }
         }
         if (f.getType() == null || f.getType().getSlot("food_item") == null) return;
         f.getOrCreatePlacedSlot("food_item").forceModel(base);
