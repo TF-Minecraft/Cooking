@@ -59,3 +59,6 @@ Desktop.ini
 
 # Removed runtime snapshots or generated archives
 /ItemsAdder/tfmc_cooking.zip
+
+# Technical documentation is maintained in TF-Minecraft/Docs
+/docs/
