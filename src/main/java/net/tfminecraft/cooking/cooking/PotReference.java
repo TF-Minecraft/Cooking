@@ -385,12 +385,20 @@ public class PotReference extends CookingReference {
             return;
         }
         ItemStack item = p.getInventory().getItemInMainHand();
+        if (isHeldSoup(item)) {
+            e.setCancelled(true);
+            return;
+        }
         if(ItemCache.isLadle(item)) {
-            scoop(p, item);
+            if (isSoup()) {
+                scoop(p, item);
+                e.setCancelled(true);
+            }
             return;
         }
         if(ItemCache.isMasher(item)) {
             mash(p);
+            e.setCancelled(true);
             return;
         }
         if (!secondaries.containsKey("liquid")) {
@@ -411,6 +419,7 @@ public class PotReference extends CookingReference {
                 danger = 0;
                 temperature = 0;
                 f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+                e.setCancelled(true);
                 return;
             }
         }
@@ -419,6 +428,7 @@ public class PotReference extends CookingReference {
             String extraKey = incoming == null ? null : extraSlotKey(incoming.getCategory());
             if (extraKey != null) {
                 acceptExtra(p, item, extraKey);
+                e.setCancelled(true);
                 return;
             }
             for(String slot : f.getType().getSlots().keySet()) {
@@ -426,10 +436,20 @@ public class PotReference extends CookingReference {
                     updateModel();
                     p.swingMainHand();
                     thickenSoup();
+                    e.setCancelled(true);
                     break;
                 }
             }
         }
+    }
+
+    /** Scooped soup keeps the ladle's paper item, so it must not be used as a ladle. */
+    private static boolean isHeldSoup(ItemStack item) {
+        FoodItem food = FoodItem.fromItem(item);
+        if (food == null) {
+            return false;
+        }
+        return "soup".equalsIgnoreCase(food.getId()) || "soup".equalsIgnoreCase(food.getCategory());
     }
 
     private void acceptExtra(Player p, ItemStack item, String extraKey) {
