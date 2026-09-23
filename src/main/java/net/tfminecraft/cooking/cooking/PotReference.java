@@ -208,7 +208,7 @@ public class PotReference extends CookingReference {
         // ---------- BUILD RESULT ----------
         CompositionResult composed = CompositionQualityResolver.compose(p, slots.values(), CompositionContext.SOUP_SCOOP);
         CompositionApplier.apply(soup, composed);
-        soup.setBaseFood(scoopFood(soup.getBaseFood(), soupScoops()));
+        soup.setBaseFood(scoopFood(soup.getBaseFood()));
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
@@ -565,9 +565,9 @@ public class PotReference extends CookingReference {
         applySoupLevel();
     }
 
-    /** Whole-pot food split across scoops. Nutrition stays the template level. */
-    public static double scoopFood(double templateFood, int scoops) {
-        return templateFood / Math.max(1, scoops);
+    /** Each scoop keeps the soup template food. Serving count does not scale it. */
+    public static double scoopFood(double templateFood) {
+        return templateFood;
     }
 
     private static int soupScoops() {
