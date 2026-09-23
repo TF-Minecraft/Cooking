@@ -4,8 +4,7 @@
 
 ## Documentation impact
 
-- [ ] System docs updated for every owned path in `docs/manifest.json`
-- [ ] Or `docs/impact-waiver.md` changed in this PR with `docs-impact: none` and a reason
+- Central [Cooking documentation](https://github.com/TF-Minecraft/Docs/tree/main/projects/Cooking): no change / updated (link)
 
 ## Contract
 
