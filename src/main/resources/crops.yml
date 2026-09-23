@@ -1,4 +1,4 @@
-# Crop harvest quality + growth gate (Cooking). Spec: docs/crops.md
+# Crop harvest quality + growth gate (Cooking). Spec: https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/docs/crops.md
 # Produce stars roll from province fertility × crop affection, then pickup permissions.
 # Growth ticks use the same affection: chance = (fertility/100) ^ affection.
 # Seeds stay untagged IA/vanilla. CustomCrops one-seed drops stay yield/balance.
