@@ -168,6 +168,7 @@ public final class HusbandryBreedListener implements Listener {
         HusbandryHarvest.prepareNewAnimal(baby, child.getType());
         repository.upsertAnimal(baby);
         HusbandryEntities.putLoaded(baby);
+        HusbandryGrowth.applyMaturity(child, baby, now);
     }
 
     private static void clearLove(Entity entity) {
