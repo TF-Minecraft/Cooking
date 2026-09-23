@@ -58,12 +58,12 @@ class PortionRulesTest {
     }
 
     @Test
-    void soupScoopDividesFoodOnly() {
+    void soupScoopKeepsTemplateFoodAndNutrition() {
         FoodItem soup = new FoodItem("soup", "Soup", true);
         soup.setBaseNutrition(8);
-        soup.setBaseFood(PotReference.scoopFood(26, 3));
+        soup.setBaseFood(PotReference.scoopFood(26));
 
-        assertEquals(26.0 / 3, soup.getBaseFood());
+        assertEquals(26, soup.getBaseFood());
         assertEquals(8, soup.getBaseNutrition());
     }
 

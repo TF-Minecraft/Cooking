@@ -1,6 +1,5 @@
 package net.tfminecraft.cooking.item;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,7 +8,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import net.tfminecraft.cooking.cooking.PotReference;
 import net.tfminecraft.cooking.utils.StationAddonRules;
 
 class ValuableIngredientTest {
@@ -24,11 +22,6 @@ class ValuableIngredientTest {
         assertFalse(StationAddonRules.hasValuable(Map.of("a", carrot)));
         assertTrue(StationAddonRules.hasValuable(Map.of("a", carrot, "b", tomato)));
         assertFalse(StationAddonRules.hasValuable(Map.of()));
-    }
-
-    @Test
-    void soupScoopFoodIsUnchangedByValuableFlag() {
-        assertEquals(26.0 / 3, PotReference.scoopFood(26, 3));
     }
 
     private static void setValuable(FoodItem item, boolean valuable) throws Exception {
