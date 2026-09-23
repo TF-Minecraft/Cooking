@@ -15,6 +15,8 @@ final class CasingPaper {
     private CasingPaper() {}
 
     static boolean isCasing(ItemStack stack) {
-        return TLibs.getItemAPI().getChecker().checkItemWithPath(stack, PATH);
+        return stack != null
+                && stack.getAmount() > 0
+                && TLibs.getItemAPI().getChecker().checkItemWithPath(stack, PATH);
     }
 }
