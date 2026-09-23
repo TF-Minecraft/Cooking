@@ -272,21 +272,19 @@ public final class SausageMakerHandler implements Listener {
 
     private static boolean hasPaper(Player player) {
         PlayerInventory inv = player.getInventory();
-        ItemStack main = inv.getItemInMainHand();
-        ItemStack off = inv.getItemInOffHand();
-        return (main != null && main.getType() == Material.PAPER)
-                || (off != null && off.getType() == Material.PAPER);
+        return CasingPaper.isCasing(inv.getItemInMainHand())
+                || CasingPaper.isCasing(inv.getItemInOffHand());
     }
 
     private static void consumePaper(Player player) {
         PlayerInventory inv = player.getInventory();
         ItemStack main = inv.getItemInMainHand();
-        if (main != null && main.getType() == Material.PAPER) {
+        if (CasingPaper.isCasing(main)) {
             main.setAmount(main.getAmount() - 1);
             return;
         }
         ItemStack off = inv.getItemInOffHand();
-        if (off != null && off.getType() == Material.PAPER) {
+        if (CasingPaper.isCasing(off)) {
             off.setAmount(off.getAmount() - 1);
         }
     }
