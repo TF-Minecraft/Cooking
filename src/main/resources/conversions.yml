@@ -1,7 +1,7 @@
 conversions:
   - v.wheat grain(type=wheat;origin=Wheat;tags=freshness.0)
   - ia.tfmc_cooking:yeast ingredient(type=yeast;origin=Yeast;tags=freshness.0)
-  - ia.tfmc_cooking:dough ingredient(type=dough;origin=Wheat;tags=freshness.0)
+  - ia.tfmc_cooking:dough ingredient(type=dough;origin=Wheat;tags=freshness.0:rising.0)
   - v.carrot vegetable(type=vegetable_1;origin=Carrot;tags=freshness.0)
   - v.potato vegetable(type=vegetable_1;origin=Potato;tags=freshness.0)
   - v.beetroot vegetable(type=vegetable_1;origin=Beetroot;tags=freshness.0)

@@ -76,6 +76,7 @@ public class ItemBuilder {
         FoodItem item = new FoodItem(template);
 
         item.setQualityRange(quality, quality);
+        DoughRising.ensureUnrisen(item);
 
         item.setAmount(1);
 
@@ -286,7 +287,7 @@ public class ItemBuilder {
         return assembleLore(
                 category,
                 origin,
-                item.getQualityMin(),
+                item.getEffectiveQuality(),
                 StringFormatter.formatHex("#d4ad77Nutrition §f" + item.getFinalNutrition()),
                 StringFormatter.formatHex("#d4ad77Food §f" + item.getFinalFood()),
                 item.getIngredients(),
@@ -357,7 +358,8 @@ public class ItemBuilder {
                         TagDisplayNames.resolve(tagLabels, t, step),
                         step.getFoodMultiplier(),
                         step.getNutritionMultiplier(),
-                        step.getCraftQualityPct()));
+                        step.getCraftQualityPct(),
+                        step.getStars()));
                 if (firstTag) {
                     indexes.put("tags", lore.size() - 1);
                     firstTag = false;

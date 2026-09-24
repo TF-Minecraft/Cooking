@@ -287,6 +287,8 @@ categories:
       - tfmc_cooking:dough
       - tfmc_cooking:dough_rotten
       - tfmc_cooking:dough_model
+      - tfmc_cooking:dough_rising_model
+      - tfmc_cooking:dough_risen_model
       - tfmc_cooking:dough_rotten_model
       - tfmc_cooking:empty_cup
       - tfmc_cooking:cup_of_water

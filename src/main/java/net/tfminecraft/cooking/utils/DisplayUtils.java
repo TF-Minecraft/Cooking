@@ -9,6 +9,11 @@ public class DisplayUtils {
 
     public static String getDisplayString(String name, double foodMultiplier, double nutritionMultiplier,
             double craftQualityPct) {
+        return getDisplayString(name, foodMultiplier, nutritionMultiplier, craftQualityPct, 0);
+    }
+
+    public static String getDisplayString(String name, double foodMultiplier, double nutritionMultiplier,
+            double craftQualityPct, int stars) {
         StringBuilder extra = new StringBuilder();
 
         // Food modifier
@@ -35,6 +40,11 @@ public class DisplayUtils {
             if (extra.length() > 0) extra.append("§7, ");
             int pct = (int) Math.round(craftQualityPct * 100);
             extra.append("§aCraft Quality +").append(pct).append('%');
+        }
+
+        if (stars != 0) {
+            if (extra.length() > 0) extra.append("§7, ");
+            extra.append(stars > 0 ? "§a" : "§c").append(String.format("%+d★", stars));
         }
 
         // No modifiers → just return the name

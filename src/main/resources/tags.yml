@@ -1,6 +1,7 @@
 
 #########Do not change these unless you know
 # craft-quality-pct: upward star-roll bonus when this step is active on an extra ingredient (e.g. 0.05 = +5% craft quality)
+# stars: added to inherited quality while this step is active. Negative lowers the star rating.
 # Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 3 days).
 # Per-type duration is types.yml age.freshness (higher = lasts longer).
 freshness:
@@ -194,3 +195,19 @@ flavourful:
     value: 0
     food-mult: 1.0
     nutrition-mult: 1.1
+
+# Dough proofing. Values are seconds at age.rising 1 (dough uses 1): rising after 5 minutes, risen after 15.
+rising:
+  ageable: true
+  unrisen:
+    name: "#c4a574Unrisen"
+    value: 0
+    stars: -3
+  rising:
+    name: "#d4b483Rising"
+    value: 300
+    stars: -1
+  risen:
+    name: "#e6c98aRisen"
+    value: 900
+    stars: 0
