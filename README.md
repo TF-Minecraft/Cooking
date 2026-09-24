@@ -17,14 +17,6 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 
 A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
 
-## Scanner dependency
-
-Cooking requires TLibs 2.1.0 or newer for shared inventory scanning. Food tags and
-legacy fish conversion subscribe to TLibs during enable and unsubscribe during
-disable; Cooking no longer requires TFMCCore. Install the new TLibs release before
-updating Cooking. To roll Cooking back, retain or restore TFMCCore for its old
-scanner API.
-
 ## Documentation
 
 [Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md)
