@@ -4,6 +4,7 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
+import net.tfminecraft.cooking.utils.DoughRising;
 
 public final class BakingTrayTransform {
     private static final String COOKED_TRACK = "cooked";
@@ -32,7 +33,8 @@ public final class BakingTrayTransform {
             loaf.setOrigin(dough.getOrigin());
         }
 
-        loaf.setQualityRange(dough.getQualityMin(), dough.getQualityMax());
+        int quality = dough.getEffectiveQuality();
+        loaf.setQualityRange(quality, quality);
 
         loaf.setLineage(dough.getLineage());
 
@@ -41,7 +43,7 @@ public final class BakingTrayTransform {
         }
 
         for (TagTrack track : dough.getTagTracks()) {
-            if (COOKED_TRACK.equals(track.getId())) {
+            if (COOKED_TRACK.equals(track.getId()) || DoughRising.TRACK.equals(track.getId())) {
                 continue;
             }
             loaf.addOrModifyTrack(new TagTrack(track));

@@ -462,6 +462,7 @@ dough:
   nutrition: 4
   age:
     freshness: 0.5
+    rising: 1
   tag-labels:
     freshness:
       rotten: "#8B7355Mouldy"

@@ -12,8 +12,10 @@ import net.tfminecraft.cooking.item.data.OverrideData;
 import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.item.model.ModelData;
 import net.tfminecraft.cooking.item.tag.AgeScale;
+import net.tfminecraft.cooking.item.tag.TagQuality;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
+import net.tfminecraft.cooking.utils.QualityUtils;
 import net.tfminecraft.cooking.loader.ModelLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -310,6 +312,11 @@ public class FoodItem {
 
     public int getQualityMin() { return qualityMin; }
     public int getQualityMax() { return qualityMax; }
+
+    /** Inherited stars plus the active tag star offsets, clamped to 1–5. */
+    public int getEffectiveQuality() {
+        return QualityUtils.clamp(qualityMin + TagQuality.stars(tags.values()));
+    }
     public void setQualityRange(int min, int max) {
         this.qualityMin = min;
         this.qualityMax = max;
@@ -615,7 +622,7 @@ public class FoodItem {
     }
 
     private double applyMultipliers(double base, int type) {
-        int stars = Math.max(1, getQualityMin());
+        int stars = getEffectiveQuality();
         double qualityMultiplier = type == 1
                 ? net.tfminecraft.cooking.quality.QualityConfig.nutritionMultiplier(stars)
                 : 1.0 + (stars - 1) * 0.20;

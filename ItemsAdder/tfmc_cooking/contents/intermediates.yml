@@ -65,7 +65,7 @@ items:
       model_path: item/intermediate/dough
 
   dough_rotten:
-    display_name: "Dough Rotten"
+    display_name: "Mouldy Dough"
     resource:
       material: PAPER
       generate: false

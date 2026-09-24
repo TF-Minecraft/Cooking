@@ -1343,18 +1343,32 @@ items:
       model_path: item/bulk/yeast_rotten
 
   dough_model:
-    display_name: "Dough (Bowl)"
+    display_name: "Unrisen Dough"
     resource:
       material: PAPER
       generate: false
-      model_path: item/bulk/dough
+      model_path: item/bulk/dough_unrisen
+
+  dough_rising_model:
+    display_name: "Rising Dough"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/bulk/dough_rising
+
+  dough_risen_model:
+    display_name: "Risen Dough"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/bulk/dough_risen
 
   dough_rotten_model:
-    display_name: "Dough Rotten (Bowl)"
+    display_name: "Mouldy Dough"
     resource:
       material: PAPER
       generate: false
-      model_path: item/bulk/dough_rotten
+      model_path: item/bulk/dough_mouldy
 
   wood_model:
     display_name: "Wood (Oven)"

@@ -100,7 +100,7 @@ public final class BakingTrayHandler implements Listener {
             return;
         }
 
-        int quality = doughItem.getQualityMin();
+        int quality = doughItem.getEffectiveQuality();
         ItemStack loaf = ItemBuilder.buildComposedWithQuality(loafItem, quality);
         if (loaf == null || FoodItem.fromItem(loaf) == null) {
             event.setCancelled(true);

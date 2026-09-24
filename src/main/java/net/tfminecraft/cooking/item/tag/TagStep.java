@@ -15,6 +15,7 @@ public class TagStep {
     private final double nutritionMultiplier;
     private final double qualityReduce;
     private final double craftQualityPct;
+    private final int stars;
 
     public TagStep(String key, ConfigurationSection config) {
         this(
@@ -24,15 +25,21 @@ public class TagStep {
                 config.getDouble("food-mult", 1.0),
                 config.getDouble("nutrition-mult", 1.0),
                 config.getDouble("quality-reduce", 0.0),
-                config.getDouble("craft-quality-pct", 0.0));
+                config.getDouble("craft-quality-pct", 0.0),
+                config.getInt("stars", 0));
     }
 
     public TagStep(String key, String name, long requiredValue, double foodMultiplier, double nutritionMultiplier) {
-        this(key, name, requiredValue, foodMultiplier, nutritionMultiplier, 0.0, 0.0);
+        this(key, name, requiredValue, foodMultiplier, nutritionMultiplier, 0.0, 0.0, 0);
     }
 
     public TagStep(String key, String name, long requiredValue, double foodMultiplier, double nutritionMultiplier,
             double qualityReduce, double craftQualityPct) {
+        this(key, name, requiredValue, foodMultiplier, nutritionMultiplier, qualityReduce, craftQualityPct, 0);
+    }
+
+    public TagStep(String key, String name, long requiredValue, double foodMultiplier, double nutritionMultiplier,
+            double qualityReduce, double craftQualityPct, int stars) {
         this.id = key;
         this.name = name != null ? name : "Tag";
         try {
@@ -45,6 +52,7 @@ public class TagStep {
         this.nutritionMultiplier = nutritionMultiplier;
         this.qualityReduce = qualityReduce;
         this.craftQualityPct = craftQualityPct;
+        this.stars = stars;
     }
 
     public Tag getTag() {
@@ -66,5 +74,6 @@ public class TagStep {
     public double getNutritionMultiplier() { return nutritionMultiplier; }
     public double getQualityReduce() { return qualityReduce; }
     public double getCraftQualityPct() { return craftQualityPct; }
+    public int getStars() { return stars; }
 }
 

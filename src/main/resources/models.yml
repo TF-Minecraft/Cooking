@@ -3116,12 +3116,36 @@ yeast:
       item: ia.tfmc_cooking:yeast_rotten_model
 
 dough:
+  unrisen:
+    weight: 30
+    tags:
+      - unrisen
+    gui:
+      item: ia.tfmc_cooking:dough_model
+    display:
+      item: ia.tfmc_cooking:dough_model
+  rising:
+    weight: 20
+    tags:
+      - rising
+    gui:
+      item: ia.tfmc_cooking:dough_rising_model
+    display:
+      item: ia.tfmc_cooking:dough_rising_model
+  risen:
+    weight: 10
+    tags:
+      - risen
+    gui:
+      item: ia.tfmc_cooking:dough_risen_model
+    display:
+      item: ia.tfmc_cooking:dough_risen_model
   fresh:
     weight: 1
     tags:
       - fresh
     gui:
-      item: ia.tfmc_cooking:dough
+      item: ia.tfmc_cooking:dough_model
     display:
       item: ia.tfmc_cooking:dough_model
   stale:
@@ -3129,15 +3153,15 @@ dough:
     tags:
       - stale
     gui:
-      item: ia.tfmc_cooking:dough
+      item: ia.tfmc_cooking:dough_model
     display:
       item: ia.tfmc_cooking:dough_model
-  rotten:
-    weight: 1
+  mouldy:
+    weight: 40
     tags:
       - rotten
     gui:
-      item: ia.tfmc_cooking:dough_rotten
+      item: ia.tfmc_cooking:dough_rotten_model
     display:
       item: ia.tfmc_cooking:dough_rotten_model
 

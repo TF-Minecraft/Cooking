@@ -13,6 +13,7 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
+import net.tfminecraft.cooking.utils.DoughRising;
 import net.tfminecraft.cooking.utils.QualityUtils;
 
 public final class CompositionQualityResolver {
@@ -79,7 +80,7 @@ public final class CompositionQualityResolver {
         }
 
         int[] qualities = mains.stream()
-                .mapToInt(item -> QualityUtils.clamp(item.getQualityMin()))
+                .mapToInt(item -> item.getEffectiveQuality())
                 .toArray();
         return QualityUtils.average(qualities);
     }
@@ -94,7 +95,7 @@ public final class CompositionQualityResolver {
 
         for (FoodItem item : mains) {
             for (TagTrack track : item.getTagTracks()) {
-                if (!track.isAgeable()) {
+                if (!track.isAgeable() || DoughRising.TRACK.equals(track.getId())) {
                     continue;
                 }
                 String id = track.getId();
@@ -121,7 +122,7 @@ public final class CompositionQualityResolver {
         double gapDown = CompositionConfig.getGapDownChancePerStar();
 
         for (FoodItem extra : extras) {
-            int extraStars = QualityUtils.clamp(extra.getQualityMin());
+            int extraStars = extra.getEffectiveQuality();
             int gap = extraStars - baseline;
 
             if (gap > 0) {
