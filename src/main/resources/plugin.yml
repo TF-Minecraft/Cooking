@@ -4,7 +4,7 @@ name: Cooking
 version: ${project.version}
 author: Drefvelin
 
-depend: [TLibs, InteractibleFurniture, TFMCCore]
+depend: [TLibs, InteractibleFurniture]
 softdepend: [RPCharacters, MMOCore, CustomCrops, SimpleFactions, CustomFishing]
 
 commands:
