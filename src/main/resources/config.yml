@@ -173,6 +173,7 @@ dictionary:
   vegetable: "#93c47dVegetable"
   fruit: "#e06666Fruit"
   dairy: "#ffd966Dairy"
+  egg: "#f5e6c8Egg"
   spice: "#cc4125Spice"
   herb: "#38761dHerb"
   sauce: "#997950Sauce"

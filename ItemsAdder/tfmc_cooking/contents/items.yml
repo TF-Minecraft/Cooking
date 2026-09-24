@@ -29,6 +29,41 @@ items:
       generate: false
       model_path: item/vanilla/apple_rotten
 
+  egg_rotten:
+    display_name: "Egg Rotten"
+    resource:
+      material: EGG
+      generate: false
+      model_path: item/vanilla/egg_rotten
+
+  fried_egg_raw:
+    display_name: "Fried Egg Raw"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/egg/fried_egg_raw
+
+  fried_egg_cooked:
+    display_name: "Fried Egg Cooked"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/egg/fried_egg_cooked
+
+  fried_egg_burnt:
+    display_name: "Fried Egg Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/egg/fried_egg_burnt
+
+  fried_egg_rotten:
+    display_name: "Fried Egg Rotten"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/egg/fried_egg_rotten
+
   beetroot_rotten:
     display_name: "Beetroot Rotten"
     resource:

@@ -202,7 +202,7 @@ species:
           - { path: m.materials.legendary_wool, amount: 1, weight: 60 }
   CHICKEN:
     grow-up: 45m
-    egg: vanilla
+    egg: "food(type=egg;origin=Egg;tags=freshness.0:cooked.0)"
     slaughter:
       meat: "meat(type=roast;origin=Chicken)"
       drops:
