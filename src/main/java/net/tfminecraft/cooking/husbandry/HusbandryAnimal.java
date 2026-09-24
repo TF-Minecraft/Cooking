@@ -26,6 +26,10 @@ public final class HusbandryAnimal {
     private long careUpRemainderSeconds;
     private long careDownRemainderSeconds;
     private String statsRevision;
+    private String world;
+    private Integer x;
+    private Integer y;
+    private Integer z;
 
     public HusbandryAnimal(UUID uuid, String type, String name) {
         this.uuid = uuid;
@@ -213,6 +217,52 @@ public final class HusbandryAnimal {
             return;
         }
         this.statsRevision = statsRevision.trim();
+    }
+
+    public String world() {
+        return world;
+    }
+
+    public Integer x() {
+        return x;
+    }
+
+    public Integer y() {
+        return y;
+    }
+
+    public Integer z() {
+        return z;
+    }
+
+    public boolean hasLocation() {
+        return world != null && !world.isBlank() && x != null && y != null && z != null;
+    }
+
+    public void setLastLocation(String world, int x, int y, int z) {
+        if (world == null || world.isBlank()) {
+            clearLocation();
+            return;
+        }
+        this.world = world.trim();
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
+
+    public void setStoredLocation(String world, Integer x, Integer y, Integer z) {
+        if (world == null || world.isBlank() || x == null || y == null || z == null) {
+            clearLocation();
+            return;
+        }
+        setLastLocation(world, x, y, z);
+    }
+
+    public void clearLocation() {
+        this.world = null;
+        this.x = null;
+        this.y = null;
+        this.z = null;
     }
 
     private static String sanitizeName(String name) {

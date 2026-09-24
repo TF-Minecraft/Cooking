@@ -1,10 +1,15 @@
 package net.tfminecraft.cooking.husbandry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -126,6 +131,127 @@ class HusbandryRepositoryTest {
         } finally {
             repository.close();
         }
+    }
+
+    @Test
+    void locationRoundTripsAndListsOnlyThatPlayersAnimals(@TempDir Path tempDir) {
+        File dbFile = tempDir.resolve("husbandry.db").toFile();
+        HusbandryRepository repository = HusbandryRepository.open(dbFile);
+        try {
+            UUID player = UUID.randomUUID();
+            UUID other = UUID.randomUUID();
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 10);
+            cow.setLastLocation("world", 120, 64, -340);
+            HusbandryAnimal sheep = animal(UUID.randomUUID(), "SHEEP", "Woolly", 4);
+            HusbandryAnimal pig = animal(UUID.randomUUID(), "PIG", "Ham", 1);
+            repository.upsertAnimals(List.of(cow, sheep, pig));
+            repository.upsertOwner(new HusbandryOwner(cow.uuid(), player, "owner"));
+            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), player, "coowner"));
+            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), other, "owner"));
+            repository.upsertOwner(new HusbandryOwner(pig.uuid(), other, "owner"));
+
+            HusbandryAnimal reloaded = repository.getAnimal(cow.uuid()).orElseThrow();
+            assertEquals("world", reloaded.world());
+            assertEquals(120, reloaded.x());
+            assertEquals(64, reloaded.y());
+            assertEquals(-340, reloaded.z());
+            assertFalse(repository.getAnimal(sheep.uuid()).orElseThrow().hasLocation());
+
+            List<HusbandryOwned> mine = repository.listForPlayer(player);
+            assertEquals(2, mine.size());
+            assertEquals("owner", roleOf(mine, cow.uuid()));
+            assertEquals("coowner", roleOf(mine, sheep.uuid()));
+            assertEquals(1, repository.listForPlayer(other).stream()
+                    .filter(row -> row.animal().uuid().equals(pig.uuid()))
+                    .count());
+            assertTrue(repository.listForPlayer(UUID.randomUUID()).isEmpty());
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void versionSevenGainsLocationColumnsWithoutLosingRows(@TempDir Path tempDir) throws Exception {
+        File dbFile = tempDir.resolve("legacy.db").toFile();
+        UUID uuid = UUID.randomUUID();
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath())) {
+            connection.createStatement().execute("""
+                    CREATE TABLE animals (
+                        uuid TEXT PRIMARY KEY,
+                        type TEXT NOT NULL,
+                        name TEXT NOT NULL DEFAULT '',
+                        state TEXT NOT NULL DEFAULT 'untamed',
+                        genetics INTEGER NOT NULL DEFAULT 0,
+                        care INTEGER NOT NULL DEFAULT 0,
+                        hungry_since INTEGER,
+                        dirty_since INTEGER,
+                        last_processed_at INTEGER NOT NULL,
+                        unloaded_at INTEGER,
+                        affliction_elapsed REAL NOT NULL DEFAULT 0,
+                        affliction_at REAL NOT NULL DEFAULT 0,
+                        last_milk_at INTEGER,
+                        wool_ready_at INTEGER,
+                        neutered INTEGER NOT NULL DEFAULT 0,
+                        loaded_visit_start INTEGER,
+                        mature_at INTEGER,
+                        shed_ready_at INTEGER,
+                        egg_ready_at INTEGER,
+                        care_up_remainder INTEGER NOT NULL DEFAULT 0,
+                        care_down_remainder INTEGER NOT NULL DEFAULT 0,
+                        stats_revision TEXT
+                    )
+                    """);
+            connection.createStatement().execute("PRAGMA user_version = 7");
+            try (PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO animals (uuid, type, name, state, genetics, care, last_processed_at, stats_revision) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
+                insert.setString(1, uuid.toString());
+                insert.setString(2, "GOAT");
+                insert.setString(3, "Nanny");
+                insert.setString(4, "owned");
+                insert.setInt(5, 440);
+                insert.setInt(6, 80);
+                insert.setLong(7, 50L);
+                insert.setString(8, "1");
+                insert.executeUpdate();
+            }
+        }
+
+        HusbandryRepository repository = HusbandryRepository.open(dbFile);
+        try {
+            HusbandryAnimal loaded = repository.getAnimal(uuid).orElseThrow();
+            assertEquals("Nanny", loaded.name());
+            assertEquals(440, loaded.genetics());
+            assertEquals(80, loaded.care());
+            assertFalse(loaded.hasLocation());
+            assertNull(loaded.world());
+            loaded.setLastLocation("tfmc_world", 3, 70, 9);
+            repository.upsertAnimal(loaded);
+        } finally {
+            repository.close();
+        }
+
+        try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + dbFile.getAbsolutePath())) {
+            assertEquals(8, connection.createStatement().executeQuery("PRAGMA user_version").getInt(1));
+        }
+        HusbandryRepository again = HusbandryRepository.open(dbFile);
+        try {
+            HusbandryAnimal loaded = again.getAnimal(uuid).orElseThrow();
+            assertEquals("tfmc_world", loaded.world());
+            assertEquals(3, loaded.x());
+            assertEquals(70, loaded.y());
+            assertEquals(9, loaded.z());
+            assertEquals(440, loaded.genetics());
+        } finally {
+            again.close();
+        }
+    }
+
+    private static String roleOf(List<HusbandryOwned> rows, UUID animalUuid) {
+        return rows.stream()
+                .filter(row -> animalUuid.equals(row.animal().uuid()))
+                .findFirst()
+                .orElseThrow()
+                .role();
     }
 
     private static HusbandryAnimal animal(UUID uuid, String type, String name, int care) {

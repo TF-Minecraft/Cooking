@@ -67,8 +67,9 @@ public final class HusbandryRepository {
                 hungry_since, dirty_since, last_processed_at, unloaded_at,
                 affliction_elapsed, affliction_at, last_milk_at, wool_ready_at,
                 neutered, loaded_visit_start, mature_at, shed_ready_at, egg_ready_at,
-                care_up_remainder, care_down_remainder, stats_revision
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                care_up_remainder, care_down_remainder, stats_revision,
+                world, x, y, z
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(uuid) DO UPDATE SET
                 type = excluded.type,
                 name = excluded.name,
@@ -90,7 +91,11 @@ public final class HusbandryRepository {
                 egg_ready_at = excluded.egg_ready_at,
                 care_up_remainder = excluded.care_up_remainder,
                 care_down_remainder = excluded.care_down_remainder,
-                stats_revision = excluded.stats_revision
+                stats_revision = excluded.stats_revision,
+                world = excluded.world,
+                x = excluded.x,
+                y = excluded.y,
+                z = excluded.z
             """;
 
     private static final String SELECT_ANIMAL = "SELECT * FROM animals WHERE uuid = ?";
@@ -179,6 +184,21 @@ public final class HusbandryRepository {
                 database.execute("ALTER TABLE animals ADD COLUMN stats_revision TEXT");
             }
             database.execute("PRAGMA user_version = 7");
+        }
+        if (version < 8) {
+            if (!hasColumn("animals", "world")) {
+                database.execute("ALTER TABLE animals ADD COLUMN world TEXT");
+            }
+            if (!hasColumn("animals", "x")) {
+                database.execute("ALTER TABLE animals ADD COLUMN x INTEGER");
+            }
+            if (!hasColumn("animals", "y")) {
+                database.execute("ALTER TABLE animals ADD COLUMN y INTEGER");
+            }
+            if (!hasColumn("animals", "z")) {
+                database.execute("ALTER TABLE animals ADD COLUMN z INTEGER");
+            }
+            database.execute("PRAGMA user_version = 8");
         }
     }
 
@@ -310,6 +330,21 @@ public final class HusbandryRepository {
                 animalUuid.toString());
     }
 
+    public List<HusbandryOwned> listForPlayer(UUID playerUuid) {
+        if (playerUuid == null) {
+            return List.of();
+        }
+        return queryList(
+                """
+                SELECT a.*, o.role AS owner_role
+                FROM animals a
+                INNER JOIN owners o ON o.animal_uuid = a.uuid
+                WHERE o.player_uuid = ?
+                """,
+                result -> new HusbandryOwned(mapAnimal(result), result.getString("owner_role")),
+                playerUuid.toString());
+    }
+
     public void checkpointWal(boolean truncate) {
         String mode = truncate ? "TRUNCATE" : "PASSIVE";
         database.execute("PRAGMA wal_checkpoint(" + mode + ")");
@@ -355,7 +390,11 @@ public final class HusbandryRepository {
                 animal.eggReadyAt(),
                 animal.careUpRemainderSeconds(),
                 animal.careDownRemainderSeconds(),
-                blankToNull(animal.statsRevision()));
+                blankToNull(animal.statsRevision()),
+                animal.hasLocation() ? animal.world() : null,
+                animal.hasLocation() ? animal.x() : null,
+                animal.hasLocation() ? animal.y() : null,
+                animal.hasLocation() ? animal.z() : null);
     }
 
     private static HusbandryAnimal mapAnimal(ResultSet result) throws SQLException {
@@ -382,6 +421,11 @@ public final class HusbandryRepository {
         animal.setCareUpRemainderSeconds(intOrZero(result, "care_up_remainder"));
         animal.setCareDownRemainderSeconds(intOrZero(result, "care_down_remainder"));
         animal.setStatsRevision(nullableString(result, "stats_revision"));
+        animal.setStoredLocation(
+                nullableString(result, "world"),
+                nullableInt(result, "x"),
+                nullableInt(result, "y"),
+                nullableInt(result, "z"));
         return animal;
     }
 
@@ -404,6 +448,15 @@ public final class HusbandryRepository {
                 return null;
             }
             return value;
+        } catch (SQLException ex) {
+            return null;
+        }
+    }
+
+    private static Integer nullableInt(ResultSet result, String column) throws SQLException {
+        try {
+            int value = result.getInt(column);
+            return result.wasNull() ? null : value;
         } catch (SQLException ex) {
             return null;
         }

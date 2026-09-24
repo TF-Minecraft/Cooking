@@ -12,6 +12,10 @@ commands:
     description: Cooking admin/debug commands
     usage: /cooking reload | /cooking builditem <string> | /cooking preview <target> ...
     permission: cooking.admin
+  animals:
+    description: List the animals you own and where they were last seen
+    usage: /animals
+    aliases: [livestock]
 
 permissions:
   cooking.admin:

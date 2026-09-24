@@ -51,6 +51,7 @@ public final class HusbandryTickTask {
             if (HusbandrySimulator.visitLongEnough(animal, now)) {
                 HusbandrySimulator.tickLoaded(animal, now);
             }
+            HusbandryLocation.remember(animal, living);
             HusbandryGrowth.applyMaturity(living, animal, now);
             HusbandryMounts.applyStats(living, animal);
             HusbandryShed.tryShed(living, animal, now);
