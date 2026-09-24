@@ -254,9 +254,13 @@ public class MixingBowlHandler implements Listener {
 
         }
 
+        FoodItem ingredient = null;
+
         if (MixingBowlSlots.FLOUR.equals(expectedSlot) || MixingBowlSlots.YEAST.equals(expectedSlot)) {
 
-            if (FoodItem.fromItem(hand) == null) {
+            ingredient = FoodItem.fromItem(hand);
+
+            if (ingredient == null) {
 
                 player.sendMessage("§cUse converted cooking ingredients.");
 
@@ -294,7 +298,7 @@ public class MixingBowlHandler implements Listener {
 
 
 
-        storeIngredientQuality(furniture, expectedSlot, hand);
+        storeIngredientQuality(furniture, expectedSlot, ingredient);
 
         MixingBowlState.setStage(furniture, stage.advance());
 
@@ -407,9 +411,7 @@ public class MixingBowlHandler implements Listener {
 
 
 
-    private void storeIngredientQuality(Furniture furniture, String slotId, ItemStack hand) {
-
-        FoodItem foodItem = FoodItem.fromItem(hand);
+    private void storeIngredientQuality(Furniture furniture, String slotId, FoodItem foodItem) {
 
         if (foodItem == null) {
 
