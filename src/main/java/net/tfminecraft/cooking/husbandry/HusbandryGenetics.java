@@ -12,6 +12,16 @@ public final class HusbandryGenetics {
             int motherCare,
             int fatherCare,
             Random random) {
+        return roll(motherGenetics, fatherGenetics, motherCare, fatherCare, random, HusbandryFeedQuality.FULL_SCALE);
+    }
+
+    public static int roll(
+            int motherGenetics,
+            int fatherGenetics,
+            int motherCare,
+            int fatherCare,
+            Random random,
+            double feedScale) {
         int maxGenetics = HusbandryConfig.maxGenetics();
         int avg = (motherGenetics + fatherGenetics) / 2;
         double varianceBase = maxGenetics / 10.0;
@@ -25,7 +35,8 @@ public final class HusbandryGenetics {
         double careAvg = (motherCare + fatherCare) / 2.0;
         double careRatio = careMax <= 0 ? 0 : Math.max(0, Math.min(1, careAvg / careMax));
         int careExtra = (int) (HusbandryConfig.careInfluence() * maxGenetics * careRatio);
-        int rolled = avg + (int) (bonus * careRatio) + careExtra;
+        int boost = (int) (bonus * careRatio) + careExtra;
+        int rolled = avg + (int) (boost * HusbandryFeedQuality.clampScale(feedScale));
         return Math.max(0, Math.min(maxGenetics, rolled));
     }
 }
