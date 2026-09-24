@@ -6,11 +6,17 @@ import java.util.List;
 public class CarveSequence {
     private final String id;
     private final int startRemaining;
+    private final int minFoodCuts;
     private final List<CarveCut> cuts = new ArrayList<>();
 
     public CarveSequence(String id, int startRemaining, List<CarveCut> cuts) {
+        this(id, startRemaining, 1, cuts);
+    }
+
+    public CarveSequence(String id, int startRemaining, int minFoodCuts, List<CarveCut> cuts) {
         this.id = id;
         this.startRemaining = startRemaining;
+        this.minFoodCuts = minFoodCuts;
         this.cuts.addAll(cuts);
     }
 
@@ -20,6 +26,11 @@ public class CarveSequence {
 
     public int getStartRemaining() {
         return startRemaining;
+    }
+
+    /** Meat portions a slaughtered animal of this sequence always keeps before the bone. */
+    public int getMinFoodCuts() {
+        return minFoodCuts;
     }
 
     public List<CarveCut> getCuts() {

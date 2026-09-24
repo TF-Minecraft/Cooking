@@ -77,7 +77,7 @@ public final class CarvableRoastUtils {
             int edible = Math.max(1, countFoodCuts(seq));
             return item.getBaseFood() * countFoodCutsFrom(seq, item.getCarveNextIndex()) / (double) edible;
         }
-        return seq.sumRemainingFood(item.getCarveNextIndex());
+        return budgetedFood(seq, item.getCarveNextIndex(), budgetedFoodCuts(item, seq));
     }
 
     public static double portionFood(double totalFood, int edibleCuts) {
@@ -103,9 +103,62 @@ public final class CarvableRoastUtils {
         return count;
     }
 
-    /** Visual stage for IA models: raw_1 = whole bird, raw_6 = mostly carved. */
+    /**
+     * Meat portions a slaughtered animal yields, then the closing bone when the sequence has one.
+     * The roast always starts at the first cut. Genetics only changes how many meat cuts follow
+     * before that bone, never below the sequence floor.
+     */
+    public record RoastPortion(int nextIndex, int remaining) {}
+
+    public static RoastPortion portion(CarveSequence seq, int requestedMeatCuts) {
+        int food = countFoodCuts(seq);
+        int min = food == 0 ? 0 : Math.min(food, Math.max(1, seq.getMinFoodCuts()));
+        int meat = Math.max(min, Math.min(food, requestedMeatCuts));
+        int bone = trailingItemIndex(seq) >= 0 ? 1 : 0;
+        return new RoastPortion(0, meat + bone);
+    }
+
+    /** Index of a non-food cut that closes the sequence, or -1 when every cut is meat. */
+    public static int trailingItemIndex(CarveSequence seq) {
+        if (seq == null) return -1;
+        List<CarveCut> cuts = seq.getCuts();
+        for (int i = cuts.size() - 1; i >= 0; i--) {
+            CarveCut cut = cuts.get(i);
+            if (cut.isItemCut()) return i;
+            if (cut.isFoodCut()) return -1;
+        }
+        return -1;
+    }
+
+    /** Visual stage for IA models: stage 1 is the whole roast, the last stage is bone. */
     public static int getVisualCarveStage(FoodItem item) {
-        return item.getCarveNextIndex() + 1;
+        return visualCarveStage(item, getSequence(item));
+    }
+
+    public static int visualCarveStage(FoodItem item, CarveSequence seq) {
+        if (item == null) return 1;
+        if (seq == null || seq.getCuts().isEmpty()) {
+            return Math.max(1, item.getCarveNextIndex() + 1);
+        }
+        int maxStage = Math.max(seq.getStartRemaining(), seq.getCuts().size());
+        maxStage = Math.max(1, maxStage);
+        CarveCut next = seq.getCut(item.getCarveNextIndex());
+        if (next != null && !next.isFoodCut()) {
+            return maxStage;
+        }
+        boolean bone = trailingItemIndex(seq) >= 0;
+        int meatLeft = bone
+                ? Math.max(0, item.getCarveRemaining() - 1)
+                : Math.max(0, item.getCarveRemaining());
+        int meatTaken = Math.max(0, item.getCarveNextIndex());
+        int meatTotal = meatTaken + meatLeft;
+        if (meatTotal <= 0 || meatTaken <= 0) {
+            return meatTaken <= 0 ? 1 : maxStage;
+        }
+        int span = bone ? meatTotal : Math.max(1, meatTotal - 1);
+        int stage = 1 + (int) Math.round(meatTaken * (double) (maxStage - 1) / span);
+        if (stage < 1) return 1;
+        return Math.min(maxStage, stage);
     }
 
     public static ModelData getStageModelData(FoodItem item) {
@@ -135,8 +188,46 @@ public final class CarvableRoastUtils {
     }
 
     public static void advanceAfterCarve(FoodItem item) {
-        item.setCarveNextIndex(item.getCarveNextIndex() + 1);
-        item.setCarveRemaining(Math.max(0, item.getCarveRemaining() - 1));
+        advanceAfterCarve(item, getSequence(item));
+    }
+
+    public static void advanceAfterCarve(FoodItem item, CarveSequence seq) {
+        int next = item.getCarveNextIndex() + 1;
+        int remaining = Math.max(0, item.getCarveRemaining() - 1);
+        if (remaining == 1 && seq != null) {
+            int bone = trailingItemIndex(seq);
+            CarveCut upcoming = seq.getCut(next);
+            if (bone >= 0 && (upcoming == null || upcoming.isFoodCut())) {
+                next = bone;
+            }
+        }
+        item.setCarveNextIndex(next);
+        item.setCarveRemaining(remaining);
+    }
+
+    private static int budgetedFoodCuts(FoodItem item, CarveSequence seq) {
+        CarveCut next = seq.getCut(item.getCarveNextIndex());
+        if (next != null && !next.isFoodCut()) {
+            return 0;
+        }
+        if (trailingItemIndex(seq) >= 0) {
+            return Math.max(0, item.getCarveRemaining() - 1);
+        }
+        return Math.max(0, item.getCarveRemaining());
+    }
+
+    private static double budgetedFood(CarveSequence seq, int fromIndex, int foodCuts) {
+        if (seq == null || foodCuts <= 0) return 0;
+        double total = 0;
+        int counted = 0;
+        List<CarveCut> cuts = seq.getCuts();
+        for (int i = Math.max(0, fromIndex); i < cuts.size() && counted < foodCuts; i++) {
+            CarveCut cut = cuts.get(i);
+            if (!cut.isFoodCut()) continue;
+            total += cut.getFood();
+            counted++;
+        }
+        return total;
     }
 
     public static void copyInheritedTracks(FoodItem parent, FoodItem child) {

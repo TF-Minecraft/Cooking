@@ -35,6 +35,8 @@ exp:
 
 initial-genetic-max: 20
 max-genetics: 1000
+# Meat portions from effective genetics, before the closing bone.
+# Poultry raises this floor to two legs and one filet (carve-sequences.yml).
 min-roast-cuts: 1
 # Bump this string to wild-reset animals with a missing or old id (genetics + care).
 stats-revision: "1"
