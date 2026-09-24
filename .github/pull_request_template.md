@@ -15,5 +15,4 @@
 ## Notes
 
 - Config source is `src/main/resources`. Do not edit `target/`.
-- `plugin.yml` version and `pom.xml` version are known drift. Do not mix a version bump into unrelated work.
 - `cookware.yml` is not loaded.
