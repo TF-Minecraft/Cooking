@@ -1,5 +1,7 @@
 poultry:
   start-remaining: 6
+  # Slaughter never drops below two legs and one filet, then the bone.
+  min-food-cuts: 3
   cuts:
     - output: "meat(type=meat_poultry_leg;origin=Chicken)"
       food: 20.0
@@ -23,6 +25,8 @@ poultry:
 
 red_meat:
   start-remaining: 8
+  # Slaughter never drops below one steak, then the bone.
+  min-food-cuts: 1
   cuts:
     - output: "meat(type=meat_red_meat;origin=Beef)"
       food: 18.0

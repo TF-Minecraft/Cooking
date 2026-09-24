@@ -41,6 +41,9 @@ public class CarveSequenceLoader {
             if (sec == null) continue;
 
             int startRemaining = sec.getInt("start-remaining", 0);
+            int minFoodCuts = sec.contains("min-food-cuts")
+                    ? sec.getInt("min-food-cuts")
+                    : defaultMinFoodCuts(key);
             List<CarveCut> cuts = new ArrayList<>();
 
             for (Map<?, ?> map : sec.getMapList("cuts")) {
@@ -70,7 +73,15 @@ public class CarveSequenceLoader {
                 }
             }
 
-            sequences.put(key.toLowerCase(), new CarveSequence(key, startRemaining, cuts));
+            sequences.put(key.toLowerCase(), new CarveSequence(key, startRemaining, minFoodCuts, cuts));
         }
+    }
+
+    /** Used when an older carve-sequences.yml has no min-food-cuts key. */
+    static int defaultMinFoodCuts(String key) {
+        if ("poultry".equalsIgnoreCase(key)) {
+            return 3;
+        }
+        return 1;
     }
 }
