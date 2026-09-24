@@ -18,6 +18,7 @@ import net.tfminecraft.cooking.loader.NamingLoader;
 import net.tfminecraft.cooking.farming.FarmHarvestListener;
 import net.tfminecraft.cooking.farming.FarmTrampleListener;
 import net.tfminecraft.cooking.farming.FarmingLoader;
+import net.tfminecraft.cooking.husbandry.HusbandryAnimalsCommand;
 import net.tfminecraft.cooking.husbandry.HusbandryBreedListener;
 import net.tfminecraft.cooking.husbandry.HusbandryCareListener;
 import net.tfminecraft.cooking.husbandry.HusbandryDamageListener;
@@ -154,6 +155,9 @@ public class Cooking extends JavaPlugin {
 
         getCommand("cooking").setExecutor(commands);
         getCommand("cooking").setTabCompleter(commands);
+        HusbandryAnimalsCommand animals = new HusbandryAnimalsCommand();
+        getCommand("animals").setExecutor(animals);
+        getCommand("animals").setTabCompleter(animals);
         if (ItemScanService.get() != null) {
             ItemScanService.get().subscribe(tagManager);
             ItemScanService.get().subscribe(legacyFishScan);

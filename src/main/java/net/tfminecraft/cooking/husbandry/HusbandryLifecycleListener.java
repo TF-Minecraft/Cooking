@@ -101,6 +101,10 @@ public final class HusbandryLifecycleListener implements Listener {
         long now = System.currentTimeMillis();
         List<HusbandryAnimal> toSave = new ArrayList<>(snapshot.size());
         for (HusbandryAnimal animal : snapshot) {
+            Entity entity = Bukkit.getEntity(animal.uuid());
+            if (entity != null) {
+                HusbandryLocation.remember(animal, entity);
+            }
             animal.setUnloadedAt(now);
             toSave.add(animal);
         }
@@ -147,6 +151,7 @@ public final class HusbandryLifecycleListener implements Listener {
         }
         HusbandryAnimal animal = stored.get();
         long now = System.currentTimeMillis();
+        HusbandryLocation.remember(animal, living);
         HusbandrySimulator.catchUp(animal, now, java.util.concurrent.ThreadLocalRandom.current());
         HusbandryGrowth.applyMaturity(living, animal, now);
         HusbandryMounts.applyStats(living, animal);
@@ -172,6 +177,7 @@ public final class HusbandryLifecycleListener implements Listener {
             return;
         }
         HusbandryAnimal animal = stored.get();
+        HusbandryLocation.remember(animal, entity);
         animal.setUnloadedAt(System.currentTimeMillis());
         repository.upsertAnimal(animal);
     }
