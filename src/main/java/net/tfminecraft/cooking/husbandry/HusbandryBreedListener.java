@@ -13,16 +13,39 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityEnterLoveModeEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 
 public final class HusbandryBreedListener implements Listener {
+
+    @EventHandler(ignoreCancelled = true)
+    public void onFeed(PlayerInteractEntityEvent event) {
+        if (!(event.getRightClicked() instanceof LivingEntity living)) {
+            return;
+        }
+        if (!HusbandryConfig.isHusbandryType(living.getType())) {
+            return;
+        }
+        Player player = event.getPlayer();
+        ItemStack hand = event.getHand() == EquipmentSlot.OFF_HAND
+                ? player.getInventory().getItemInOffHand()
+                : player.getInventory().getItemInMainHand();
+        HusbandryFeedQuality.offer(
+                living.getUniqueId(),
+                HusbandryFeedQuality.scaleOf(hand),
+                System.currentTimeMillis());
+    }
 
     @EventHandler(ignoreCancelled = true)
     public void onEnterLove(EntityEnterLoveModeEvent event) {
         Entity entity = event.getEntity();
         BlockReason reason = cannotBreed(entity);
         if (reason == BlockReason.NONE) {
+            HusbandryFeedQuality.commitOffer(entity.getUniqueId(), System.currentTimeMillis());
             return;
         }
+        HusbandryFeedQuality.discardOffer(entity.getUniqueId());
         event.setCancelled(true);
         clearLove(entity);
         Player feeder = event.getHumanEntity() instanceof Player player ? player : null;
@@ -60,7 +83,7 @@ public final class HusbandryBreedListener implements Listener {
             return;
         }
 
-        persistBaby(child, mother, father);
+        persistBaby(child, mother, father, event.getBredWith());
         scheduleMountStats(child);
     }
 
@@ -129,7 +152,11 @@ public final class HusbandryBreedListener implements Listener {
 
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.
     @SuppressWarnings("deprecation")
-    private static void persistBaby(LivingEntity child, LivingEntity mother, LivingEntity father) {
+    private static void persistBaby(
+            LivingEntity child,
+            LivingEntity mother,
+            LivingEntity father,
+            ItemStack bredWith) {
         if (child == null) {
             return;
         }
@@ -147,15 +174,17 @@ public final class HusbandryBreedListener implements Listener {
         int fatherGenetics = fatherAnimal == null ? 0 : fatherAnimal.genetics();
         int motherCare = motherAnimal == null ? 0 : motherAnimal.care();
         int fatherCare = fatherAnimal == null ? 0 : fatherAnimal.care();
+        long now = System.currentTimeMillis();
+        double feedScale = HusbandryFeedQuality.consumeBreedingScale(
+                mother.getUniqueId(), father.getUniqueId(), bredWith, now);
         int genetics = HusbandryGenetics.roll(
-                motherGenetics, fatherGenetics, motherCare, fatherCare, ThreadLocalRandom.current());
+                motherGenetics, fatherGenetics, motherCare, fatherCare, ThreadLocalRandom.current(), feedScale);
         String name = HusbandryEntities.displayName(child.getType());
         child.setCustomName(name);
         child.setCustomNameVisible(false);
         HusbandryEntities.applyPersistFlags(child);
         HusbandryEntities.stampManaged(child);
 
-        long now = System.currentTimeMillis();
         HusbandryAnimal baby = new HusbandryAnimal(uuid, child.getType().name(), name);
         baby.setState(HusbandryAnimalState.UNTAMED);
         baby.setGenetics(genetics);

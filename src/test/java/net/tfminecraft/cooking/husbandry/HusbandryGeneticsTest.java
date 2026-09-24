@@ -51,6 +51,37 @@ class HusbandryGeneticsTest {
         assertEquals(0, child);
     }
 
+    @Test
+    void fiveStarFeedMatchesTheUnscaledRoll() {
+        int full = HusbandryGenetics.roll(10, 10, 200, 200, maxBonus());
+        int fiveStars = HusbandryGenetics.roll(
+                10, 10, 200, 200, maxBonus(), HusbandryFeedQuality.scaleForStars(5));
+        assertEquals(68, full);
+        assertEquals(full, fiveStars);
+    }
+
+    @Test
+    void oneStarFeedKeepsOneFifthOfTheBoost() {
+        int child = HusbandryGenetics.roll(
+                10, 10, 200, 200, maxBonus(), HusbandryFeedQuality.scaleForStars(1));
+        assertEquals(21, child);
+    }
+
+    @Test
+    void mixedOneAndFiveStarFeedsUseTheAverage() {
+        double scale = HusbandryFeedQuality.combine(
+                HusbandryFeedQuality.scaleForStars(1),
+                HusbandryFeedQuality.scaleForStars(5));
+        int child = HusbandryGenetics.roll(10, 10, 200, 200, maxBonus(), scale);
+        assertEquals(44, child);
+    }
+
+    @Test
+    void zeroCareIgnoresFeedQuality() {
+        assertEquals(10, HusbandryGenetics.roll(
+                10, 10, 0, 0, maxBonus(), HusbandryFeedQuality.scaleForStars(1)));
+    }
+
     private static Random maxBonus() {
         return new Random() {
             @Override

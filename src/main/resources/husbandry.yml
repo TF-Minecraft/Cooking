@@ -48,6 +48,8 @@ breeding:
   genetic-slowdown-divisor: 0.6
   # Extra gene points at full parent care: this * max-genetics (0.02 -> +20 at 1000).
   care-influence: 0.02
+  # Breeding-food stars scale that bonus (1★ = 20% … 5★ = 100%, same roll as before).
+  # Universal feed and items with no cooking quality count as a full bonus.
 
 amount-from-genetics:
   - min: 0
