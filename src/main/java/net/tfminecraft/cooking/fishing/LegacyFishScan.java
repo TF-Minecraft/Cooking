@@ -6,7 +6,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.tfmccore.itemscan.ItemScanHandler;
+import net.tfminecraft.tlibs.itemscan.ItemScanHandler;
 
 public final class LegacyFishScan implements ItemScanHandler {
 

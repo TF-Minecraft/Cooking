@@ -11,7 +11,7 @@ import org.bukkit.persistence.PersistentDataType;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.Keys;
-import net.tfminecraft.tfmccore.itemscan.ItemScanHandler;
+import net.tfminecraft.tlibs.itemscan.ItemScanHandler;
 
 public class TagManager implements ItemScanHandler {
 

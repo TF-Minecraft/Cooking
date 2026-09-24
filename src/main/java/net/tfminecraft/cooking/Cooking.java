@@ -75,7 +75,7 @@ import net.tfminecraft.cooking.oven.OvenCavityHandler;
 import net.tfminecraft.cooking.oven.OvenCavityManager;
 import net.tfminecraft.cooking.oven.OvenHandler;
 import net.tfminecraft.cooking.oven.OvenLifecycleHandler;
-import net.tfminecraft.tfmccore.itemscan.ItemScanService;
+import net.tfminecraft.tlibs.itemscan.ItemScanService;
 
 public class Cooking extends JavaPlugin {
 
