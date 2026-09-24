@@ -82,6 +82,7 @@ categories:
       - tfmc_cooking:carrot_rotten
       - tfmc_cooking:wheat_rotten
       - tfmc_cooking:apple_rotten
+      - tfmc_cooking:egg_rotten
       - tfmc_cooking:beetroot_rotten
       - tfmc_cooking:potato_rotten
       - tfmc_cooking:cut_carrot
@@ -299,6 +300,10 @@ categories:
       - tfmc_cooking:cream
       - tfmc_cooking:egg_carton
       - tfmc_cooking:fried_egg
+      - tfmc_cooking:fried_egg_raw
+      - tfmc_cooking:fried_egg_cooked
+      - tfmc_cooking:fried_egg_burnt
+      - tfmc_cooking:fried_egg_rotten
       - tfmc_cooking:grilled_mushroom
       - tfmc_cooking:maple_syrup
       - tfmc_cooking:mashed_potatoes

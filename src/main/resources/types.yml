@@ -576,3 +576,22 @@ butter:
     freshness:
       stale: "#c3db81Rancid"
       rotten: "#8B7355Spoiled"
+
+egg:
+  name: "#f5e6c8Egg"
+  model: egg
+  category: egg
+  food: 10
+  nutrition: 6
+  edible-when-cooked: true
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 12
+      burn: 25
+  age:
+    freshness: 1
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"

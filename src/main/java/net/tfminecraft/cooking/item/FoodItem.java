@@ -33,6 +33,7 @@ public class FoodItem {
     private boolean valuable = false;
     private boolean mashable = false;
     private boolean edible = true;
+    private boolean edibleWhenCooked = false;
     private Integer catchSizeCm;
     private String seafoodCutType;
     private String customFishingId;
@@ -83,6 +84,7 @@ public class FoodItem {
         this.valuable = config.getBoolean("valuable", false);
         this.mashable = config.getBoolean("mashable", false);
         this.edible = config.getBoolean("edible", true);
+        this.edibleWhenCooked = config.getBoolean("edible-when-cooked", false);
         this.typeLevelCarveSequence = config.getString("carve-sequence", null);
 
         String modelId = config.getString("model", null);
@@ -155,6 +157,7 @@ public class FoodItem {
         this.valuable = other.valuable;
         this.mashable = other.mashable;
         this.edible = other.edible;
+        this.edibleWhenCooked = other.edibleWhenCooked;
         this.catchSizeCm = other.catchSizeCm;
         this.seafoodCutType = other.seafoodCutType;
         this.customFishingId = other.customFishingId;
@@ -266,8 +269,17 @@ public class FoodItem {
     public boolean isValuable() { return valuable; }
     public boolean isMashable() { return mashable; }
     public void setMashable(boolean mashable) { this.mashable = mashable; }
-    public boolean isEdible() { return edible; }
+    public boolean isEdible() {
+        if (!edible) {
+            return false;
+        }
+        return !edibleWhenCooked || !hasTag(Tag.RAW);
+    }
     public void setEdible(boolean edible) { this.edible = edible; }
+
+    void setEdibleWhenCooked(boolean edibleWhenCooked) {
+        this.edibleWhenCooked = edibleWhenCooked;
+    }
     public Integer getCatchSizeCm() { return catchSizeCm; }
     public void setCatchSizeCm(Integer catchSizeCm) { this.catchSizeCm = catchSizeCm; }
     public String getSeafoodCutType() { return seafoodCutType; }

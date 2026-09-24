@@ -3475,3 +3475,102 @@ seafood_octopus:
       item: ia.tfmc_cooking:octopus_rotten
     display:
       item: ia.tfmc_cooking:octopus_rotten
+
+egg:
+  raw:
+    weight: 1
+    tags:
+      - raw
+    gui:
+      item: v.egg
+    display:
+      item: v.egg
+      furniture:
+        - frying_pan ia.tfmc_cooking:fried_egg_raw
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05
+  raw_rotten:
+    weight: 2
+    tags:
+      - raw
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:egg_rotten
+    display:
+      item: ia.tfmc_cooking:egg_rotten
+      furniture:
+        - frying_pan ia.tfmc_cooking:fried_egg_rotten
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05
+  cooked:
+    weight: 2
+    tags:
+      - cooked
+    gui:
+      item: ia.tfmc_cooking:fried_egg_cooked
+    display:
+      item: ia.tfmc_cooking:fried_egg_cooked
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:fried_egg_burnt
+    display:
+      item: ia.tfmc_cooking:fried_egg_burnt
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05
+  cooked_rotten:
+    weight: 3
+    tags:
+      - cooked
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:fried_egg_rotten
+    display:
+      item: ia.tfmc_cooking:fried_egg_rotten
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05
+  burnt_rotten:
+    weight: 3
+    tags:
+      - burnt
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:fried_egg_rotten
+    display:
+      item: ia.tfmc_cooking:fried_egg_rotten
+    display-data:
+      scale:
+        x: 3
+        y: 3
+        z: 3
+      position:
+        y: 0.05

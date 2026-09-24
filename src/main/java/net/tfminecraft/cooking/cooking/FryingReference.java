@@ -23,6 +23,7 @@ import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.WarmthUtils;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
@@ -171,6 +172,24 @@ public class FryingReference extends CookingReference {
     }
 
     @Override
+    public void slotAdd(FurnitureSlotItemAddEvent e) {
+        super.slotAdd(e);
+        if (e.isCancelled()) {
+            return;
+        }
+        FoodItem fi = slots.get(e.getSlot().getId());
+        if (fi == null || fi.getModel() == null) {
+            return;
+        }
+        ItemStack shown = ItemUpdater.applyItemUpdate(e.getItem(), fi, f.getId());
+        if (shown != null) {
+            shown.setAmount(1);
+            e.setItem(shown);
+        }
+        e.setDisplayData(fi.getModelData().getDisplayData(f.getId()));
+    }
+
+    @Override
     public void slotRemove(FurnitureSlotItemTakeEvent e) {
         FoodItem fi = slots.remove(e.getSlot().getId());
         ItemStack item = e.getItem();
@@ -187,6 +206,10 @@ public class FryingReference extends CookingReference {
             return;
         }
         if (data.getCurrentTime() < 5) {
+            ItemStack returned = ItemUpdater.applyItemUpdate(item, fi, null);
+            if (returned != null) {
+                e.setItem(returned);
+            }
             slots.put(e.getSlot().getId(), fi);
             return;
         }
@@ -204,7 +227,7 @@ public class FryingReference extends CookingReference {
             CompositionApplier.apply(fi, composed);
         }
 
-        item = ItemUpdater.applyItemUpdate(item, fi, f.getId());
+        item = ItemUpdater.applyItemUpdate(item, fi, null);
         if (item == null) {
             slots.put(e.getSlot().getId(), fi);
             return;

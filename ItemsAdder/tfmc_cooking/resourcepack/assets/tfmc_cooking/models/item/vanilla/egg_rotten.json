@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "tfmc_cooking:item/vanilla/egg_rotten"
+  }
+}
