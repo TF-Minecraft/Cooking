@@ -1,10 +1,12 @@
 package net.tfminecraft.cooking.manager;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.bukkit.inventory.ItemStack;
@@ -14,6 +16,33 @@ import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 class PlateManagerTest {
+
+    @Test
+    void unrecognizedItemDoesNotHideLaterSauce() {
+        Map<String, PlacedSlot> slots = new LinkedHashMap<>();
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID()) {
+            @Override
+            public Map<String, PlacedSlot> getActiveSlots() {
+                return slots;
+            }
+        };
+        ItemStack unrecognized = new ItemStack() {
+            @Override
+            public boolean hasItemMeta() {
+                return false;
+            }
+        };
+        PlacedSlot food = new PlacedSlot(plate, "food_item");
+        food.setModel(unrecognized);
+        slots.put("food_item", food);
+        PlacedSlot sauce = new PlacedSlot(plate, "sauce");
+        sauce.setModel(new ItemStack() {});
+        slots.put("sauce", sauce);
+
+        assertTrue(new PlateManager().hasSauce(plate));
+        assertSame(unrecognized, food.getCurrentItem());
+        assertSame(food, slots.get("food_item"));
+    }
 
     @Test
     void occupiedSauceSlotCountsAsSauceWithoutFoodMetadata() {
