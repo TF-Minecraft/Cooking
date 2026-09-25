@@ -40,6 +40,8 @@ class EggIngredientTest {
         assertTrue(types.contains("edible-when-cooked: true"));
         assertTrue(conversions.contains("v.egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
         assertTrue(husbandry.contains("food(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
+        assertTrue(husbandry.contains("egg-timer: 1h"));
+        assertFalse(husbandry.contains("egg-timer: 10m"));
         for (String id : List.of(
                 "egg_rotten",
                 "fried_egg_raw",

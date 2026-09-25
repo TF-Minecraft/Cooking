@@ -29,7 +29,7 @@ public final class HusbandryConfig {
     private static int growUpSeconds = 3600;
     private static int shedTimerSeconds = 28800;
     private static double shedChance = 0.15;
-    private static int eggTimerSeconds = 600;
+    private static int eggTimerSeconds = 3600;
     private static String tameItem = "";
     private static String coOwnItem = "";
     private static String feedItem = "";
