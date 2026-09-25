@@ -90,6 +90,7 @@ public class PlateManager implements Listener{
                 ItemStack item = slot.getCurrentItem();
                 if(item == null) continue;
                 FoodItem sauce = FoodItem.fromItem(item);
+                if(sauce == null) continue;
                 if(sauce.getCategory().equalsIgnoreCase("sauce")) return true;
             }
         }
