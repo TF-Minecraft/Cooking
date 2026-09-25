@@ -2,6 +2,8 @@ package net.tfminecraft.cooking.manager;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 import java.util.UUID;
 
@@ -12,6 +14,44 @@ import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 class PlateManagerTest {
+
+    @Test
+    void occupiedSauceSlotCountsAsSauceWithoutFoodMetadata() {
+        Furniture plate = plateWithSauceVisual();
+
+        assertTrue(new PlateManager().hasSauce(plate));
+    }
+
+    @Test
+    void existingSauceReturnsBeforeTouchingThePlayerOrLadle() {
+        Furniture plate = plateWithSauceVisual();
+        ItemStack visual = plate.getActiveSlots().get("sauce").getCurrentItem();
+
+        // Null interaction arguments ensure the duplicate attempt exits before using them.
+        assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
+        assertSame(visual, plate.getActiveSlots().get("sauce").getCurrentItem());
+    }
+
+    @Test
+    void emptySauceSlotDoesNotCountAsSauce() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+        plate.getActiveSlots().put("sauce", new PlacedSlot(plate, "sauce"));
+
+        assertFalse(new PlateManager().hasSauce(plate));
+    }
+
+    private Furniture plateWithSauceVisual() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+        PlacedSlot sauce = new PlacedSlot(plate, "sauce");
+        sauce.setModel(new ItemStack() {
+            @Override
+            public boolean hasItemMeta() {
+                throw new AssertionError("Sauce visuals must not be parsed as food");
+            }
+        });
+        plate.getActiveSlots().put("sauce", sauce);
+        return plate;
+    }
 
     @Test
     void sauceCheckIgnoresUnrecognizedItemsWithoutRemovingThem() {
