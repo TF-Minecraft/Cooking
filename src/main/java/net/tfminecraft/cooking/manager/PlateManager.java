@@ -89,7 +89,10 @@ public class PlateManager implements Listener{
             if(!slot.getId().contains("display")) {
                 ItemStack item = slot.getCurrentItem();
                 if(item == null) continue;
+                // addSauce stores an ItemsAdder visual here, without Cooking food metadata.
+                if(slot.getId().equals("sauce")) return true;
                 FoodItem sauce = FoodItem.fromItem(item);
+                if(sauce == null) continue;
                 if(sauce.getCategory().equalsIgnoreCase("sauce")) return true;
             }
         }
