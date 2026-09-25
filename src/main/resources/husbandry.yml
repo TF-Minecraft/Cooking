@@ -10,7 +10,8 @@ milk-cooldown: 20m
 wool-timer: 4h
 shed-timer: 4h
 shed-chance: 0.15
-egg-timer: 10m
+# Time between eggs from a loaded, mature, happy chicken.
+egg-timer: 1h
 
 affliction:
   mean: 6h
