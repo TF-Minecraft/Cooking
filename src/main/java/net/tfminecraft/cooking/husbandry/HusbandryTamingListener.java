@@ -47,7 +47,9 @@ public final class HusbandryTamingListener implements Listener {
 
         if (HusbandryItems.matches(hand, HusbandryConfig.coOwnItem())) {
             event.setCancelled(true);
-            if (clicked instanceof Player target) {
+            if (acceptsLinkedToken(player, hand)) {
+                handleCoOwnOnPlayer(player, player, hand);
+            } else if (clicked instanceof Player target) {
                 handleCoOwnOnPlayer(player, target, hand);
             } else if (clicked instanceof LivingEntity living) {
                 handleCoOwnLink(player, living, hand);
@@ -66,7 +68,7 @@ public final class HusbandryTamingListener implements Listener {
     }
 
     @EventHandler
-    public void onInteractAir(PlayerInteractEvent event) {
+    public void onInteractUse(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
         }
@@ -74,18 +76,23 @@ public final class HusbandryTamingListener implements Listener {
                 && event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) {
             return;
         }
-        if (event.getClickedBlock() != null) {
-            return;
-        }
         ItemStack hand = event.getItem();
         if (!HusbandryItems.matches(hand, HusbandryConfig.coOwnItem())) {
             return;
         }
-        if (HusbandryItems.linkedAnimal(hand) == null) {
+        if (!acceptsLinkedToken(event.getPlayer(), hand)) {
             return;
         }
         event.setCancelled(true);
         handleCoOwnOnPlayer(event.getPlayer(), event.getPlayer(), hand);
+    }
+
+    private static boolean acceptsLinkedToken(Player player, ItemStack hand) {
+        UUID linked = HusbandryCoOwnToken.parse(HusbandryItems.linkedAnimal(hand));
+        return HusbandryCoOwnToken.accepts(
+                linked,
+                HusbandryOwnershipService.hasAnyOwner(linked),
+                HusbandryOwnershipService.isOwner(player, linked));
     }
 
     private static void handleTame(Player player, LivingEntity entity, ItemStack hand) {
