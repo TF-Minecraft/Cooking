@@ -116,4 +116,45 @@ class PlateManagerTest {
 
         assertFalse(new PlateManager().hasSauce(plate));
     }
+
+    @Test
+    void sauceIsLeftoverOnceTheLastFoodLeaves() {
+        Furniture plate = plateWithSauceVisual();
+        plate.getActiveSlots().put("item_1", new PlacedSlot(plate, "item_1"));
+
+        assertFalse(new PlateManager().hasLeftoverSauce(plate, null));
+        assertTrue(new PlateManager().hasLeftoverSauce(plate, "item_1"));
+    }
+
+    @Test
+    void sauceStaysWhileOtherFoodRemains() {
+        Furniture plate = plateWithSauceVisual();
+        plate.getActiveSlots().put("item_1", new PlacedSlot(plate, "item_1"));
+        plate.getActiveSlots().put("item_2", new PlacedSlot(plate, "item_2"));
+
+        assertFalse(new PlateManager().hasLeftoverSauce(plate, "item_1"));
+    }
+
+    @Test
+    void sauceAloneOnAPlateIsLeftover() {
+        assertTrue(new PlateManager().hasLeftoverSauce(plateWithSauceVisual(), null));
+    }
+
+    @Test
+    void plateWithoutSauceHasNoLeftover() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+        plate.getActiveSlots().put("item_1", new PlacedSlot(plate, "item_1"));
+
+        assertFalse(new PlateManager().hasLeftoverSauce(plate, null));
+        assertFalse(new PlateManager().hasLeftoverSauce(plate, "item_1"));
+    }
+
+    @Test
+    void sauceOnAnEmptyPlateReturnsBeforeTouchingThePlayerOrLadle() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+
+        // Null interaction arguments ensure the empty-plate attempt exits before using them.
+        assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
+        assertTrue(plate.getActiveSlots().isEmpty());
+    }
 }

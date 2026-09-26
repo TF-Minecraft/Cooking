@@ -10,6 +10,7 @@ import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -31,6 +32,7 @@ import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
+import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
@@ -56,6 +58,11 @@ public class PlateManager implements Listener{
     }
 
     public void update(Furniture f) {
+        // Also clears plates saved with leftover sauce before the take handler existed.
+        if(hasLeftoverSauce(f, null)) {
+            f.removeActiveSlot("sauce");
+            InteractibleFurniture.getInstance().getFurnitureManager().persistFurniture(f);
+        }
         for(PlacedSlot slot : f.getActiveSlots().values()) {
             if(slot.getId().contains("display")) continue;
             ItemStack item = slot.getCurrentItem();
@@ -99,10 +106,35 @@ public class PlateManager implements Listener{
         return false;
     }
 
+    /**
+     * True when the plate shows a sauce visual but no food would remain once {@code leavingSlot}
+     * is gone. A leftover sauce visual makes hasSauce reject the next dish on the plate.
+     */
+    boolean hasLeftoverSauce(Furniture f, String leavingSlot) {
+        if(!f.hasActiveSlot("sauce")) return false;
+        for(String id : f.getActiveSlots().keySet()) {
+            if(id.equals("sauce") || id.equals(leavingSlot)) continue;
+            return false;
+        }
+        return true;
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void takeItem(FurnitureSlotItemTakeEvent e) {
+        Furniture f = e.getFurniture();
+        if(!FurnitureCache.isPlate(f)) return;
+        // The taken slot is still active here; InteractibleFurniture removes it and saves the plate next.
+        if(hasLeftoverSauce(f, e.getSlot().getId())) {
+            f.removeActiveSlot("sauce");
+        }
+    }
+
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.
     @SuppressWarnings("deprecation")
     public void addSauce(Player p, Furniture f, FoodItem sauce, ItemStack base) {
         if (hasSauce(f)) return;
+        // Sauce on an empty plate would never reach food added later, so keep the ladle full.
+        if (f.getActiveSlots().isEmpty()) return;
 
         // Replace player ladle with empty ladle
         p.getInventory().setItemInMainHand(
