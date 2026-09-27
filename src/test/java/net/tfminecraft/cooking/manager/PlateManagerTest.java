@@ -159,6 +159,23 @@ class PlateManagerTest {
     }
 
     @Test
+    void sauceOnAPlateWithoutLoadedFoodReturnsBeforeTouchingThePlayerOrLadle() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+        plate.getActiveSlots().put("item_1", new PlacedSlot(plate, "item_1"));
+        PlacedSlot unrecognized = new PlacedSlot(plate, "item_2");
+        unrecognized.setModel(new ItemStack() {
+            @Override
+            public boolean hasItemMeta() {
+                return false;
+            }
+        });
+        plate.getActiveSlots().put("item_2", unrecognized);
+
+        assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
+        assertFalse(plate.hasActiveSlot("sauce"));
+    }
+
+    @Test
     void displaySlotsDoNotCountAsFood() {
         Furniture plate = plateWithSauceVisual();
         plate.getActiveSlots().put("display_1", new PlacedSlot(plate, "display_1"));

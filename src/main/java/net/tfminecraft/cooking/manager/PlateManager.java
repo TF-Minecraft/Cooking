@@ -125,6 +125,16 @@ public class PlateManager implements Listener{
         return false;
     }
 
+    // Food addSauce can actually apply the sauce to.
+    private boolean hasSauceableFood(Furniture f) {
+        for(PlacedSlot slot : f.getActiveSlots().values()) {
+            if(slot.getId().equals("sauce") || slot.getId().contains("display")) continue;
+            ItemStack item = slot.getCurrentItem();
+            if(item != null && FoodItem.fromItem(item) != null) return true;
+        }
+        return false;
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void takeItem(FurnitureSlotItemTakeEvent e) {
         Furniture f = e.getFurniture();
@@ -139,8 +149,8 @@ public class PlateManager implements Listener{
     @SuppressWarnings("deprecation")
     public void addSauce(Player p, Furniture f, FoodItem sauce, ItemStack base) {
         if (hasSauce(f)) return;
-        // Sauce on an empty plate would never reach food added later, so keep the ladle full.
-        if (!hasFood(f, null)) return;
+        // Sauce with no food to take it would never reach food added later, so keep the ladle full.
+        if (!hasSauceableFood(f)) return;
 
         // Replace player ladle with empty ladle
         p.getInventory().setItemInMainHand(
