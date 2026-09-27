@@ -66,8 +66,11 @@ final class HusbandryEntityScan {
         } catch (IOException ex) {
             return false;
         }
-        if (data.length < SECTOR * 2) {
+        if (data.length == 0) {
             return true;
+        }
+        if (data.length < SECTOR * 2) {
+            return false;
         }
         boolean complete = true;
         for (int index = 0; index < 1024; index++) {

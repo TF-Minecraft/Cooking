@@ -76,6 +76,18 @@ class HusbandryEntityScanTest {
     }
 
     @Test
+    void truncatedRegionIsIncompleteButEmptyRegionIsNot(@TempDir Path dir) throws IOException {
+        File entities = dir.resolve("entities").toFile();
+        entities.mkdirs();
+        Files.write(new File(entities, "r.0.0.mca").toPath(), new byte[0]);
+        List<HusbandryEntityScan.WorldDir> worlds = List.of(new HusbandryEntityScan.WorldDir("world", entities));
+        assertTrue(HusbandryEntityScan.scan(worlds, Set.of(COW)).complete());
+
+        Files.write(new File(entities, "r.0.1.mca").toPath(), new byte[100]);
+        assertFalse(HusbandryEntityScan.scan(worlds, Set.of(COW)).complete());
+    }
+
+    @Test
     void missingFolderIsSkipped(@TempDir Path dir) {
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
                 List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("nope").toFile())), Set.of(COW));

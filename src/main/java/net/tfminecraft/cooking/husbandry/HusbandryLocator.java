@@ -59,7 +59,7 @@ public final class HusbandryLocator {
         Bukkit.getScheduler().runTaskAsynchronously(Cooking.plugin, () -> {
             HusbandryEntityScan.Result result = HusbandryEntityScan.scan(worlds, targets.keySet());
             if (Cooking.plugin != null && Cooking.plugin.isEnabled()) {
-                Bukkit.getScheduler().runTask(Cooking.plugin, () -> apply(targets, result));
+                Bukkit.getScheduler().runTask(Cooking.plugin, () -> apply(targets, result, worlds));
             }
         });
     }
@@ -73,7 +73,10 @@ public final class HusbandryLocator {
         };
     }
 
-    private static void apply(Map<UUID, Long> targets, HusbandryEntityScan.Result result) {
+    private static void apply(
+            Map<UUID, Long> targets,
+            HusbandryEntityScan.Result result,
+            List<HusbandryEntityScan.WorldDir> worlds) {
         HusbandryRepository repository = HusbandryEntities.repository();
         if (repository == null) {
             return;
@@ -92,7 +95,10 @@ public final class HusbandryLocator {
             }
             HusbandryEntityScan.Found found = result.found().get(uuid);
             if (found == null) {
-                if (result.complete()) {
+                String storedWorld = stored.get().world();
+                // An animal last seen in a world that was not scanned may still be there.
+                if (result.complete() && (storedWorld == null
+                        || worlds.stream().anyMatch(world -> world.world().equals(storedWorld)))) {
                     MISSING.add(uuid);
                     missing++;
                 }
