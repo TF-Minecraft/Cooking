@@ -7,6 +7,8 @@ conversions:
   - v.beetroot vegetable(type=vegetable_1;origin=Beetroot;tags=freshness.0)
   - v.apple fruit(type=fruit_1;origin=Apple;tags=freshness.0)
   - v.egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)
+  - v.blue_egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)
+  - v.brown_egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)
   - v.melon fruit(type=fruit_1;origin=Melon;tags=freshness.0)
   - v.melon_slice fruit(type=fruit_1;origin=Melon Slice;tags=freshness.0)
   - v.pumpkin vegetable(type=vegetable_1;origin=Pumpkin;tags=freshness.0)

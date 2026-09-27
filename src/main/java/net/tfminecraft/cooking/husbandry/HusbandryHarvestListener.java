@@ -214,7 +214,7 @@ public final class HusbandryHarvestListener implements Listener {
             return;
         }
         ItemStack stack = event.getItemDrop().getItemStack();
-        if (stack.getType() != Material.EGG) {
+        if (!HusbandryEggs.isVanillaEgg(stack.getType())) {
             return;
         }
         HusbandryRepository repository = HusbandryEntities.repository();

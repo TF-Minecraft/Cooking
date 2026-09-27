@@ -8,6 +8,11 @@ final class HusbandryEggs {
 
     private HusbandryEggs() {}
 
+    // Cold and warm chicken variants lay blue and brown eggs.
+    static boolean isVanillaEgg(Material material) {
+        return material == Material.EGG || material == Material.BLUE_EGG || material == Material.BROWN_EGG;
+    }
+
     static void tryLay(LivingEntity entity, HusbandryAnimal animal, long nowMillis) {
         if (entity == null || animal == null) {
             return;

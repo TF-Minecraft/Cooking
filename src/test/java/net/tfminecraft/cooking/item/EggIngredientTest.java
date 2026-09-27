@@ -39,6 +39,8 @@ class EggIngredientTest {
 
         assertTrue(types.contains("edible-when-cooked: true"));
         assertTrue(conversions.contains("v.egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
+        assertTrue(conversions.contains("v.blue_egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
+        assertTrue(conversions.contains("v.brown_egg egg(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
         assertTrue(husbandry.contains("food(type=egg;origin=Egg;tags=freshness.0:cooked.0)"));
         assertTrue(husbandry.contains("egg-timer: 1h"));
         assertFalse(husbandry.contains("egg-timer: 10m"));
