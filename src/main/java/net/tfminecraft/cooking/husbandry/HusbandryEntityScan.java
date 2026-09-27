@@ -81,10 +81,15 @@ final class HusbandryEntityScan {
         boolean complete = true;
         for (int index = 0; index < 1024; index++) {
             int entry = readInt(data, index * 4);
-            int offset = (entry >>> 8) * SECTOR;
-            if (offset == 0) {
+            long sectorOffset = (long) (entry >>> 8) * SECTOR;
+            if (sectorOffset == 0) {
                 continue;
             }
+            if (sectorOffset + 5 > data.length) {
+                complete = false;
+                continue;
+            }
+            int offset = (int) sectorOffset;
             try {
                 byte[] chunk = chunkBytes(world, data, offset, regionX * 32 + index % 32, regionZ * 32 + index / 32);
                 if (chunk == null) {
@@ -101,9 +106,6 @@ final class HusbandryEntityScan {
 
     private static byte[] chunkBytes(WorldDir world, byte[] data, int offset, int chunkX, int chunkZ)
             throws IOException {
-        if (offset + 5 > data.length) {
-            return null;
-        }
         int length = readInt(data, offset);
         int compression = data[offset + 4] & 0xFF;
         byte[] raw;
@@ -111,7 +113,7 @@ final class HusbandryEntityScan {
             compression &= 0x7F;
             raw = readBounded(new File(world.entities(), "c." + chunkX + "." + chunkZ + ".mcc"), MAX_CHUNK_BYTES);
         } else {
-            if (length < 1 || offset + 4 + length > data.length) {
+            if (length < 1 || (long) offset + 4 + length > data.length) {
                 return null;
             }
             raw = new byte[length - 1];

@@ -106,6 +106,32 @@ class HusbandryEntityScanTest {
     }
 
     @Test
+    void outOfRangeChunkHeadersAreUnreadable(@TempDir Path dir) throws IOException {
+        File entities = dir.resolve("entities").toFile();
+        entities.mkdirs();
+        byte[] region = new byte[4096 * 3];
+        // Chunk 0 points past the end of the file; chunk 1 claims a 2 GiB payload.
+        region[0] = (byte) 0xFF;
+        region[1] = (byte) 0xFF;
+        region[2] = (byte) 0xFF;
+        region[3] = 1;
+        region[6] = 2;
+        region[7] = 1;
+        region[8192] = 0x7F;
+        region[8193] = (byte) 0xFF;
+        region[8194] = (byte) 0xFF;
+        region[8195] = (byte) 0xFF;
+        region[8196] = 2;
+        Files.write(new File(entities, "r.0.0.mca").toPath(), region);
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("world", entities)), Set.of(COW));
+
+        assertFalse(result.complete());
+        assertTrue(result.found().isEmpty());
+    }
+
+    @Test
     void missingFolderIsSkipped(@TempDir Path dir) {
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
                 List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("nope").toFile())), Set.of(COW));
