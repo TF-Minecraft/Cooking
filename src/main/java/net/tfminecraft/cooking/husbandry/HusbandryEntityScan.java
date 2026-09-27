@@ -31,6 +31,7 @@ final class HusbandryEntityScan {
 
     private static final Pattern REGION = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
     private static final int SECTOR = 4096;
+    private static final int MAX_CHUNK_BYTES = 32 * 1024 * 1024;
 
     private HusbandryEntityScan() {}
 
@@ -41,8 +42,12 @@ final class HusbandryEntityScan {
             return new Result(found, true);
         }
         for (WorldDir world : worlds) {
+            if (!world.entities().exists()) {
+                continue;
+            }
             File[] files = world.entities().listFiles();
             if (files == null) {
+                complete = false;
                 continue;
             }
             for (File file : files) {
@@ -121,7 +126,11 @@ final class HusbandryEntityScan {
             return null;
         }
         try (in) {
-            return in.readAllBytes();
+            byte[] chunk = in.readNBytes(MAX_CHUNK_BYTES + 1);
+            if (chunk.length > MAX_CHUNK_BYTES) {
+                throw new IOException("Entity chunk larger than " + MAX_CHUNK_BYTES + " bytes");
+            }
+            return chunk;
         }
     }
 
@@ -181,14 +190,12 @@ final class HusbandryEntityScan {
             String key = in.readUTF();
             if (type == INT_ARRAY && key.equals("UUID")) {
                 int size = in.readInt();
-                int[] parts = new int[size];
-                for (int i = 0; i < size; i++) {
-                    parts[i] = in.readInt();
-                }
                 if (size == 4) {
                     uuid = new UUID(
-                            ((long) parts[0] << 32) | (parts[1] & 0xFFFFFFFFL),
-                            ((long) parts[2] << 32) | (parts[3] & 0xFFFFFFFFL));
+                            ((long) in.readInt() << 32) | (in.readInt() & 0xFFFFFFFFL),
+                            ((long) in.readInt() << 32) | (in.readInt() & 0xFFFFFFFFL));
+                } else {
+                    in.skipNBytes(4L * size);
                 }
             } else if (type == LIST && key.equals("Pos")) {
                 byte element = in.readByte();

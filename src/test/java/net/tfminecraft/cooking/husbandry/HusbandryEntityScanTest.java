@@ -88,6 +88,24 @@ class HusbandryEntityScanTest {
     }
 
     @Test
+    void corruptUuidLengthIsUnreadableNotAnAllocation(@TempDir Path dir) throws IOException {
+        File entities = dir.resolve("entities").toFile();
+        entities.mkdirs();
+        Body corrupt = out -> {
+            out.writeByte(11);
+            out.writeUTF("UUID");
+            out.writeInt(Integer.MAX_VALUE);
+        };
+        writeRegion(new File(entities, "r.0.0.mca"), Map.of(0, zlib(chunk(corrupt))), Map.of());
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("world", entities)), Set.of(COW));
+
+        assertFalse(result.complete());
+        assertTrue(result.found().isEmpty());
+    }
+
+    @Test
     void missingFolderIsSkipped(@TempDir Path dir) {
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
                 List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("nope").toFile())), Set.of(COW));
