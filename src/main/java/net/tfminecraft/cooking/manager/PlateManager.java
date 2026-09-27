@@ -181,10 +181,17 @@ public class PlateManager implements Listener{
 
         if (f.getType() == null || f.getType().getSlot("sauce") == null) return;
         if(f.hasActiveSlot("sauce")) return;
-        String saucePath = CategoryDictionary.getSauceItemPath(
-            StringFormatter.extractHexColor(base.getItemMeta().getDisplayName()), 1);
+        ItemMeta baseMeta = base.getItemMeta();
+        String saucePath = CategoryDictionary.getSauceItemPath(sauceColour(
+            baseMeta.getPersistentDataContainer().get(Keys.SAUCE_COLOUR, PersistentDataType.STRING),
+            baseMeta.getDisplayName()), 1);
         f.getOrCreatePlacedSlot("sauce").forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(saucePath));
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
+    }
+
+    /** Sauce colour stored at scoop time; ladles scooped before it existed fall back to the name's colour. */
+    static String sauceColour(String stored, String displayName) {
+        return stored != null ? stored : StringFormatter.extractHexColor(displayName);
     }
 
     public void addSoup(Player p, Furniture f, FoodItem soup, ItemStack base) {

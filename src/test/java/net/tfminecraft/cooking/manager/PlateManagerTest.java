@@ -1,7 +1,9 @@
 package net.tfminecraft.cooking.manager;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,6 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
+import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 class PlateManagerTest {
 
@@ -173,6 +176,17 @@ class PlateManagerTest {
 
         assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
         assertFalse(plate.hasActiveSlot("sauce"));
+    }
+
+    @Test
+    void storedSauceColourWinsOverTheName() {
+        assertEquals("#ffffff", PlateManager.sauceColour("#ffffff", "§fMixed Sauce"));
+    }
+
+    @Test
+    void ladlesWithoutAStoredColourFallBackToTheName() {
+        assertEquals("#185d15", PlateManager.sauceColour(null, StringFormatter.formatHex("#185d15Basil Sauce")));
+        assertNull(PlateManager.sauceColour(null, "000000Mixed Sauce"));
     }
 
     @Test

@@ -41,6 +41,9 @@ public class Keys {
             new NamespacedKey(Cooking.plugin, "sauce");
     public static final NamespacedKey SAUCE_NAME =
             new NamespacedKey(Cooking.plugin, "sauce_name");
+    /** Merged {@code #rrggbb} colour of a scooped sauce; plates pick their sauce visual from it. */
+    public static final NamespacedKey SAUCE_COLOUR =
+            new NamespacedKey(Cooking.plugin, "sauce_colour");
     public static final NamespacedKey CARVE_SEQUENCE =
             new NamespacedKey(Cooking.plugin, "carve_sequence");
     public static final NamespacedKey CARVE_NEXT_INDEX =

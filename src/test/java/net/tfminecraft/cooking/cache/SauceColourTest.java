@@ -67,10 +67,8 @@ class SauceColourTest {
     }
 
     @Test
-    void milkOnlySauceNameShowsTheMilkVisual() {
-        String name = StringFormatter.formatHex(
-                DisplayUtils.getNameColour(DisplayUtils.getMergedColour(List.of("ffffff"))) + "Mixed Sauce");
-
-        assertEquals(MILK_PLATED, CategoryDictionary.getSauceItemPath(StringFormatter.extractHexColor(name), 1));
+    void milkOnlySauceColourShowsTheMilkVisual() {
+        // Scooping stores this merged colour on the ladle; the name alone can't carry it (Paper keeps #ffffff as named white).
+        assertEquals(MILK_PLATED, CategoryDictionary.getSauceItemPath(DisplayUtils.getMergedColour(List.of("ffffff")), 1));
     }
 }

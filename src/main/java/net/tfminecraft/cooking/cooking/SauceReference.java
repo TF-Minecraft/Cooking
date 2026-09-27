@@ -20,6 +20,8 @@ import org.bukkit.inventory.ItemStack;
 
 import org.bukkit.inventory.meta.ItemMeta;
 
+import org.bukkit.persistence.PersistentDataType;
+
 
 
 import net.tfminecraft.tlibs.TLibs;
@@ -57,6 +59,8 @@ import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.FoodParser;
 
 import net.tfminecraft.cooking.utils.ItemBuilder;
+
+import net.tfminecraft.cooking.utils.Keys;
 
 import net.tfminecraft.cooking.utils.StationAddonRules;
 
@@ -306,11 +310,14 @@ public class SauceReference extends CookingReference {
 
 
 
-        String displayName = applyNameTemplate(sauce, DisplayUtils.getMergedColour(colours), "Sauce");
+        String colour = DisplayUtils.getMergedColour(colours);
+        String displayName = applyNameTemplate(sauce, colour, "Sauce");
 
         ItemMeta m = output.getItemMeta();
 
         m.setDisplayName(StringFormatter.formatHex(displayName));
+        // The name can't carry every colour (Paper stores #ffffff as named white), so keep it here too.
+        m.getPersistentDataContainer().set(Keys.SAUCE_COLOUR, PersistentDataType.STRING, colour);
 
         output.setItemMeta(m);
 
