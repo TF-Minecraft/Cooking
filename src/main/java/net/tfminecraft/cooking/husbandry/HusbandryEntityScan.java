@@ -29,9 +29,10 @@ final class HusbandryEntityScan {
     /** {@code complete} is false when some chunk could not be read, so a missing animal may still exist. */
     record Result(Map<UUID, Found> found, boolean complete) {}
 
-    private static final Pattern REGION = Pattern.compile("r\\.(-?\\d+)\\.(-?\\d+)\\.mca");
+    private static final Pattern REGION = Pattern.compile("r\\.(-?\\d{1,7})\\.(-?\\d{1,7})\\.mca");
     private static final int SECTOR = 4096;
     private static final int MAX_CHUNK_BYTES = 32 * 1024 * 1024;
+    private static final int MAX_REGION_BYTES = 256 * 1024 * 1024;
 
     private HusbandryEntityScan() {}
 
@@ -67,7 +68,7 @@ final class HusbandryEntityScan {
             WorldDir world, File file, int regionX, int regionZ, Set<UUID> targets, Map<UUID, Found> found) {
         byte[] data;
         try {
-            data = Files.readAllBytes(file.toPath());
+            data = readBounded(file, MAX_REGION_BYTES);
         } catch (IOException ex) {
             return false;
         }
@@ -108,7 +109,7 @@ final class HusbandryEntityScan {
         byte[] raw;
         if ((compression & 0x80) != 0) {
             compression &= 0x7F;
-            raw = Files.readAllBytes(new File(world.entities(), "c." + chunkX + "." + chunkZ + ".mcc").toPath());
+            raw = readBounded(new File(world.entities(), "c." + chunkX + "." + chunkZ + ".mcc"), MAX_CHUNK_BYTES);
         } else {
             if (length < 1 || offset + 4 + length > data.length) {
                 return null;
@@ -131,6 +132,16 @@ final class HusbandryEntityScan {
                 throw new IOException("Entity chunk larger than " + MAX_CHUNK_BYTES + " bytes");
             }
             return chunk;
+        }
+    }
+
+    private static byte[] readBounded(File file, int max) throws IOException {
+        try (InputStream in = Files.newInputStream(file.toPath())) {
+            byte[] data = in.readNBytes(max + 1);
+            if (data.length > max) {
+                throw new IOException(file.getName() + " is larger than " + max + " bytes");
+            }
+            return data;
         }
     }
 
