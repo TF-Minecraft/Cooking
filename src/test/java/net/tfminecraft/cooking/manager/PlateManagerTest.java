@@ -157,4 +157,21 @@ class PlateManagerTest {
         assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
         assertTrue(plate.getActiveSlots().isEmpty());
     }
+
+    @Test
+    void displaySlotsDoNotCountAsFood() {
+        Furniture plate = plateWithSauceVisual();
+        plate.getActiveSlots().put("display_1", new PlacedSlot(plate, "display_1"));
+
+        assertTrue(new PlateManager().hasLeftoverSauce(plate, null));
+    }
+
+    @Test
+    void sauceOnADisplayOnlyPlateReturnsBeforeTouchingThePlayerOrLadle() {
+        Furniture plate = new Furniture("plate", null, UUID.randomUUID());
+        plate.getActiveSlots().put("display_1", new PlacedSlot(plate, "display_1"));
+
+        assertDoesNotThrow(() -> new PlateManager().addSauce(null, plate, null, null));
+        assertFalse(plate.hasActiveSlot("sauce"));
+    }
 }

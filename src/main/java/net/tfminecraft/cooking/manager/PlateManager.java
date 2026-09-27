@@ -112,11 +112,17 @@ public class PlateManager implements Listener{
      */
     boolean hasLeftoverSauce(Furniture f, String leavingSlot) {
         if(!f.hasActiveSlot("sauce")) return false;
+        return !hasFood(f, leavingSlot);
+    }
+
+    // An active food slot counts even without a loaded item: restore can leave the item unset
+    // while the display still shows the food.
+    private boolean hasFood(Furniture f, String ignoredSlot) {
         for(String id : f.getActiveSlots().keySet()) {
-            if(id.equals("sauce") || id.equals(leavingSlot)) continue;
-            return false;
+            if(id.equals("sauce") || id.contains("display") || id.equals(ignoredSlot)) continue;
+            return true;
         }
-        return true;
+        return false;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -134,7 +140,7 @@ public class PlateManager implements Listener{
     public void addSauce(Player p, Furniture f, FoodItem sauce, ItemStack base) {
         if (hasSauce(f)) return;
         // Sauce on an empty plate would never reach food added later, so keep the ladle full.
-        if (f.getActiveSlots().isEmpty()) return;
+        if (!hasFood(f, null)) return;
 
         // Replace player ladle with empty ladle
         p.getInventory().setItemInMainHand(
