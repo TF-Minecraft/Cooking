@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.husbandry;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
@@ -19,7 +21,8 @@ import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 
 /**
  * Finds owned animals sitting in unloaded chunks by reading the saved entity chunks,
- * so {@code /animals} can point at them. Animals that are not in any saved chunk are marked missing.
+ * so {@code /animals} can point at them. An owned animal that is not in any saved chunk
+ * of a fully scanned world is a ghost: its row is deleted and logged.
  */
 public final class HusbandryLocator {
 
@@ -82,7 +85,9 @@ public final class HusbandryLocator {
             return;
         }
         int located = 0;
+        int dropped = 0;
         int missing = 0;
+        List<String> scannedWorlds = worlds.stream().map(HusbandryEntityScan.WorldDir::world).toList();
         for (Map.Entry<UUID, Long> target : targets.entrySet()) {
             UUID uuid = target.getKey();
             if (HusbandryEntities.getLoaded(uuid).isPresent()) {
@@ -95,10 +100,18 @@ public final class HusbandryLocator {
             }
             HusbandryEntityScan.Found found = result.found().get(uuid);
             if (found == null) {
-                String storedWorld = stored.get().world();
+                HusbandryAnimal animal = stored.get();
                 // An animal last seen in a world that was not scanned may still be there.
-                if (result.complete() && (storedWorld == null
-                        || worlds.stream().anyMatch(world -> world.world().equals(storedWorld)))) {
+                if (!isConfirmedGhost(result.complete(), animal.world(), scannedWorlds)) {
+                    continue;
+                }
+                try {
+                    String line = deleteGhost(repository, animal);
+                    Bukkit.getLogger().warning(line);
+                    dropped++;
+                } catch (SqliteDatabaseException ex) {
+                    Bukkit.getLogger().severe("[Cooking] Failed to drop ghost animal " + uuid
+                            + ": " + ex.getMessage());
                     MISSING.add(uuid);
                     missing++;
                 }
@@ -117,11 +130,56 @@ public final class HusbandryLocator {
                 Bukkit.getLogger().severe("[Cooking] Failed to save husbandry animal location: " + ex.getMessage());
             }
         }
-        if (located > 0 || missing > 0 || !result.complete()) {
-            Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, " + missing
-                    + " owned animals not found in saved chunks"
-                    + (result.complete() ? "." : " (some chunks could not be read, none marked missing)."));
+        if (located > 0 || dropped > 0 || missing > 0 || !result.complete()) {
+            String failed = missing > 0
+                    ? ", " + missing + " still marked missing after a failed drop"
+                    : "";
+            Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, dropped "
+                    + dropped + " ghost animals" + failed
+                    + (result.complete() ? "." : " (some chunks could not be read, none dropped)."));
         }
+    }
+
+    /**
+     * A ghost is an owned animal absent from every saved chunk after a complete scan of its world.
+     * An incomplete scan, or a last world that was not scanned, is not enough to drop the row.
+     */
+    static boolean isConfirmedGhost(boolean scanComplete, String storedWorld, Collection<String> scannedWorlds) {
+        if (!scanComplete) {
+            return false;
+        }
+        if (storedWorld == null || storedWorld.isBlank()) {
+            return true;
+        }
+        return scannedWorlds != null && scannedWorlds.contains(storedWorld);
+    }
+
+    /** Deletes the animal and its owners. Returns the log line for the dropped record. */
+    static String deleteGhost(HusbandryRepository repository, HusbandryAnimal animal) {
+        List<HusbandryOwner> owners = repository.listOwners(animal.uuid());
+        repository.deleteAnimal(animal.uuid());
+        for (HusbandryOwner owner : owners) {
+            repository.deleteOwner(animal.uuid(), owner.playerUuid());
+        }
+        HusbandryEntities.evict(animal.uuid());
+        MISSING.remove(animal.uuid());
+        return ghostLog(animal, owners);
+    }
+
+    static String ghostLog(HusbandryAnimal animal, List<HusbandryOwner> owners) {
+        String name = animal.name() == null || animal.name().isBlank() ? "(unnamed)" : animal.name();
+        String type = animal.type() == null || animal.type().isBlank() ? "unknown" : animal.type();
+        String place = animal.hasLocation()
+                ? animal.world() + " " + animal.x() + ", " + animal.y() + ", " + animal.z()
+                : "unknown";
+        String ownerText = owners == null || owners.isEmpty()
+                ? "none"
+                : owners.stream()
+                        .sorted((left, right) -> left.playerUuid().compareTo(right.playerUuid()))
+                        .map(owner -> owner.playerUuid() + " (" + owner.role() + ")")
+                        .collect(Collectors.joining(", "));
+        return "[Cooking] Dropped ghost animal " + name + " (" + type + ") " + animal.uuid()
+                + " owners=" + ownerText + " last seen " + place;
     }
 
     private static boolean sameLocation(HusbandryAnimal animal, HusbandryEntityScan.Found found) {
