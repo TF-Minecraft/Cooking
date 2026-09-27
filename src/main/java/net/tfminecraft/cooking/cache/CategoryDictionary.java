@@ -25,6 +25,8 @@ public class CategoryDictionary {
     }
 
     public static String getSauceItemPath(String colour, int index) {
+        // Uncoloured names (water-only mixes, or older "000000Mixed Sauce" items) have no hex to read.
+        if (colour == null) return ItemCache.liquidFallback;
         int rTotal = 0, gTotal = 0, bTotal = 0, count = 0;
         String hex = colour.replace("#", "");
         if (hex.equalsIgnoreCase("000000")) return ItemCache.liquidFallback;

@@ -56,9 +56,10 @@ public class DisplayUtils {
         return name + " §8(" + extra.toString() + "§8)";
     }
 
+    /** Average of the stored {@code rrggbb} colours, always as {@code #rrggbb}. */
     public static String getMergedColour(List<String> colours) {
-        if (colours.size() == 0) return "000000";
-        if (colours.size() == 1) return colours.get(0);
+        if (colours.size() == 0) return "#000000";
+        if (colours.size() == 1) return "#" + colours.get(0).replace("#", "");
 
         int r = 0, g = 0, b = 0;
 
@@ -76,6 +77,15 @@ public class DisplayUtils {
 
         // format back to hex, always 2 digits
         return String.format("#%02x%02x%02x", r, g, b);
+    }
+
+    /**
+     * Colour code for a sauce or soup name. A mix of only uncoloured liquids (water) merges to
+     * {@code #000000}, which would print black, so it uses white instead.
+     */
+    public static String getNameColour(String mergedColour) {
+        if (mergedColour == null || mergedColour.replace("#", "").equalsIgnoreCase("000000")) return "&f";
+        return mergedColour;
     }
 
     public static String getSauceStatString(double food, double nutrition) {

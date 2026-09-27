@@ -310,7 +310,7 @@ public class CookingReference {
         if (fillers.isEmpty()) {
             fillers = "Mixed ";
         }
-        displayName = displayName.replace("{colour}", colour == null ? "" : colour);
+        displayName = displayName.replace("{colour}", DisplayUtils.getNameColour(colour));
         displayName = displayName.replace("{prefixes}", NameComposer.formatPrefixes(product));
         displayName = displayName.replace("{fillers}", fillers);
         displayName = displayName.replace("{ingredients}", getName(typeLabel));
