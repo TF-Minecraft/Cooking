@@ -55,6 +55,27 @@ class HusbandryRosterTest {
     }
 
     @Test
+    void missingAnimalsAreFlaggedWithTheirLastKnownSpot() {
+        HusbandryAnimal bess = animal("COW", "Bess");
+        bess.setLastLocation("TFMC_Map", 4369, 167, 1950);
+        HusbandryAnimal ham = animal("PIG", "Ham");
+        HusbandryAnimal woolly = animal("SHEEP", "Woolly");
+        woolly.setLastLocation("TFMC_Map", 10, 64, 10);
+
+        List<String> lines = text(HusbandryRoster.render("Ada", true, List.of(
+                new HusbandryOwned(bess, "owner"),
+                new HusbandryOwned(ham, "owner"),
+                new HusbandryOwned(woolly, "owner")), 15, 1_000L,
+                uuid -> !uuid.equals(woolly.uuid())));
+
+        assertEquals(List.of(
+                "Your animals (3/15)",
+                "• Bess · Cow · Happy · Missing · last seen TFMC_Map 4369, 167, 1950",
+                "• Ham · Pig · Happy · Missing",
+                "• Woolly · Sheep · Happy · TFMC_Map 10, 64, 10"), lines);
+    }
+
+    @Test
     void otherPlayersEmptyListUsesTheirName() {
         List<String> lines = text(HusbandryRoster.render("Ada", false, List.of(), 15, 1_000L));
         assertEquals(List.of(

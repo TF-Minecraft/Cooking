@@ -152,6 +152,7 @@ public final class HusbandryLifecycleListener implements Listener {
         HusbandryAnimal animal = stored.get();
         long now = System.currentTimeMillis();
         HusbandryLocation.remember(animal, living);
+        HusbandryLocator.markFound(uuid);
         HusbandrySimulator.catchUp(animal, now, java.util.concurrent.ThreadLocalRandom.current());
         HusbandryGrowth.applyMaturity(living, animal, now);
         HusbandryMounts.applyStats(living, animal);

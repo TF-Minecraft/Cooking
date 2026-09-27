@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.function.Predicate;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickEvent;
@@ -21,6 +23,16 @@ public final class HusbandryRoster {
             List<HusbandryOwned> owned,
             int maxAnimals,
             long nowMillis) {
+        return render(ownerName, self, owned, maxAnimals, nowMillis, uuid -> false);
+    }
+
+    public static List<Component> render(
+            String ownerName,
+            boolean self,
+            List<HusbandryOwned> owned,
+            int maxAnimals,
+            long nowMillis,
+            Predicate<UUID> missing) {
         List<HusbandryOwned> rows = owned == null ? List.of() : owned;
         int shown = rows.size();
         int cap = Math.max(1, maxAnimals);
@@ -45,7 +57,7 @@ public final class HusbandryRoster {
                 .thenComparing(row -> speciesLabel(row.animal().type()).toLowerCase(Locale.ROOT))
                 .thenComparing(row -> row.animal().uuid() == null ? "" : row.animal().uuid().toString()));
         for (HusbandryOwned row : sorted) {
-            lines.add(line(row, nowMillis));
+            lines.add(line(row, nowMillis, missing.test(row.animal().uuid())));
         }
         return lines;
     }
@@ -79,7 +91,7 @@ public final class HusbandryRoster {
         return speciesLabel(owned.animal().type());
     }
 
-    private static Component line(HusbandryOwned owned, long nowMillis) {
+    private static Component line(HusbandryOwned owned, long nowMillis, boolean missing) {
         HusbandryAnimal animal = owned.animal();
         String species = speciesLabel(animal.type());
         String name = plain(animal.name());
@@ -95,7 +107,17 @@ public final class HusbandryRoster {
         if (!HusbandryGrowth.isMature(animal, nowMillis)) {
             row = row.append(sep()).append(Component.text("Growing", NamedTextColor.GRAY));
         }
-        return row.append(sep()).append(status(animal)).append(sep()).append(place(animal));
+        row = row.append(sep()).append(status(animal));
+        if (missing) {
+            row = row.append(sep()).append(Component.text("Missing", NamedTextColor.RED)
+                    .hoverEvent(HoverEvent.showText(Component.text(
+                            "Not found in any saved chunk when the server started."))));
+            if (!animal.hasLocation()) {
+                return row;
+            }
+            return row.append(sep()).append(Component.text("last seen ", NamedTextColor.GRAY)).append(place(animal));
+        }
+        return row.append(sep()).append(place(animal));
     }
 
     private static Component status(HusbandryAnimal animal) {

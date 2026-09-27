@@ -345,6 +345,16 @@ public final class HusbandryRepository {
                 playerUuid.toString());
     }
 
+    public List<HusbandryAnimal> listOwnedAnimals() {
+        return queryList(
+                """
+                SELECT a.*
+                FROM animals a
+                WHERE EXISTS (SELECT 1 FROM owners o WHERE o.animal_uuid = a.uuid)
+                """,
+                HusbandryRepository::mapAnimal);
+    }
+
     public void checkpointWal(boolean truncate) {
         String mode = truncate ? "TRUNCATE" : "PASSIVE";
         database.execute("PRAGMA wal_checkpoint(" + mode + ")");

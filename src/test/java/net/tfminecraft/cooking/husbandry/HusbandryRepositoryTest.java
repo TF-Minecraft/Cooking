@@ -165,6 +165,14 @@ class HusbandryRepositoryTest {
                     .filter(row -> row.animal().uuid().equals(pig.uuid()))
                     .count());
             assertTrue(repository.listForPlayer(UUID.randomUUID()).isEmpty());
+
+            HusbandryAnimal wild = animal(UUID.randomUUID(), "COW", "", 0);
+            repository.upsertAnimal(wild);
+            assertEquals(
+                    java.util.Set.of(cow.uuid(), sheep.uuid(), pig.uuid()),
+                    repository.listOwnedAnimals().stream()
+                            .map(HusbandryAnimal::uuid)
+                            .collect(java.util.stream.Collectors.toSet()));
         } finally {
             repository.close();
         }

@@ -36,6 +36,7 @@ import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
 import net.tfminecraft.cooking.crops.CropGrowthListener;
 import net.tfminecraft.cooking.crops.CropsLoader;
 import net.tfminecraft.cooking.husbandry.HusbandryLoader;
+import net.tfminecraft.cooking.husbandry.HusbandryLocator;
 import net.tfminecraft.cooking.husbandry.HusbandryRepository;
 import net.tfminecraft.cooking.husbandry.HusbandryTickTask;
 import net.tfminecraft.cooking.loader.PermissionEffectsLoader;
@@ -151,6 +152,7 @@ public class Cooking extends JavaPlugin {
             NutritionDrainTask.start();
             HusbandryLifecycleListener.resumeLoadedWorlds();
             HusbandryTickTask.start();
+            HusbandryLocator.scanUnloaded();
         });
 
         getCommand("cooking").setExecutor(commands);

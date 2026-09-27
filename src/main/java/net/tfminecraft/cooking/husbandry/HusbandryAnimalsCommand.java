@@ -64,7 +64,8 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
             rows.add(new HusbandryOwned(animal, owned.role()));
         }
         for (Component line : HusbandryRoster.render(
-                ownerName, self, rows, HusbandryConfig.maxAnimals(), System.currentTimeMillis())) {
+                ownerName, self, rows, HusbandryConfig.maxAnimals(), System.currentTimeMillis(),
+                HusbandryLocator::isMissing)) {
             sender.sendMessage(line);
         }
         return true;
