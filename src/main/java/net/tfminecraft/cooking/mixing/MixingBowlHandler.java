@@ -319,7 +319,8 @@ public class MixingBowlHandler implements Listener {
         ItemStack converted = IngredientConverter.convertIfNeeded(player, hand);
         if (converted != hand) {
             player.getInventory().setItemInMainHand(converted);
-            hand = converted;
+            // setItemInMainHand stores a copy, so take from the hand itself or nothing is used up.
+            hand = player.getInventory().getItemInMainHand();
         }
 
         FoodItem foodItem = FoodItem.fromItem(hand);

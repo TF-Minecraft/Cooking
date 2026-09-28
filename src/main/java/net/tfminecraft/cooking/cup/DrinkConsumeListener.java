@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.cup;
 
+import java.util.function.Supplier;
+
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -66,24 +68,34 @@ public final class DrinkConsumeListener implements Listener {
         }
 
         int amountBefore = consumed.getAmount();
-        Bukkit.getScheduler().runTask(Cooking.plugin, () -> replaceWithEmptyCup(player, amountBefore));
+        EquipmentSlot hand = event.getHand() == EquipmentSlot.OFF_HAND ? EquipmentSlot.OFF_HAND : EquipmentSlot.HAND;
+        int slot = hand == EquipmentSlot.OFF_HAND ? -1 : player.getInventory().getHeldItemSlot();
+        Bukkit.getScheduler().runTask(Cooking.plugin, () -> replaceWithEmptyCup(player, amountBefore, slot));
     }
 
-    private static void replaceWithEmptyCup(Player player, int amountBefore) {
+    /**
+     * Swaps the glass bottle vanilla leaves in the slot the cup was drunk from for an empty cup.
+     * Only that slot, and only if it still holds the bottle: switching slots within the tick
+     * must neither leave the bottle and add a cup, nor overwrite whatever is held instead.
+     */
+    static void replaceWithEmptyCup(Player player, int amountBefore, int slot) {
+        replaceWithEmptyCup(player, amountBefore, slot, CupItems::emptyCup);
+    }
+
+    static void replaceWithEmptyCup(Player player, int amountBefore, int slot, Supplier<ItemStack> emptyCup) {
         if (amountBefore > 1) {
             return;
         }
-
-        ItemStack empty = CupItems.emptyCup();
-        ItemStack main = player.getInventory().getItemInMainHand();
-        ItemStack off = player.getInventory().getItemInOffHand();
-
-        if (main.getType() == Material.GLASS_BOTTLE || main.getType() == Material.AIR) {
-            player.getInventory().setItemInMainHand(empty);
-        } else if (off.getType() == Material.GLASS_BOTTLE) {
-            player.getInventory().setItemInOffHand(empty);
-        } else if (!ItemCache.isCupOfWater(main) && !ItemCache.isCupOfMilk(main)) {
-            player.getInventory().setItemInMainHand(empty);
+        PlayerInventory inv = player.getInventory();
+        ItemStack left = slot < 0 ? inv.getItemInOffHand() : inv.getItem(slot);
+        if (left != null && left.getType() != Material.GLASS_BOTTLE && left.getType() != Material.AIR) {
+            return;
+        }
+        ItemStack empty = emptyCup.get();
+        if (slot < 0) {
+            inv.setItemInOffHand(empty);
+        } else {
+            inv.setItem(slot, empty);
         }
     }
 

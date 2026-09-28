@@ -106,7 +106,8 @@ public class FryingReference extends CookingReference {
         ItemStack converted = IngredientConverter.convertIfNeeded(p, item);
         if (converted != item) {
             p.getInventory().setItemInMainHand(converted);
-            item = converted;
+            // setItemInMainHand stores a copy, so take from the hand itself or nothing is used up.
+            item = p.getInventory().getItemInMainHand();
         }
 
         FoodItem butterFi = FoodItem.fromItem(item);

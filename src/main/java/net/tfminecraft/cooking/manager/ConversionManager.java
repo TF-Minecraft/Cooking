@@ -23,6 +23,7 @@ import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
+import net.tfminecraft.cooking.utils.Keys;
 
 public class ConversionManager implements Listener {
 
@@ -132,7 +133,7 @@ public class ConversionManager implements Listener {
                 FoodItem fb = FoodItem.fromItem(b);
                 if (fb == null) continue;
 
-                if (InventoryAdder.equalsFood(fa, fb)) {
+                if (InventoryAdder.equalsFood(fa, fb) && sameApartFromAging(a, b)) {
                     ItemStack clone = b.clone();
                     clone.setAmount(a.getAmount());
                     setSlot(i, clone, top, bottom, topSize);
@@ -140,6 +141,31 @@ public class ConversionManager implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * True when two food stacks differ only in how far they have aged, so one can be copied over
+     * the other to let them stack. equalsFood matches by kind and tag step alone, so without this
+     * a carved roast, a sausage chain or a big catch would be replaced by a fresh copy of another.
+     */
+    public static boolean sameApartFromAging(ItemStack a, ItemStack b) {
+        return withoutAging(a).isSimilar(withoutAging(b));
+    }
+
+    private static ItemStack withoutAging(ItemStack item) {
+        ItemStack copy = item.clone();
+        copy.setAmount(1);
+        ItemMeta meta = copy.getItemMeta();
+        if (meta == null) return copy;
+        var pdc = meta.getPersistentDataContainer();
+        // The clock, the progress within each tag step, and the lore written from them.
+        pdc.remove(Keys.LAST_UPDATE);
+        pdc.remove(Keys.AGE_REMAINDER);
+        pdc.remove(Keys.TAGS);
+        pdc.remove(Keys.LORE_INDEX_MAP);
+        meta.lore(null);
+        copy.setItemMeta(meta);
+        return copy;
     }
 
     private ItemStack getSlot(int index, Inventory top, Inventory bottom, int topSize) {

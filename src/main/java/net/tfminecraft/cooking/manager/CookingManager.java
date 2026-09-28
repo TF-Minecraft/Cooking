@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -27,6 +28,7 @@ import net.tfminecraft.cooking.cooking.PotReference;
 import net.tfminecraft.cooking.cooking.SauceReference;
 import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
@@ -76,6 +78,13 @@ public class CookingManager implements Listener {
         }
     }
 
+    /** Drops references to furniture in an unloading chunk; loading it again builds fresh ones. */
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        Chunk chunk = event.getChunk();
+        stations.values().removeIf(ref -> StationChunks.isIn(ref.getFurniture(), chunk));
+    }
+
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
         Chunk chunk = event.getChunk();
@@ -97,7 +106,9 @@ public class CookingManager implements Listener {
 
     private CookingReference getOrCreateReference(Furniture furniture) {
         CookingReference existing = stations.get(furniture.getEntityId());
-        if (existing != null) {
+        // A chunk reload replaces the furniture object under the same UUID. A reference still
+        // holding the old one would hand out items the live furniture also keeps, so rebuild it.
+        if (existing != null && existing.getFurniture() == furniture) {
             return existing;
         }
         Method method = FurnitureCache.getByFurniture(furniture);

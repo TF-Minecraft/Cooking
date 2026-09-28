@@ -16,6 +16,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
@@ -34,6 +35,7 @@ import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.data.CookData;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.cooking.loader.CraftingStationLoader;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -92,7 +94,8 @@ public class CraftingManager implements Listener {
     public CraftingStation getOrCreateStation(Furniture f) {
         if (f.getType() == null) return null;
         CraftingStation existing = stations.get(f.getEntityId());
-        if (existing != null) return existing;
+        // A chunk reload replaces the furniture object under the same UUID; rebuild from the live one.
+        if (existing != null && existing.getFurniture() == f) return existing;
 
         for (CraftingStation template : CraftingStationLoader.get()) {
             if (template.getBlockId().equalsIgnoreCase(f.getType().getId())) {
@@ -103,6 +106,13 @@ public class CraftingManager implements Listener {
             }
         }
         return null;
+    }
+
+    /** Drops stations in an unloading chunk; loading it again builds fresh ones. */
+    @EventHandler
+    public void onChunkUnload(ChunkUnloadEvent event) {
+        Chunk chunk = event.getChunk();
+        stations.values().removeIf(station -> StationChunks.isIn(station.getFurniture(), chunk));
     }
 
     @EventHandler

@@ -18,7 +18,32 @@
         <tlibs.version>2.1.0</tlibs.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Keep MockBukkit's JUnit in line with the one these tests use. -->
+            <dependency>
+                <groupId>org.junit</groupId>
+                <artifactId>junit-bom</artifactId>
+                <version>5.10.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
+        <dependency>
+            <groupId>org.mockbukkit.mockbukkit</groupId>
+            <artifactId>mockbukkit-v1.21</artifactId>
+            <version>4.95.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.20.0</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>local</groupId>
             <artifactId>gson</artifactId>

@@ -136,8 +136,16 @@ public final class SausageMakerHandler implements Listener {
     }
 
     private void finishCrank(Furniture furniture, Player player) {
+        if (!player.isOnline()) {
+            return;
+        }
         List<FoodItem> meats = collectMeats(furniture);
         if (meats.size() < MEAT_SLOTS.length) {
+            return;
+        }
+        // The paper was checked when the crank started; it could have been put away since.
+        if (!hasPaper(player)) {
+            player.sendMessage("§cHold paper to casing.");
             return;
         }
 
