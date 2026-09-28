@@ -76,7 +76,8 @@ public final class DrinkConsumeListener implements Listener {
     /**
      * Swaps the glass bottle vanilla leaves in the slot the cup was drunk from for an empty cup.
      * Only that slot, and only if it still holds the bottle: switching slots within the tick
-     * must neither leave the bottle and add a cup, nor overwrite whatever is held instead.
+     * must neither leave the bottle and add a cup, nor overwrite whatever is held instead. Cups
+     * are potions, so an empty slot means the bottle was moved away, or nothing was used up.
      */
     static void replaceWithEmptyCup(Player player, int amountBefore, int slot) {
         replaceWithEmptyCup(player, amountBefore, slot, CupItems::emptyCup);
@@ -88,7 +89,7 @@ public final class DrinkConsumeListener implements Listener {
         }
         PlayerInventory inv = player.getInventory();
         ItemStack left = slot < 0 ? inv.getItemInOffHand() : inv.getItem(slot);
-        if (left != null && left.getType() != Material.GLASS_BOTTLE && left.getType() != Material.AIR) {
+        if (left == null || left.getType() != Material.GLASS_BOTTLE) {
             return;
         }
         ItemStack empty = emptyCup.get();

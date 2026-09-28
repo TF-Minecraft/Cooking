@@ -158,7 +158,8 @@ public class ConversionManager implements Listener {
         ItemMeta meta = copy.getItemMeta();
         if (meta == null) return copy;
         var pdc = meta.getPersistentDataContainer();
-        // The clock, the progress within each tag step, and the lore written from them.
+        // The clock, the progress within each tag step, and the lore written from them. Food lore
+        // is always rebuilt whole from the item's data (ItemBuilder.stamp), which is compared.
         pdc.remove(Keys.LAST_UPDATE);
         pdc.remove(Keys.AGE_REMAINDER);
         pdc.remove(Keys.TAGS);

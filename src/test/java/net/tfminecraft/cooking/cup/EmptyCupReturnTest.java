@@ -63,6 +63,13 @@ class EmptyCupReturnTest {
 	}
 
 	@Test
+	void aSlotEmptiedOfItsBottleGetsNoCup() {
+		DrinkConsumeListener.replaceWithEmptyCup(player, 1, 3, () -> fail("no cup should be made"));
+
+		assertEquals(Material.AIR, inventory.getItem(3) == null ? Material.AIR : inventory.getItem(3).getType());
+	}
+
+	@Test
 	void theOffHandIsUsedWhenTheCupWasDrunkFromIt() {
 		inventory.setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
 
