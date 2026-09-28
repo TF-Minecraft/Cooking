@@ -9,6 +9,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import net.tfminecraft.cooking.cooking.PotReference;
+import net.tfminecraft.cooking.enums.Method;
+import net.tfminecraft.cooking.item.data.CookParameter;
+import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 
 class PotMashTest {
@@ -28,6 +31,32 @@ class PotMashTest {
         FoodItem raw = food(true, 0);
         PotReference.markBoiled(raw);
         assertEquals(3, raw.getTagTrack("cooked").getValue());
+    }
+
+    @Test
+    void rebuildKeepsSoupAndBoilingPiecesOnly() {
+        FoodItem mashed = piece();
+        mashed.addOrModifyTrack(new TagTrack("mashed", false, List.of(step("mashed"))));
+        assertTrue(PotReference.keepsOnRebuild(mashed));
+
+        FoodItem boiled = piece();
+        boiled.addOrModifyTrack(new TagTrack("cooked", false, List.of(step("cooked"))));
+        boiled.getCookData().getParameters().put(Method.POT, new CookParameter(1, 15, 30));
+        assertTrue(PotReference.keepsOnRebuild(boiled));
+
+        FoodItem panOnly = piece();
+        panOnly.getCookData().getParameters().put(Method.FRYING_PAN, new CookParameter(1, 15, 30));
+        assertFalse(PotReference.keepsOnRebuild(panOnly));
+        assertFalse(PotReference.keepsOnRebuild(piece()));
+        assertFalse(PotReference.keepsOnRebuild(null));
+    }
+
+    private static FoodItem piece() {
+        return new FoodItem("vegetable_cut", "Carrot", true);
+    }
+
+    private static TagStep step(String key) {
+        return new TagStep(key, key, 0, 1.0, 1.0);
     }
 
     private static FoodItem food(boolean mashable, int cooked) {
