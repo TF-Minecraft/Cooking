@@ -42,7 +42,8 @@ public final class HusbandryMountListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTame(EntityTameEvent event) {
         if (event.getOwner() instanceof Player player) {
-            HusbandryClaimHint.send(player, event.getEntity());
+            // The event fires before the animal is tamed, so it cannot report itself as tamed yet.
+            HusbandryClaimHint.send(player, event.getEntity(), false);
         }
     }
 
