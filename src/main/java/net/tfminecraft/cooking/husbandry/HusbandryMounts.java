@@ -8,7 +8,6 @@ import org.bukkit.entity.AbstractHorse;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.inventory.ItemStack;
 
 public final class HusbandryMounts {
 
@@ -20,18 +19,6 @@ public final class HusbandryMounts {
 
     public static boolean hasConfiguredStats(Entity entity) {
         return entity != null && HusbandryConfig.mountStats(entity.getType()) != null;
-    }
-
-    /** Vanilla ownership and equipment survive even when Cooking has no record. */
-    public static boolean isPlayerKeptMount(Entity entity) {
-        if (!(entity instanceof AbstractHorse horse)) {
-            return false;
-        }
-        if (horse.isTamed() || horse.customName() != null) {
-            return true;
-        }
-        ItemStack saddle = horse.getInventory().getSaddle();
-        return saddle != null && !saddle.getType().isAir();
     }
 
     public static boolean shouldWipeUnowned(
