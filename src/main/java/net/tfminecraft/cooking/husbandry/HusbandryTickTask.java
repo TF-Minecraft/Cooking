@@ -1,7 +1,10 @@
 package net.tfminecraft.cooking.husbandry;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
@@ -41,6 +44,7 @@ public final class HusbandryTickTask {
         }
         long now = System.currentTimeMillis();
         List<HusbandryAnimal> dirty = new ArrayList<>();
+        Map<UUID, byte[]> snapshots = new HashMap<>();
         for (HusbandryAnimal animal : HusbandryEntities.snapshotLoaded()) {
             Entity entity = Bukkit.getEntity(animal.uuid());
             if (!(entity instanceof LivingEntity) || entity.isDead()) {
@@ -58,6 +62,12 @@ public final class HusbandryTickTask {
             HusbandryEggs.tryLay(living, animal, now);
             dirty.add(animal);
             HusbandryStateDisplay.sync(living, animal);
+            if (HusbandrySnapshots.shouldCapture(animal)) {
+                byte[] snapshot = HusbandrySnapshots.capture(living, false);
+                if (snapshot != null) {
+                    snapshots.put(animal.uuid(), snapshot);
+                }
+            }
         }
         if (dirty.isEmpty()) {
             return;
@@ -67,5 +77,6 @@ public final class HusbandryTickTask {
         } catch (SqliteDatabaseException ex) {
             Bukkit.getLogger().severe("[Cooking] Failed to persist husbandry tick: " + ex.getMessage());
         }
+        HusbandrySnapshots.save(repository, snapshots);
     }
 }

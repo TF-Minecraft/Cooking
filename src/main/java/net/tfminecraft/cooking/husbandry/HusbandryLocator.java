@@ -22,7 +22,8 @@ import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 /**
  * Finds owned animals sitting in unloaded chunks by reading the saved entity chunks,
  * so {@code /animals} can point at them. An owned animal that is not in any saved chunk
- * of a fully scanned world is a ghost: its row is deleted and logged.
+ * of a fully scanned world, nor under a logged-out rider, was lost from the save: it is
+ * respawned from its snapshot, or, without one, its row is deleted as a ghost and logged.
  */
 public final class HusbandryLocator {
 
@@ -37,6 +38,12 @@ public final class HusbandryLocator {
     static void markFound(UUID uuid) {
         if (uuid != null) {
             MISSING.remove(uuid);
+        }
+    }
+
+    static void markMissing(UUID uuid) {
+        if (uuid != null) {
+            MISSING.add(uuid);
         }
     }
 
@@ -59,8 +66,9 @@ public final class HusbandryLocator {
         for (World world : Bukkit.getWorlds()) {
             worlds.add(new HusbandryEntityScan.WorldDir(world.getName(), entitiesFolder(world)));
         }
+        File playerdata = new File(Bukkit.getWorlds().get(0).getWorldFolder(), "playerdata");
         Bukkit.getScheduler().runTaskAsynchronously(Cooking.plugin, () -> {
-            HusbandryEntityScan.Result result = HusbandryEntityScan.scan(worlds, targets.keySet());
+            HusbandryEntityScan.Result result = HusbandryEntityScan.scan(worlds, playerdata, targets.keySet());
             if (Cooking.plugin != null && Cooking.plugin.isEnabled()) {
                 Bukkit.getScheduler().runTask(Cooking.plugin, () -> apply(targets, result, worlds));
             }
@@ -85,6 +93,7 @@ public final class HusbandryLocator {
             return;
         }
         int located = 0;
+        int restoring = 0;
         int dropped = 0;
         int missing = 0;
         List<String> scannedWorlds = worlds.stream().map(HusbandryEntityScan.WorldDir::world).toList();
@@ -98,11 +107,29 @@ public final class HusbandryLocator {
                 // Loaded or unloaded again during the scan; the stored location is newer.
                 continue;
             }
+            if (result.ridden().contains(uuid)) {
+                // Saved with a rider who logged out; it comes back when they join.
+                MISSING.remove(uuid);
+                continue;
+            }
             HusbandryEntityScan.Found found = result.found().get(uuid);
             if (found == null) {
                 HusbandryAnimal animal = stored.get();
                 // An animal last seen in a world that was not scanned may still be there.
                 if (!isConfirmedGhost(result.complete(), animal.world(), scannedWorlds)) {
+                    continue;
+                }
+                try {
+                    if (HusbandrySnapshots.restore(repository, animal, repository.listOwners(uuid))) {
+                        MISSING.remove(uuid);
+                        restoring++;
+                        continue;
+                    }
+                } catch (SqliteDatabaseException ex) {
+                    Bukkit.getLogger().severe("[Cooking] Failed to read the snapshot of " + uuid
+                            + ": " + ex.getMessage());
+                    MISSING.add(uuid);
+                    missing++;
                     continue;
                 }
                 try {
@@ -130,12 +157,12 @@ public final class HusbandryLocator {
                 Bukkit.getLogger().severe("[Cooking] Failed to save husbandry animal location: " + ex.getMessage());
             }
         }
-        if (located > 0 || dropped > 0 || missing > 0 || !result.complete()) {
+        if (located > 0 || restoring > 0 || dropped > 0 || missing > 0 || !result.complete()) {
             String failed = missing > 0
                     ? ", " + missing + " still marked missing after a failed drop"
                     : "";
-            Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, dropped "
-                    + dropped + " ghost animals" + failed
+            Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, restoring "
+                    + restoring + " lost animals from snapshots, dropped " + dropped + " ghost animals" + failed
                     + (result.complete() ? "." : " (some chunks could not be read, none dropped)."));
         }
     }
@@ -167,19 +194,23 @@ public final class HusbandryLocator {
     }
 
     static String ghostLog(HusbandryAnimal animal, List<HusbandryOwner> owners) {
-        String name = animal.name() == null || animal.name().isBlank() ? "(unnamed)" : animal.name();
-        String type = animal.type() == null || animal.type().isBlank() ? "unknown" : animal.type();
         String place = animal.hasLocation()
                 ? animal.world() + " " + animal.x() + ", " + animal.y() + ", " + animal.z()
                 : "unknown";
+        return "[Cooking] Dropped ghost animal " + describe(animal, owners) + " last seen " + place;
+    }
+
+    /** Name, type, uuid and owners, as the ghost and restore log lines print them. */
+    static String describe(HusbandryAnimal animal, List<HusbandryOwner> owners) {
+        String name = animal.name() == null || animal.name().isBlank() ? "(unnamed)" : animal.name();
+        String type = animal.type() == null || animal.type().isBlank() ? "unknown" : animal.type();
         String ownerText = owners == null || owners.isEmpty()
                 ? "none"
                 : owners.stream()
                         .sorted((left, right) -> left.playerUuid().compareTo(right.playerUuid()))
                         .map(owner -> owner.playerUuid() + " (" + owner.role() + ")")
                         .collect(Collectors.joining(", "));
-        return "[Cooking] Dropped ghost animal " + name + " (" + type + ") " + animal.uuid()
-                + " owners=" + ownerText + " last seen " + place;
+        return name + " (" + type + ") " + animal.uuid() + " owners=" + ownerText;
     }
 
     private static boolean sameLocation(HusbandryAnimal animal, HusbandryEntityScan.Found found) {

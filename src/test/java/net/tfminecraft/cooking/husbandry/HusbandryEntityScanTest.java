@@ -132,6 +132,38 @@ class HusbandryEntityScanTest {
     }
 
     @Test
+    void animalsUnderALoggedOutRiderCountAsRidden(@TempDir Path dir) throws IOException {
+        File entities = dir.resolve("entities").toFile();
+        entities.mkdirs();
+        File playerdata = dir.resolve("playerdata").toFile();
+        playerdata.mkdirs();
+        Files.write(new File(playerdata, RIDER + ".dat").toPath(), gzip(player(entity(HORSE, 5.5, 64.0, 5.5))));
+        // Paper's backup copy is stale and must not count.
+        Files.write(new File(playerdata, RIDER + ".dat_old").toPath(), gzip(player(entity(COW, 1.0, 64.0, 1.0))));
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("TFMC_Map", entities)), playerdata, Set.of(HORSE, COW));
+
+        assertTrue(result.complete());
+        assertEquals(Set.of(HORSE), result.ridden());
+        assertTrue(result.found().isEmpty());
+    }
+
+    @Test
+    void unreadablePlayerFilesMakeTheScanIncomplete(@TempDir Path dir) throws IOException {
+        File playerdata = dir.resolve("playerdata").toFile();
+        playerdata.mkdirs();
+        Files.write(new File(playerdata, RIDER + ".dat").toPath(), new byte[] {1, 2, 3});
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("entities").toFile())),
+                playerdata, Set.of(HORSE));
+
+        assertFalse(result.complete());
+        assertTrue(result.ridden().isEmpty());
+    }
+
+    @Test
     void missingFolderIsSkipped(@TempDir Path dir) {
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
                 List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("nope").toFile())), Set.of(COW));
@@ -188,6 +220,31 @@ class HusbandryEntityScanTest {
             }
             out.writeByte(0);
         };
+    }
+
+    private static byte[] player(Body vehicle) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeByte(10);
+        out.writeUTF("");
+        out.writeByte(8);
+        out.writeUTF("Dimension");
+        out.writeUTF("minecraft:overworld");
+        out.writeByte(10);
+        out.writeUTF("RootVehicle");
+        out.writeByte(11);
+        out.writeUTF("Attach");
+        out.writeInt(4);
+        out.writeInt(1);
+        out.writeInt(2);
+        out.writeInt(3);
+        out.writeInt(4);
+        out.writeByte(10);
+        out.writeUTF("Entity");
+        vehicle.write(out);
+        out.writeByte(0);
+        out.writeByte(0);
+        return bytes.toByteArray();
     }
 
     private static byte[] chunk(Body... entities) throws IOException {

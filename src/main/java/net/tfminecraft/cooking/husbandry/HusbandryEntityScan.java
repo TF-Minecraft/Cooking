@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -17,7 +18,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
 /**
- * Reads saved entity chunks ({@code entities/r.X.Z.mca}) to find where unloaded animals are.
+ * Reads saved entity chunks ({@code entities/r.X.Z.mca}) to find where unloaded animals are,
+ * and player files for animals saved with a rider who logged out ({@code RootVehicle}).
  * Runs off the main thread; it only reads files.
  */
 final class HusbandryEntityScan {
@@ -26,8 +28,11 @@ final class HusbandryEntityScan {
 
     record Found(String world, int x, int y, int z) {}
 
-    /** {@code complete} is false when some chunk could not be read, so a missing animal may still exist. */
-    record Result(Map<UUID, Found> found, boolean complete) {}
+    /**
+     * {@code ridden} holds animals saved under a logged-out rider.
+     * {@code complete} is false when some chunk or player file could not be read, so a missing animal may still exist.
+     */
+    record Result(Map<UUID, Found> found, Set<UUID> ridden, boolean complete) {}
 
     private static final Pattern REGION = Pattern.compile("r\\.(-?\\d{1,7})\\.(-?\\d{1,7})\\.mca");
     private static final int SECTOR = 4096;
@@ -37,10 +42,15 @@ final class HusbandryEntityScan {
     private HusbandryEntityScan() {}
 
     static Result scan(List<WorldDir> worlds, Set<UUID> targets) {
+        return scan(worlds, null, targets);
+    }
+
+    static Result scan(List<WorldDir> worlds, File playerdata, Set<UUID> targets) {
         Map<UUID, Found> found = new HashMap<>();
+        Set<UUID> ridden = new HashSet<>();
         boolean complete = true;
         if (targets.isEmpty()) {
-            return new Result(found, true);
+            return new Result(found, ridden, true);
         }
         for (WorldDir world : worlds) {
             if (!world.entities().exists()) {
@@ -61,7 +71,31 @@ final class HusbandryEntityScan {
                 complete &= scanRegion(world, file, regionX, regionZ, targets, found);
             }
         }
-        return new Result(found, complete);
+        complete &= scanPlayers(playerdata, targets, ridden);
+        return new Result(found, ridden, complete);
+    }
+
+    private static boolean scanPlayers(File playerdata, Set<UUID> targets, Set<UUID> ridden) {
+        if (playerdata == null || !playerdata.exists()) {
+            return true;
+        }
+        File[] files = playerdata.listFiles((dir, name) -> name.endsWith(".dat"));
+        if (files == null) {
+            return false;
+        }
+        boolean complete = true;
+        for (File file : files) {
+            try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(
+                    new GZIPInputStream(new ByteArrayInputStream(readBounded(file, MAX_CHUNK_BYTES)))
+                            .readNBytes(MAX_CHUNK_BYTES)))) {
+                Map<UUID, Found> vehicle = new HashMap<>();
+                readPlayer(in, targets, vehicle);
+                ridden.addAll(vehicle.keySet());
+            } catch (IOException | RuntimeException ex) {
+                complete = false;
+            }
+        }
+        return complete;
     }
 
     private static boolean scanRegion(
@@ -173,6 +207,31 @@ final class HusbandryEntityScan {
             String key = in.readUTF();
             if (type == LIST && key.equals("Entities")) {
                 readEntityList(in, world, targets, found);
+            } else {
+                skip(in, type);
+            }
+        }
+    }
+
+    private static void readPlayer(DataInputStream in, Set<UUID> targets, Map<UUID, Found> found)
+            throws IOException {
+        if (in.readByte() != COMPOUND) {
+            return;
+        }
+        in.readUTF();
+        byte type;
+        while ((type = in.readByte()) != END) {
+            String key = in.readUTF();
+            if (type == COMPOUND && key.equals("RootVehicle")) {
+                byte inner;
+                while ((inner = in.readByte()) != END) {
+                    String innerKey = in.readUTF();
+                    if (inner == COMPOUND && innerKey.equals("Entity")) {
+                        readEntity(in, "", targets, found);
+                    } else {
+                        skip(in, inner);
+                    }
+                }
             } else {
                 skip(in, type);
             }
