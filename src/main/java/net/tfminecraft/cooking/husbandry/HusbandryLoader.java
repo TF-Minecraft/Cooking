@@ -330,6 +330,7 @@ public final class HusbandryLoader {
         HusbandryConfig.setMountSpeedShares(0.40, 0.30, 0.20);
         HusbandryConfig.setBreeding(0.4, 0.4, 0.02);
         HusbandryConfig.setStatsRevision("1");
+        HusbandryConfig.setRestoreLostAnimals(true);
         HusbandryConfig.setProfessionExp("farming", HusbandryExpBracket.of(6, 8));
     }
 }
