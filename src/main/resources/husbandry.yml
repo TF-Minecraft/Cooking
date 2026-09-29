@@ -41,6 +41,8 @@ max-genetics: 1000
 min-roast-cuts: 1
 # Bump this string to wild-reset animals with a missing or old id (genetics + care).
 stats-revision: "1"
+# Respawn an owned animal from its last snapshot when a crash or forced stop loses it from the world save.
+restore-lost-animals: true
 
 breeding:
   # Bigger = larger gene bump per generation.

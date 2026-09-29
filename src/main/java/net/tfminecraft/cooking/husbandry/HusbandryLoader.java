@@ -82,6 +82,7 @@ public final class HusbandryLoader {
                 config.getDouble("breeding.genetic-slowdown-divisor", 0.4),
                 config.getDouble("breeding.care-influence", 0.02));
         HusbandryConfig.setStatsRevision(config.getString("stats-revision", "1"));
+        HusbandryConfig.setRestoreLostAnimals(config.getBoolean("restore-lost-animals", true));
         HusbandryConfig.setProfessionExp(
                 config.getString("profession", "farming"),
                 parseExpBracket(config.getConfigurationSection("exp"), 6, 8));

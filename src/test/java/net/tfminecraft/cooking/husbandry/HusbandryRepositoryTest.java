@@ -262,6 +262,42 @@ class HusbandryRepositoryTest {
                 .role();
     }
 
+    @Test
+    void snapshotsRoundTripAndGoWithTheirAnimal(@TempDir Path tempDir) {
+        File dbFile = tempDir.resolve("husbandry.db").toFile();
+        HusbandryRepository repository = HusbandryRepository.open(dbFile);
+        try {
+            HusbandryAnimal kept = animal(UUID.randomUUID(), "HORSE", "Drake Maye", 200);
+            HusbandryAnimal dropped = animal(UUID.randomUUID(), "HORSE", "gregor", 200);
+            UUID noRow = UUID.randomUUID();
+            repository.upsertAnimals(List.of(kept, dropped));
+
+            repository.upsertSnapshots(
+                    java.util.Map.of(kept.uuid(), new byte[] {1, 2, 3}, dropped.uuid(), new byte[] {4}, noRow,
+                            new byte[] {5}),
+                    100L);
+            HusbandrySnapshot stored = repository.getSnapshot(kept.uuid()).orElseThrow();
+            assertTrue(Arrays.equals(new byte[] {1, 2, 3}, stored.data()));
+            assertEquals(100L, stored.savedAt());
+            assertTrue(repository.getSnapshot(noRow).isEmpty());
+
+            repository.upsertSnapshots(java.util.Map.of(kept.uuid(), new byte[] {9}), 200L);
+            stored = repository.getSnapshot(kept.uuid()).orElseThrow();
+            assertTrue(Arrays.equals(new byte[] {9}, stored.data()));
+            assertEquals(200L, stored.savedAt());
+
+            repository.deleteAnimal(dropped.uuid());
+            assertTrue(repository.getSnapshot(dropped.uuid()).isEmpty());
+
+            repository.deleteSnapshot(kept.uuid());
+            assertTrue(repository.getSnapshot(kept.uuid()).isEmpty());
+            assertTrue(repository.exists(kept.uuid()));
+            assertTrue(repository.getSnapshot(null).isEmpty());
+        } finally {
+            repository.close();
+        }
+    }
+
     private static HusbandryAnimal animal(UUID uuid, String type, String name, int care) {
         HusbandryAnimal animal = new HusbandryAnimal(uuid, type, name);
         animal.setCare(care);

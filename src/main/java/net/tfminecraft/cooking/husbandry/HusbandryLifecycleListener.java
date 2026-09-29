@@ -13,7 +13,9 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityRemoveEvent;
 import org.bukkit.event.world.EntitiesLoadEvent;
 import org.bukkit.event.world.EntitiesUnloadEvent;
 
@@ -32,6 +34,26 @@ public final class HusbandryLifecycleListener implements Listener {
     public void onEntitiesUnload(EntitiesUnloadEvent event) {
         for (Entity entity : event.getEntities()) {
             handleUnload(entity);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onEntityRemove(EntityRemoveEvent event) {
+        handleRemove(event.getEntity().getUniqueId(), event.getCause());
+    }
+
+    static void handleRemove(UUID uuid, EntityRemoveEvent.Cause cause) {
+        if (HusbandrySnapshots.keepsSnapshot(cause) || HusbandryEntities.getLoaded(uuid).isEmpty()) {
+            return;
+        }
+        HusbandryRepository repository = HusbandryEntities.repository();
+        if (repository == null) {
+            return;
+        }
+        try {
+            repository.deleteSnapshot(uuid);
+        } catch (SqliteDatabaseException ex) {
+            Bukkit.getLogger().severe("[Cooking] Failed to drop the snapshot of " + uuid + ": " + ex.getMessage());
         }
     }
 
@@ -100,10 +122,17 @@ public final class HusbandryLifecycleListener implements Listener {
         }
         long now = System.currentTimeMillis();
         List<HusbandryAnimal> toSave = new ArrayList<>(snapshot.size());
+        Map<UUID, byte[]> copies = new HashMap<>();
         for (HusbandryAnimal animal : snapshot) {
             Entity entity = Bukkit.getEntity(animal.uuid());
             if (entity != null) {
                 HusbandryLocation.remember(animal, entity);
+                if (HusbandrySnapshots.shouldCapture(animal)) {
+                    byte[] copy = HusbandrySnapshots.capture(entity, false);
+                    if (copy != null) {
+                        copies.put(animal.uuid(), copy);
+                    }
+                }
             }
             animal.setUnloadedAt(now);
             toSave.add(animal);
@@ -113,6 +142,7 @@ public final class HusbandryLifecycleListener implements Listener {
         } catch (SqliteDatabaseException ex) {
             Bukkit.getLogger().severe("[Cooking] Failed to flush husbandry animals on disable: " + ex.getMessage());
         }
+        HusbandrySnapshots.save(repository, copies);
     }
 
     static void handleLoad(Entity entity) {
@@ -185,5 +215,11 @@ public final class HusbandryLifecycleListener implements Listener {
         HusbandryLocation.remember(animal, entity);
         animal.setUnloadedAt(System.currentTimeMillis());
         repository.upsertAnimal(animal);
+        if (HusbandrySnapshots.shouldCapture(animal)) {
+            byte[] copy = HusbandrySnapshots.capture(entity, true);
+            if (copy != null) {
+                HusbandrySnapshots.save(repository, Map.of(uuid, copy));
+            }
+        }
     }
 }

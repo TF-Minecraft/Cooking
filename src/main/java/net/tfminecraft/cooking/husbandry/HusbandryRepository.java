@@ -8,6 +8,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
@@ -52,6 +53,15 @@ public final class HusbandryRepository {
                 player_uuid TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'owner',
                 PRIMARY KEY (animal_uuid, player_uuid),
+                FOREIGN KEY (animal_uuid) REFERENCES animals(uuid) ON DELETE CASCADE
+            )
+            """;
+
+    private static final String CREATE_SNAPSHOTS = """
+            CREATE TABLE IF NOT EXISTS snapshots (
+                animal_uuid TEXT PRIMARY KEY,
+                data BLOB NOT NULL,
+                saved_at INTEGER NOT NULL,
                 FOREIGN KEY (animal_uuid) REFERENCES animals(uuid) ON DELETE CASCADE
             )
             """;
@@ -108,6 +118,14 @@ public final class HusbandryRepository {
     private static final String DELETE_OWNER = "DELETE FROM owners WHERE animal_uuid = ? AND player_uuid = ?";
     private static final String COUNT_PLAYER = "SELECT COUNT(*) FROM owners WHERE player_uuid = ?";
     private static final String LIST_OWNERS = "SELECT animal_uuid, player_uuid, role FROM owners WHERE animal_uuid = ?";
+    // Skips animals whose row is already gone, so a late snapshot cannot trip the foreign key.
+    private static final String UPSERT_SNAPSHOT = """
+            INSERT INTO snapshots (animal_uuid, data, saved_at)
+            SELECT ?, ?, ? WHERE EXISTS (SELECT 1 FROM animals WHERE uuid = ?)
+            ON CONFLICT(animal_uuid) DO UPDATE SET data = excluded.data, saved_at = excluded.saved_at
+            """;
+    private static final String SELECT_SNAPSHOT = "SELECT data, saved_at FROM snapshots WHERE animal_uuid = ?";
+    private static final String DELETE_SNAPSHOT = "DELETE FROM snapshots WHERE animal_uuid = ?";
 
     private final SqliteDatabase database;
 
@@ -139,6 +157,7 @@ public final class HusbandryRepository {
         database.execute(CREATE_ANIMALS);
         database.execute(CREATE_OWNERS);
         database.execute(INDEX_OWNERS_PLAYER);
+        database.execute(CREATE_SNAPSHOTS);
         migrateSchema();
     }
 
@@ -353,6 +372,44 @@ public final class HusbandryRepository {
                 WHERE EXISTS (SELECT 1 FROM owners o WHERE o.animal_uuid = a.uuid)
                 """,
                 HusbandryRepository::mapAnimal);
+    }
+
+    /** Stores the serialized entities in one transaction; animals without a row are skipped. */
+    public void upsertSnapshots(Map<UUID, byte[]> snapshots, long savedAt) {
+        if (snapshots == null || snapshots.isEmpty()) {
+            return;
+        }
+        database.runTransaction(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(UPSERT_SNAPSHOT)) {
+                for (Map.Entry<UUID, byte[]> snapshot : snapshots.entrySet()) {
+                    if (snapshot.getKey() == null || snapshot.getValue() == null) {
+                        continue;
+                    }
+                    String uuid = snapshot.getKey().toString();
+                    bindParams(statement, uuid, snapshot.getValue(), savedAt, uuid);
+                    statement.executeUpdate();
+                }
+            } catch (SQLException e) {
+                throw new SqliteDatabaseException("Failed to upsert snapshots", e);
+            }
+        });
+    }
+
+    public Optional<HusbandrySnapshot> getSnapshot(UUID uuid) {
+        if (uuid == null) {
+            return Optional.empty();
+        }
+        return queryOne(
+                SELECT_SNAPSHOT,
+                result -> new HusbandrySnapshot(result.getBytes("data"), result.getLong("saved_at")),
+                uuid.toString());
+    }
+
+    public void deleteSnapshot(UUID uuid) {
+        if (uuid == null) {
+            return;
+        }
+        executeUpdate(DELETE_SNAPSHOT, uuid.toString());
     }
 
     public void checkpointWal(boolean truncate) {
