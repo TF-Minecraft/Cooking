@@ -359,14 +359,9 @@ public class PotReference extends CookingReference {
             item.addOrModifyTrack(new TagTrack(TrackLoader.getByString("mashed")));
             applySlotUpdate(entry.getKey(), item);
             updateModel();
-            DisplayData mashed = new DisplayData();
-            mashed.setxScale(0);
-            mashed.setyScale(0);
-            mashed.setzScale(0);
-            mashed.setyPos(-0.4f);
             if (!f.hasActiveSlot(entry.getKey())) continue;
             PlacedSlot slot = f.getActiveSlot(entry.getKey()).get();
-            slot.applyDisplayData(mashed);
+            slot.applyDisplayData(mashedDisplay());
             found = true;
         }
         if(found) {
@@ -581,14 +576,62 @@ public class PotReference extends CookingReference {
         applySoupLevel();
     }
 
+    /** Mashed pieces sink out of sight; the soup liquid shows them. */
+    private static DisplayData mashedDisplay() {
+        DisplayData mashed = new DisplayData();
+        mashed.setxScale(0);
+        mashed.setyScale(0);
+        mashed.setzScale(0);
+        mashed.setyPos(-0.4f);
+        return mashed;
+    }
+
     @Override
     public void rebuildFromFurniture() {
         super.rebuildFromFurniture();
+        restoreMains();
         restoreExtras();
         if (f != null && f.hasActiveSlot("liquid")) {
             secondaries.put("liquid", -1);
         }
+        restoreColours();
         applySoupLevel();
+    }
+
+    /**
+     * The base rebuild keeps raw food only. Soup is mashed and boiled pieces are cooked, so a
+     * chunk reload or restart would drop them: the ladle found no soup and a break dropped them.
+     */
+    private void restoreMains() {
+        if (f == null || f.getType() == null) return;
+        for (String slotId : f.getType().getSlots().keySet()) {
+            if (!slotId.contains("input") || slots.containsKey(slotId)) continue;
+            PlacedSlot placed = f.getActiveSlot(slotId).orElse(null);
+            if (placed == null) continue;
+            FoodItem fi = FoodItem.fromItem(placed.getCurrentItem());
+            if (!keepsOnRebuild(fi)) continue;
+            slots.put(slotId, fi);
+            if (fi.hasTag(Tag.MASHED)) {
+                placed.applyDisplayData(mashedDisplay());
+            }
+        }
+    }
+
+    /** True for food the pot holds as a main: soup pieces and anything that boils. */
+    public static boolean keepsOnRebuild(FoodItem fi) {
+        if (fi == null) return false;
+        if (fi.hasTag(Tag.MASHED)) return true;
+        return fi.canBeCooked() && fi.getCookData().hasMethod(Method.POT);
+    }
+
+    /** Colours are not saved, so rebuild them in the order the pot was filled: water first. */
+    private void restoreColours() {
+        if (f == null || f.getType() == null || !secondaries.containsKey("liquid")) return;
+        addColour("3d85c6");
+        for (String slotId : f.getType().getSlots().keySet()) {
+            if (!slots.containsKey(slotId) || isExtraSlot(slotId)) continue;
+            f.getActiveSlot(slotId).ifPresent(placed -> addColour(ItemCache.getColour(placed.getCurrentItem())));
+        }
     }
 
     /** Each scoop keeps the soup template food. Serving count does not scale it. */

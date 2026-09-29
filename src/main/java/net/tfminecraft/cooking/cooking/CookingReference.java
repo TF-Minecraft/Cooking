@@ -184,6 +184,8 @@ public class CookingReference {
     public void slotAdd(FurnitureSlotItemAddEvent e) {
         ItemStack item = e.getItem();
         FoodItem fi = FoodItem.fromItem(item);
+        // Non-food the slot whitelists (the pot's ladle rest) is the furniture's business.
+        if (fi == null) return;
         if(!fi.canBeCooked()) {
             e.setCancelled(true);
             return;
