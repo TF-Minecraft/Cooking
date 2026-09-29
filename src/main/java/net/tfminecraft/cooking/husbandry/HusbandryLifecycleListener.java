@@ -125,10 +125,11 @@ public final class HusbandryLifecycleListener implements Listener {
         }
         UUID uuid = entity.getUniqueId();
         boolean hasRow = repository.exists(uuid);
+        boolean playerKeptMount = HusbandryMounts.isPlayerKeptMount(entity);
 
         if (HusbandryMounts.shouldWipeUnowned(
                 HusbandryConfig.isRemoveUnowned(entity.getType()),
-                HusbandryOwnershipService.hasAnyOwner(uuid),
+                HusbandryOwnershipService.hasAnyOwner(uuid) || playerKeptMount,
                 hasRow,
                 HusbandryMounts.hasConfiguredStats(entity))) {
             if (hasRow) {
@@ -139,6 +140,9 @@ public final class HusbandryLifecycleListener implements Listener {
             return;
         }
         if (!hasRow) {
+            if (playerKeptMount) {
+                HusbandryEntities.applyPersistFlags(living);
+            }
             return;
         }
 
