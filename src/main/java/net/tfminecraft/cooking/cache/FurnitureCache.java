@@ -90,4 +90,10 @@ public class FurnitureCache {
     public static boolean isMealHolder(Furniture f) {
         return isBowl(f) || isPlate(f);
     }
+
+    // Other plugins' furniture (pedestals, displays) keeps its own slot display.
+    public static boolean isCookingFurniture(Furniture f) {
+        return f.getType() != null
+            && f.getType().getItemPath().toLowerCase().startsWith("ia.tfmc_cooking:");
+    }
 }

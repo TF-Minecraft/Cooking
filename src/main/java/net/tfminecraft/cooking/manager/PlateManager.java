@@ -244,7 +244,7 @@ public class PlateManager implements Listener{
     @EventHandler
     public void addItem(FurnitureSlotItemAddEvent e) {
         Furniture f = e.getFurniture();
-        if(FurnitureCache.isMealHolder(f));
+        if(!FurnitureCache.isCookingFurniture(f)) return;
         ItemStack item = e.getItem();
         FoodItem fi = FoodItem.fromItem(item);
         if(fi == null) return;
