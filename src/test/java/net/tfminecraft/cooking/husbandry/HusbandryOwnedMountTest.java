@@ -54,7 +54,7 @@ class HusbandryOwnedMountTest {
 
     @Test
     void hintExplainsHowToClaimAndTheLimit() {
-        List<String> lines = HusbandryClaimHint.lines("Horse", true, true, 3, 15, false);
+        List<String> lines = HusbandryClaimHint.lines("Horse", true, true, false, 3, 15, false);
         assertEquals(3, lines.size());
         assertTrue(lines.get(0).contains("This horse is not claimed"));
         assertTrue(lines.get(1).contains("Tame it, then right-click it with an Ownership Token"));
@@ -63,7 +63,7 @@ class HusbandryOwnedMountTest {
 
     @Test
     void hintAtCapSaysItCannotBeClaimed() {
-        List<String> lines = HusbandryClaimHint.lines("Donkey", true, false, 15, 15, false);
+        List<String> lines = HusbandryClaimHint.lines("Donkey", true, false, false, 15, 15, false);
         assertTrue(lines.get(1).contains("15/15 animals, so you cannot claim it"));
         assertTrue(lines.get(2).contains("shift-right-click it with an empty hand, then click Remove ownership"));
         assertTrue(lines.get(2).contains("/animals"));
@@ -71,7 +71,7 @@ class HusbandryOwnedMountTest {
 
     @Test
     void unclaimableAnimalsAreNotSentToTheToken() {
-        List<String> lines = HusbandryClaimHint.lines("Wolf", false, false, 0, 15, false);
+        List<String> lines = HusbandryClaimHint.lines("Wolf", false, false, false, 0, 15, false);
         assertEquals(2, lines.size());
         assertTrue(lines.get(0).contains("the next time their area loads"));
         assertTrue(lines.get(1).contains("cannot be claimed"));
@@ -153,14 +153,67 @@ class HusbandryOwnedMountTest {
     }
 
     @Test
+    void riddenUnownedHorseStillGetsTheClaimHint() {
+        Player player = mock(Player.class);
+        UUID playerId = UUID.randomUUID();
+        when(player.getUniqueId()).thenReturn(playerId);
+        Horse horse = horse();
+        UUID horseId = UUID.randomUUID();
+        when(horse.getUniqueId()).thenReturn(horseId);
+        when(horse.getType()).thenReturn(EntityType.HORSE);
+        HusbandryRepository repository = mock(HusbandryRepository.class);
+        // Mounting already enrolled it, so the cleanup keeps it as a wild horse.
+        when(repository.exists(horseId)).thenReturn(true);
+        when(repository.countForPlayer(playerId)).thenReturn(4);
+        try (MockedStatic<HusbandryEntities> entities = mockStatic(HusbandryEntities.class);
+             MockedStatic<HusbandryConfig> config = mockStatic(HusbandryConfig.class);
+             MockedStatic<HusbandryOwnershipService> ownership = mockStatic(HusbandryOwnershipService.class)) {
+            entities.when(HusbandryEntities::repository).thenReturn(repository);
+            entities.when(() -> HusbandryEntities.getLoaded(horseId)).thenReturn(Optional.empty());
+            entities.when(() -> HusbandryEntities.displayName(EntityType.HORSE)).thenReturn("Horse");
+            config.when(() -> HusbandryConfig.isRemoveUnowned(EntityType.HORSE)).thenReturn(true);
+            config.when(() -> HusbandryConfig.mountStats(EntityType.HORSE))
+                    .thenReturn(mock(HusbandryMountStats.class));
+            config.when(() -> HusbandryConfig.species(EntityType.HORSE)).thenReturn(mock(HusbandrySpecies.class));
+            config.when(HusbandryConfig::maxAnimals).thenReturn(15);
+
+            HusbandryClaimHint.send(player, horse, true);
+
+            ArgumentCaptor<String> sent = ArgumentCaptor.forClass(String.class);
+            verify(player, times(3)).sendMessage(sent.capture());
+            assertTrue(sent.getAllValues().get(0).contains("Anyone can ride it or claim it"));
+            assertTrue(sent.getAllValues().get(1).startsWith("§7Tame it, then right-click it"));
+            assertTrue(sent.getAllValues().get(2).contains("4/15"));
+        }
+    }
+
+    @Test
+    void ownedHorseGetsNoHint() {
+        Player player = mock(Player.class);
+        Horse horse = horse();
+        UUID horseId = UUID.randomUUID();
+        when(horse.getUniqueId()).thenReturn(horseId);
+        when(horse.getType()).thenReturn(EntityType.HORSE);
+        try (MockedStatic<HusbandryConfig> config = mockStatic(HusbandryConfig.class);
+             MockedStatic<HusbandryOwnershipService> ownership = mockStatic(HusbandryOwnershipService.class)) {
+            config.when(() -> HusbandryConfig.isRemoveUnowned(EntityType.HORSE)).thenReturn(true);
+            ownership.when(() -> HusbandryOwnershipService.hasAnyOwner(horseId)).thenReturn(true);
+
+            HusbandryClaimHint.send(player, horse, false);
+
+            verify(player, never()).sendMessage(anyString());
+        }
+    }
+
+    @Test
     void tamedHintSkipsTheTamingStep() {
-        List<String> lines = HusbandryClaimHint.lines("Horse", true, false, 0, 15, false);
+        List<String> lines = HusbandryClaimHint.lines("Horse", true, false, false, 0, 15, false);
         assertTrue(lines.get(1).startsWith("§7Right-click it with an Ownership Token"));
     }
 
     @Test
     void staffHintHasNoLimit() {
-        List<String> lines = HusbandryClaimHint.lines("Horse", true, false, 40, 15, true);
+        List<String> lines = HusbandryClaimHint.lines("Horse", true, false, false, 40, 15, true);
         assertEquals(2, lines.size());
         assertTrue(lines.get(1).contains("no animal limit"));
     }

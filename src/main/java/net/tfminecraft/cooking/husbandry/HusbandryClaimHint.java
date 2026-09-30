@@ -10,7 +10,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Tameable;
 
-/** Tells players that animals they tame or ride vanish unless claimed in Cooking. */
+/** Tells players who tame or ride an unowned animal how to claim it, and their animal limit. */
 public final class HusbandryClaimHint {
 
     static final long COOLDOWN_MILLIS = 60_000L;
@@ -35,6 +35,13 @@ public final class HusbandryClaimHint {
                 HusbandryMounts.hasConfiguredStats(entity));
     }
 
+    /** Any listed animal without a Cooking owner, including ridden mounts the cleanup keeps as wild. */
+    public static boolean isUnclaimed(Entity entity) {
+        return entity != null
+                && HusbandryConfig.isRemoveUnowned(entity.getType())
+                && !HusbandryOwnershipService.hasAnyOwner(entity.getUniqueId());
+    }
+
     /** Sends the hint unless this player saw one within the cooldown. */
     public static void remind(Player player, Entity entity) {
         long now = System.currentTimeMillis();
@@ -50,16 +57,18 @@ public final class HusbandryClaimHint {
      * so reading it from the entity would tell a player who just tamed it to tame it first.
      */
     public static void send(Player player, Entity entity, boolean untamed) {
-        if (player == null || !needsClaim(entity)) {
+        if (player == null || !isUnclaimed(entity)) {
             return;
         }
+        // Riding enrolls a mount, and the cleanup keeps enrolled mounts as unowned wild animals.
+        boolean staysWild = !needsClaim(entity);
         LAST_SENT.put(player.getUniqueId(), System.currentTimeMillis());
         boolean claimable = HusbandryConfig.species(entity.getType()) != null;
         boolean staff = HusbandryOwnershipService.isStaff(player);
         HusbandryRepository repository = HusbandryEntities.repository();
         int owned = repository == null ? 0 : repository.countForPlayer(player.getUniqueId());
         for (String line : lines(HusbandryEntities.displayName(entity.getType()),
-                claimable, untamed, owned, HusbandryConfig.maxAnimals(), staff)) {
+                claimable, untamed, staysWild, owned, HusbandryConfig.maxAnimals(), staff)) {
             player.sendMessage(line);
         }
     }
@@ -69,10 +78,18 @@ public final class HusbandryClaimHint {
     }
 
     static List<String> lines(
-            String species, boolean claimable, boolean untamed, int owned, int cap, boolean staff) {
+            String species,
+            boolean claimable,
+            boolean untamed,
+            boolean staysWild,
+            int owned,
+            int cap,
+            boolean staff) {
         String label = species == null || species.isBlank() ? "animal" : species.toLowerCase(Locale.ROOT);
-        String warning = "§eThis " + label + " is not claimed. Unclaimed animals disappear the next time"
-                + " their area loads.";
+        String warning = staysWild
+                ? "§eThis " + label + " is not claimed. Anyone can ride it or claim it until someone does."
+                : "§eThis " + label + " is not claimed. Unclaimed animals disappear the next time"
+                        + " their area loads.";
         if (!claimable) {
             return List.of(warning, "§7This kind of animal cannot be claimed, so it will not stay.");
         }
