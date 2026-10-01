@@ -15,7 +15,9 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 
 ## A complete food journey
 
-Food crops must be planted outdoors with an open column of sky above them. Cave ceilings, building roofs (including glass), and other overhead blocks prevent vanilla and CustomCrops planting, including automatic replanting. Nether wart, mushrooms, and the CustomCrops yeast crop can still be planted indoors.
+Food crops need an open column above them. Cave ceilings and building roofs prevent vanilla and CustomCrops planting, including automatic replanting. Glass greenhouses are allowed by default. Nether wart, mushrooms, and the CustomCrops yeast crop can still be planted indoors.
+
+The `planting` section of `crops.yml` controls `require-open-sky`, `allow-glass-roofs`, additional `allowed-cover` block materials, and `exempt-vanilla` / `exempt-custom` crop lists. Lists replace their defaults; an empty exemption list requires open sky for those crops too. Reload with `cooking reload`. Existing configs without this section use the defaults above. Adding a roof after planting does not remove existing crops or change their growth rules.
 
 A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
 

@@ -3,6 +3,15 @@
 # Growth ticks use the same affection: chance = (fertility/100) ^ affection.
 # Seeds stay untagged IA/vanilla. CustomCrops one-seed drops stay yield/balance.
 
+planting:
+  require-open-sky: true
+  # Greenhouses: clear, stained and tinted glass, including panes, are allowed.
+  allow-glass-roofs: true
+  # Additional Bukkit block materials allowed anywhere above the crop.
+  allowed-cover: []
+  exempt-vanilla: [NETHER_WART, BROWN_MUSHROOM, RED_MUSHROOM]
+  exempt-custom: [yeast]
+
 growth-gate:
   enabled: true
 

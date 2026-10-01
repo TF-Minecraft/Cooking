@@ -22,9 +22,11 @@ public final class CropsLoader {
         } catch (IOException | InvalidConfigurationException ex) {
             Bukkit.getLogger().warning("[Cooking] Failed to load crops.yml: " + ex.getMessage());
             CropsConfig.apply(Map.of(), Map.of(), Map.of(), true);
+            CropPlantingRule.configure(null);
             return;
         }
 
+        CropPlantingRule.configure(config.getConfigurationSection("planting"));
         ConfigurationSection harvest = config.getConfigurationSection("harvest-quality");
         boolean growthGate = true;
         ConfigurationSection growth = config.getConfigurationSection("growth-gate");

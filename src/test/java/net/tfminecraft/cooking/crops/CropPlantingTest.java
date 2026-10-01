@@ -11,6 +11,8 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -24,6 +26,7 @@ class CropPlantingTest {
 
     @BeforeEach
     void setup() {
+        CropPlantingRule.configure(null);
         world = mock(World.class);
         location = new Location(world, 4, 64, 8);
         when(world.getMaxHeight()).thenReturn(320);
@@ -39,7 +42,7 @@ class CropPlantingTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = Material.class, names = {"STONE", "OAK_PLANKS", "GLASS", "OAK_SLAB", "OAK_LEAVES"})
+    @EnumSource(value = Material.class, names = {"STONE", "OAK_PLANKS", "OAK_SLAB", "OAK_LEAVES"})
     void caveAndHouseRoofsCancelVanillaPlanting(Material roof) {
         roof(roof, 90);
         Block crop = mock(Block.class);
@@ -58,13 +61,13 @@ class CropPlantingTest {
     void checksRoofAtTopOfWorldButIgnoresCropItself() {
         roof(Material.WHEAT, 64);
         assertTrue(CropPlantingRule.hasOpenSky(location));
-        roof(Material.GLASS, 319);
+        roof(Material.STONE, 319);
         assertFalse(CropPlantingRule.hasOpenSky(location));
     }
 
     @Test
-    void customCropsCancelUnderGlassButYeastIsExempt() {
-        roof(Material.GLASS, 66);
+    void customCropsCancelUnderStoneButYeastIsExempt() {
+        roof(Material.STONE, 66);
         CropPlantEvent event = mock(CropPlantEvent.class);
         CropConfig config = mock(CropConfig.class);
         when(config.id()).thenReturn("tomato");
@@ -97,5 +100,40 @@ class CropPlantingTest {
         Block block = mock(Block.class);
         when(block.getType()).thenReturn(material);
         when(world.getBlockAt(4, y, 8)).thenReturn(block);
+    }
+
+    @AfterEach
+    void resetConfig() {
+        CropPlantingRule.configure(null);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Material.class, names = {"GLASS", "GLASS_PANE", "RED_STAINED_GLASS", "BLUE_STAINED_GLASS_PANE", "TINTED_GLASS"})
+    void greenhousesAllowedUnlessDisabled(Material glass) {
+        roof(glass, 70);
+        assertTrue(CropPlantingRule.hasOpenSky(location));
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("allow-glass-roofs", false);
+        CropPlantingRule.configure(config);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+    }
+
+    @Test
+    void configurableCoverExemptionsAndDisable() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("allowed-cover", java.util.List.of("OAK_LEAVES"));
+        config.set("exempt-vanilla", java.util.List.of("WHEAT"));
+        config.set("exempt-custom", java.util.List.of("Tomato"));
+        CropPlantingRule.configure(config);
+        roof(Material.OAK_LEAVES, 70);
+        assertTrue(CropPlantingRule.hasOpenSky(location));
+        assertFalse(CropPlantingRule.requiresOpenSky(Material.WHEAT));
+        assertTrue(CropPlantingRule.requiresOpenSky(Material.NETHER_WART));
+        assertFalse(CropPlantingRule.customRequiresOpenSky("tomato"));
+        assertTrue(CropPlantingRule.customRequiresOpenSky("yeast"));
+        config.set("require-open-sky", false);
+        CropPlantingRule.configure(config);
+        assertFalse(CropPlantingRule.requiresOpenSky(Material.CARROTS));
+        assertFalse(CropPlantingRule.customRequiresOpenSky("rice"));
     }
 }
