@@ -262,7 +262,7 @@ public class MixingBowlHandler implements Listener {
 
             if (ingredient == null) {
 
-                player.sendMessage("§cUse converted cooking ingredients.");
+                player.sendMessage("§cYou have to prepare the ingredients before cooking with them.");
 
                 event.setCancelled(true);
 

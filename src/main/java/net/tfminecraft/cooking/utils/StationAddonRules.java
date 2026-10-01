@@ -99,7 +99,7 @@ public final class StationAddonRules {
         }
         if (hasDuplicateOrigin(slots, incoming)) {
             if (player != null) {
-                player.sendMessage("§cThat ingredient is already in the station.");
+                player.sendMessage("§cThat ingredient is already in there.");
             }
             return false;
         }

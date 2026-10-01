@@ -88,8 +88,8 @@ public final class HusbandryClaimHint {
         String label = species == null || species.isBlank() ? "animal" : species.toLowerCase(Locale.ROOT);
         String warning = staysWild
                 ? "§eThis " + label + " is not claimed. Anyone can ride it or claim it until someone does."
-                : "§eThis " + label + " is not claimed. Unclaimed animals disappear the next time"
-                        + " their area loads.";
+                : "§eThis " + label + " is not claimed. Unclaimed animals wander off once no one"
+                        + " is nearby.";
         if (!claimable) {
             return List.of(warning, "§7This kind of animal cannot be claimed, so it will not stay.");
         }
