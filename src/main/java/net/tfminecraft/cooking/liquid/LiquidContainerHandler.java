@@ -191,7 +191,7 @@ public final class LiquidContainerHandler implements Listener {
 
         boolean lastCup = hand.getAmount() <= 1;
         if (!lastCup && !hasStorageSlot(player)) {
-            player.sendMessage("Need a free inventory slot.");
+            player.sendMessage("You have no room to carry another cup.");
             return;
         }
 

@@ -185,7 +185,7 @@ public final class HusbandryTamingListener implements Listener {
         try {
             animalUuid = UUID.fromString(linked);
         } catch (IllegalArgumentException ignored) {
-            actor.sendMessage("§cThis token is invalid.");
+            actor.sendMessage("§cThis token does not name any animal.");
             return;
         }
         HusbandryRepository repository = HusbandryEntities.repository();
@@ -194,7 +194,7 @@ public final class HusbandryTamingListener implements Listener {
         }
         Optional<HusbandryAnimal> stored = HusbandryEntities.lookup(animalUuid);
         if (stored.isEmpty()) {
-            actor.sendMessage("§cThat animal no longer exists.");
+            actor.sendMessage("§cThat animal can no longer be found.");
             return;
         }
         HusbandryAnimal animal = stored.get();
