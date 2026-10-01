@@ -73,7 +73,7 @@ class HusbandryOwnedMountTest {
     void unclaimableAnimalsAreNotSentToTheToken() {
         List<String> lines = HusbandryClaimHint.lines("Wolf", false, false, false, 0, 15, false);
         assertEquals(2, lines.size());
-        assertTrue(lines.get(0).contains("wander off once no one is nearby"));
+        assertTrue(lines.get(0).contains("wander off before anyone next comes by"));
         assertTrue(lines.get(1).contains("cannot be claimed"));
         assertFalse(String.join(" ", lines).contains("Ownership Token"));
     }
