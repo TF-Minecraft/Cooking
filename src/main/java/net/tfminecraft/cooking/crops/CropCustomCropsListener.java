@@ -21,6 +21,7 @@ import net.momirealms.customcrops.api.core.mechanic.crop.CropConfig;
 import net.momirealms.customcrops.api.core.world.CustomCropsBlockState;
 import net.momirealms.customcrops.api.event.CropBreakEvent;
 import net.momirealms.customcrops.api.event.CropInteractEvent;
+import net.momirealms.customcrops.api.event.CropPlantEvent;
 
 import net.tfminecraft.cooking.Cooking;
 
@@ -30,6 +31,15 @@ public final class CropCustomCropsListener implements Listener {
     private static final int PENDING_TICKS = 2;
 
     private final Map<String, PendingHarvest> pending = new ConcurrentHashMap<>();
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlant(CropPlantEvent event) {
+        if (CropPlantingRule.customRequiresOpenSky(event.cropConfig().id())
+                && !CropPlantingRule.hasOpenSky(event.location())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage(CropPlantingListener.DENIAL_MESSAGE);
+        }
+    }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBreak(CropBreakEvent event) {

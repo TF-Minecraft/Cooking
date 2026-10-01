@@ -34,6 +34,7 @@ import net.tfminecraft.cooking.fishing.CustomFishingBridge;
 import net.tfminecraft.cooking.fishing.LegacyFishScan;
 import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
 import net.tfminecraft.cooking.crops.CropGrowthListener;
+import net.tfminecraft.cooking.crops.CropPlantingListener;
 import net.tfminecraft.cooking.crops.CropsLoader;
 import net.tfminecraft.cooking.husbandry.HusbandryLoader;
 import net.tfminecraft.cooking.husbandry.HusbandryLocator;
@@ -237,6 +238,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new FarmHarvestListener(), this);
         getServer().getPluginManager().registerEvents(new FarmTrampleListener(), this);
         getServer().getPluginManager().registerEvents(new CropGrowthListener(), this);
+        getServer().getPluginManager().registerEvents(new CropPlantingListener(), this);
         CropCustomCropsBridge customCropsBridge = new CropCustomCropsBridge();
         getServer().getPluginManager().registerEvents(customCropsBridge, this);
         CropCustomCropsBridge.tryRegister(this);
