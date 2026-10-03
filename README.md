@@ -15,17 +15,28 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 
 ## A complete food journey
 
-Food crops need an open column above them. Cave ceilings and building roofs prevent vanilla and CustomCrops planting, including automatic replanting. Glass greenhouses are allowed by default. Nether wart, mushrooms, and the CustomCrops yeast crop can still be planted indoors.
-
-The `planting` section of `crops.yml` controls `require-open-sky`, `allow-glass-roofs`, additional `allowed-cover` block materials, and `exempt-vanilla` / `exempt-custom` crop lists. Lists replace their defaults; an empty exemption list requires open sky for those crops too. Reload with `cooking reload`. Existing configs without this section use the defaults above. Adding a roof after planting does not remove existing crops or change their growth rules.
-
-A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
+Crops are planted outdoors under open sky or beneath the glass roof of a greenhouse. A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
 
 ## Documentation
 
 [Project documentation](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md)
 
 Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/TF-Minecraft/Docs).
+
+## Tests
+
+With Java 21 and the pinned plugin dependencies installed (see the build workflow), run:
+
+```sh
+mvn -B --no-transfer-progress clean verify
+```
+
+The JUnit 5 suite covers food parsing and items, crops, husbandry, nutrition,
+fishing and configuration loading, using MockBukkit and Mockito where Bukkit or
+plugin APIs are involved. The Build and release workflows run the same command,
+and the Build workflow uploads the Surefire reports. No coverage gate is
+enforced. The tests do not replace checking kitchens, crops and livestock on a
+live Paper server with the pinned integrations.
 
 ## License
 
