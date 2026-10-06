@@ -90,9 +90,6 @@ public final class HusbandryLoader {
 
     private static Set<EntityType> parseEntityTypes(List<String> raw) {
         Set<EntityType> types = EnumSet.noneOf(EntityType.class);
-        if (raw == null) {
-            return types;
-        }
         for (String entry : raw) {
             EntityType type = parseEntityType(entry);
             if (type != null) {
@@ -151,9 +148,6 @@ public final class HusbandryLoader {
 
     private static List<HusbandryDropEntry> parseDropEntries(List<Map<?, ?>> raw) {
         List<HusbandryDropEntry> entries = new ArrayList<>();
-        if (raw == null) {
-            return entries;
-        }
         for (Map<?, ?> entry : raw) {
             Object pathRaw = entry.get("path");
             String path = pathRaw == null ? "" : String.valueOf(pathRaw).trim();
@@ -189,9 +183,6 @@ public final class HusbandryLoader {
 
     private static List<HusbandryQualityBand> parseQualityBands(List<Map<?, ?>> raw) {
         List<HusbandryQualityBand> bands = new ArrayList<>();
-        if (raw == null) {
-            return bands;
-        }
         for (Map<?, ?> entry : raw) {
             int min = intValue(entry.get("min"), 0);
             int stars = intValue(entry.get("stars"), 1);
@@ -203,9 +194,6 @@ public final class HusbandryLoader {
 
     private static List<HusbandryAmountBand> parseAmountBands(List<Map<?, ?>> raw) {
         List<HusbandryAmountBand> bands = new ArrayList<>();
-        if (raw == null) {
-            return bands;
-        }
         for (Map<?, ?> entry : raw) {
             bands.add(new HusbandryAmountBand(
                     intValue(entry.get("min"), 0),
@@ -304,7 +292,7 @@ public final class HusbandryLoader {
                 20,
                 1000,
                 1,
-                1200,
+                28800,
                 3600,
                 28800,
                 0.15,

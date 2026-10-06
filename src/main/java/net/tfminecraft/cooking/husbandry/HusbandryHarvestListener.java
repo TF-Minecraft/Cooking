@@ -153,16 +153,15 @@ public final class HusbandryHarvestListener implements Listener {
             return;
         }
         event.setCancelled(true);
-        if (!(sheared instanceof LivingEntity living)) {
-            return;
+        if (sheared instanceof LivingEntity living) {
+            HusbandryHarvest.tryShear(
+                    event.getPlayer(),
+                    living,
+                    stored.get(),
+                    species,
+                    repository,
+                    System.currentTimeMillis());
         }
-        HusbandryHarvest.tryShear(
-                event.getPlayer(),
-                living,
-                stored.get(),
-                species,
-                repository,
-                System.currentTimeMillis());
     }
 
     private static boolean onMilkCooldown(HusbandryAnimal animal, EntityType type, long now) {
@@ -184,9 +183,6 @@ public final class HusbandryHarvestListener implements Listener {
             return;
         }
         ItemStack used = player.getInventory().getItem(slot);
-        if (used == null || used.getType() != Material.BUCKET) {
-            return;
-        }
         int amount = used.getAmount();
         if (amount <= 1) {
             player.getInventory().setItem(slot, new ItemStack(Material.AIR));

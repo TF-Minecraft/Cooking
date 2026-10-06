@@ -32,9 +32,6 @@ public final class VarietyMath {
         double sum = 0;
         double sumSquares = 0;
         for (double weight : weights.values()) {
-            if (weight <= 0) {
-                continue;
-            }
             sum += weight;
             sumSquares += weight * weight;
         }
@@ -61,9 +58,6 @@ public final class VarietyMath {
     private static Map<String, Double> weights(VarietyHistory history, double mainWeight, double extraWeight) {
         Map<String, Double> weights = new HashMap<>();
         for (IngredientLineage meal : history.meals()) {
-            if (meal == null) {
-                continue;
-            }
             for (String origin : meal.mains()) {
                 add(weights, origin, mainWeight);
             }

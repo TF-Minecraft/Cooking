@@ -20,7 +20,7 @@ public class CookData {
         for(String key : config.getKeys(false)) {
             ConfigurationSection param = config.getConfigurationSection(key);
             try {
-                parameters.put(Method.valueOf(key.toUpperCase()), new CookParameter(param.getInt("tag", 1), param.getInt("time", 15), param.getInt("burn", 30)));
+                parameters.put(Method.valueOf(key.toUpperCase(java.util.Locale.ROOT)), new CookParameter(param.getInt("tag", 1), param.getInt("time", 15), param.getInt("burn", 30)));
             } catch (Exception e) {
                 Bukkit.getLogger().info("Failed to create cooking data for "+id);
             }
@@ -31,7 +31,7 @@ public class CookData {
 
     public CookData(FoodItem item, CookData other) {
         this.item = item;
-        parameters = other.parameters;
+        parameters = new HashMap<>(other.parameters);
         this.currentMethod = other.currentMethod;
         this.currentTime = other.currentTime;
     }
@@ -86,6 +86,9 @@ public class CookData {
 
     public boolean check() {
         CookParameter p = parameters.get(currentMethod); 
+        if (p == null || item == null || item.getTagTrack("cooked") == null) {
+            return false;
+        }
         boolean changed = false;
         if(currentTime == p.getTime()) {
             changed = true;

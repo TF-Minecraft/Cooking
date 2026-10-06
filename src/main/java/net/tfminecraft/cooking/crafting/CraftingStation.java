@@ -123,7 +123,8 @@ public class CraftingStation {
 
         for(ItemStack stack : slots.values()) {
             FoodItem fs = FoodItem.fromItem(stack);
-            if(fs != null && !fs.getOrigin().equalsIgnoreCase(fi.getOrigin())) {
+            if(fs != null && (fs.getOrigin() == null
+                    ? fi.getOrigin() != null : !fs.getOrigin().equalsIgnoreCase(fi.getOrigin()))) {
                 return false;
             }
         }
@@ -195,7 +196,10 @@ public class CraftingStation {
     public void craft(Player p) {
         if(currentRecipe == null) return;
         if(slots.isEmpty()) return;
-        if(slots.size() < currentRecipe.getRatio()) return;
+        int ratio = currentRecipe.getRatio();
+        if (ratio <= 0) return;
+        int available = slots.values().stream().mapToInt(ItemStack::getAmount).sum();
+        if(available < ratio) return;
         if ("cut_seafood".equals(currentRecipe.getId())) {
             craftSeafood(p);
             return;
@@ -204,61 +208,59 @@ public class CraftingStation {
         String origin = "none";
         List<FoodItem> consumedInputs = new ArrayList<>();
 
-        int outputAmount = slots.size() / currentRecipe.getRatio();
-        int used = outputAmount * currentRecipe.getRatio();
-
-        for(String slotId : new ArrayList<>(slots.keySet())) {
-            if(used <= 0) break;
-
-            FoodItem fi = FoodItem.fromItem(slots.get(slotId));
-            if(fi != null) {
-                consumedInputs.add(fi);
-                if(isSingleOrigin()) origin = fi.getOrigin();
+        int outputAmount = available / ratio;
+        int used = outputAmount * ratio;
+        List<ItemStack> remainingInputs = new ArrayList<>();
+        for (ItemStack source : slots.values()) {
+            int take = Math.min(used, source.getAmount());
+            if (take > 0) {
+                FoodItem fi = FoodItem.fromItem(source);
+                if (fi != null) {
+                    for (int i = 0; i < take; i++) consumedInputs.add(fi);
+                    if (isSingleOrigin()) origin = fi.getOrigin();
+                }
+                used -= take;
             }
-
-            slots.remove(slotId);
-
-            PlacedSlot slot = f.getActiveSlot(slotId).orElse(null);
-            if(slot != null) {
-                slot.clearModel();
-                f.removeActiveSlot(slotId);
+            if (take < source.getAmount()) {
+                ItemStack remaining = source.clone();
+                remaining.setAmount(source.getAmount() - take);
+                remainingInputs.add(remaining);
             }
-
-            used--;
         }
 
-        String data = new String(currentRecipe.getOutput());
-        if(isSingleOrigin() && !origin.equalsIgnoreCase("none")) {
+        String data = currentRecipe.getOutput();
+        if(isSingleOrigin() && origin != null && !origin.equalsIgnoreCase("none")) {
             data = data.replace("{origin}", origin);
         }
 
-        FoodItem item = FoodParser.parse(data).template;
+        FoodParser.Result parsed = FoodParser.parse(data);
+        if (parsed == null || parsed.template == null) return;
+        FoodItem item = parsed.template;
 
         if(currentRecipe.isProcessed()) {
             item.addOrModifyTrack(TrackLoader.getByString("processed"));
         }
 
-        f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
-
-        for(Map.Entry<String, ItemStack> entry : slots.entrySet()) {
-            PlacedSlot slot = f.getActiveSlot(entry.getKey()).orElse(null);
-            ItemStack remaining = slot.getCurrentItem();
-            if(remaining == null) continue;
-
-            if(slot != null) slot.clearModel();
-
-            f.getLoc().getWorld().dropItem(
-                f.getLoc(),
-                remaining
-            ).setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
-        }
-        slots.clear();
-        currentRecipe = null;
-
         CompositionResult composed = CompositionQualityResolver.compose(p, consumedInputs, CompositionContext.CUTTING_BOARD);
         CompositionApplier.apply(item, composed);
         ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
+        if (output == null || output.getType().isAir()) return;
         output.setAmount(outputAmount);
+
+        // Prepare the complete result before taking any ingredient from the board.
+        var modelData = item.getModelData();
+        var displayData = modelData == null ? null : modelData.getDisplayData(f.getId());
+        for (String slotId : slots.keySet()) {
+            f.getActiveSlot(slotId).ifPresent(PlacedSlot::clearModel);
+            f.removeActiveSlot(slotId);
+        }
+        for (ItemStack remaining : remainingInputs) {
+            f.getLoc().getWorld().dropItem(f.getLoc(), remaining)
+                    .setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
+        }
+        slots.clear();
+        currentRecipe = null;
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
 
         boolean onBoard = false;
         for(SlotDefinition def : f.getType().getSlots().values()) {
@@ -267,7 +269,7 @@ public class CraftingStation {
             PlacedSlot slot = f.getOrCreatePlacedSlot(def.getId());
             slot.forceModel(output);
             onBoard = true;
-            slot.applyDisplayData(item.getModelData().getDisplayData(f.getId()));
+            if (displayData != null) slot.applyDisplayData(displayData);
 
             // Attempt to match new currentRecipe based on the output item
             CraftingRecipe newRecipe = null;

@@ -38,7 +38,11 @@ public final class HusbandryInspectGui {
         }
         boolean mount = HusbandryMounts.isMount(entity);
         HusbandryInspectHolder holder = new HusbandryInspectHolder(animal.uuid());
-        String title = "§6" + (animal.name() == null ? "Animal" : animal.name());
+        String displayName = animal.name();
+        if (displayName == null || displayName.isBlank() || "???".equals(displayName.trim())) {
+            displayName = HusbandryEntities.displayName(entity.getType());
+        }
+        String title = "§6" + displayName;
         Inventory inv = Bukkit.createInventory(holder, INVENTORY_SIZE, title);
         holder.setInventory(inv);
 
@@ -48,7 +52,7 @@ public final class HusbandryInspectGui {
         inv.setItem(0, statusItem(animal));
         inv.setItem(1, named(Material.SHEARS, animal.neutered() ? "§cNeutered" : "§aNot neutered", List.of()));
         inv.setItem(2, ownersItem(animal.uuid()));
-        inv.setItem(4, named(Material.NAME_TAG, "§6" + animal.name(),
+        inv.setItem(4, named(Material.NAME_TAG, "§6" + displayName,
                 List.of("§7" + entity.getType().name(), "§7State: " + animal.state().storage(),
                         growingLine(animal))));
         ItemStack products = productsItem(entity.getType(), yieldPct);
@@ -97,9 +101,6 @@ public final class HusbandryInspectGui {
             return "§7Mature";
         }
         Long matureAt = animal.matureAt();
-        if (matureAt == null) {
-            return "§7Growing up";
-        }
         long remaining = Math.max(0L, matureAt - System.currentTimeMillis());
         return "§7Grows up in " + TimeFormatter.formatTime((int) (remaining / 1000L));
     }
@@ -124,9 +125,6 @@ public final class HusbandryInspectGui {
     private static String decayLine(HusbandryAnimal animal) {
         Long hungry = animal.hungrySince();
         Long dirty = animal.dirtySince();
-        if (hungry == null && dirty == null) {
-            return "§7No decay";
-        }
         long earliest = hungry == null ? dirty : (dirty == null ? hungry : Math.min(hungry, dirty));
         long decayStart = earliest + HusbandryConfig.decayGraceSeconds() * 1000L;
         long now = System.currentTimeMillis();

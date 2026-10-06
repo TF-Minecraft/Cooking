@@ -53,9 +53,6 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
         }
         List<HusbandryOwned> rows = new ArrayList<>();
         for (HusbandryOwned owned : repository.listForPlayer(targetId)) {
-            if (owned.animal() == null) {
-                continue;
-            }
             HusbandryAnimal animal = HusbandryEntities.getLoaded(owned.animal().uuid()).orElse(owned.animal());
             Entity live = Bukkit.getEntity(animal.uuid());
             if (live != null) {

@@ -50,7 +50,7 @@ public final class SausageMakerAnimation {
         final Transformation startTransform = parent.getTransformation();
         final Vector3f startTranslation = new Vector3f(startTransform.getTranslation());
         final Quaternionf startRot = new Quaternionf(startTransform.getLeftRotation());
-        final int duration = ItemCache.sausageMakerDurationTicks;
+        final int duration = Math.max(1, ItemCache.sausageMakerDurationTicks);
         final float wobbleRadians = (float) Math.toRadians(ItemCache.sausageMakerWobbleDegrees);
 
         new BukkitRunnable() {

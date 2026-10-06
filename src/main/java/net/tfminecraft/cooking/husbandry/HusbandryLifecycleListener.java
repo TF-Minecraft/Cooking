@@ -154,7 +154,8 @@ public final class HusbandryLifecycleListener implements Listener {
             return;
         }
         UUID uuid = entity.getUniqueId();
-        boolean hasRow = repository.exists(uuid);
+        Optional<HusbandryAnimal> stored = repository.getAnimal(uuid);
+        boolean hasRow = stored.isPresent();
 
         if (HusbandryMounts.shouldWipeUnowned(
                 HusbandryConfig.isRemoveUnowned(entity.getType()),
@@ -175,10 +176,6 @@ public final class HusbandryLifecycleListener implements Listener {
         HusbandryEntities.applyPersistFlags(living);
         HusbandryEntities.stampManaged(living);
 
-        Optional<HusbandryAnimal> stored = repository.getAnimal(uuid);
-        if (stored.isEmpty()) {
-            return;
-        }
         HusbandryAnimal animal = stored.get();
         long now = System.currentTimeMillis();
         HusbandryLocation.remember(animal, living);

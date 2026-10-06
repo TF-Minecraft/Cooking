@@ -98,10 +98,7 @@ public class CookingManager implements Listener {
         if (method == Method.SAUCEPAN) {
             return new SauceReference(furniture, method);
         }
-        if (method == Method.POT) {
-            return new PotReference(furniture, method);
-        }
-        return new CookingReference(furniture, method);
+        return new PotReference(furniture, method);
     }
 
     private CookingReference getOrCreateReference(Furniture furniture) {
@@ -138,12 +135,14 @@ public class CookingManager implements Listener {
         Player p = e.getPlayer();
         ItemStack item = p.getInventory().getItemInMainHand();
         if(item == null) return;
-        if(!e.getClickedBlock().getType().equals(Material.CAULDRON)) return;
+        if(e.getClickedBlock() == null || !e.getClickedBlock().getType().equals(Material.CAULDRON)) return;
         FoodItem fi = FoodItem.fromItem(item);
         if(fi == null) return;
         if(fi.getCategory().equalsIgnoreCase("sauce") || fi.getCategory().equalsIgnoreCase("soup")) {
+            ItemStack empty = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
+            if (empty == null || empty.getType().isAir()) return;
             e.setCancelled(true);
-            p.getInventory().setItemInMainHand(TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle));
+            p.getInventory().setItemInMainHand(empty.clone());
         }
     }
     @EventHandler

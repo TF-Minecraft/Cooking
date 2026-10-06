@@ -26,7 +26,7 @@ public final class HeatLoader {
                                 + "' for furniture '" + furnitureId + "'");
                         continue;
                     }
-                    sources.put(furnitureId.toLowerCase(), new HeatSourceDefinition(furnitureId, type));
+                    sources.put(furnitureId.toLowerCase(java.util.Locale.ROOT), new HeatSourceDefinition(furnitureId, type));
                 }
             }
 
@@ -42,7 +42,7 @@ public final class HeatLoader {
                                 + furnitureId + "'");
                         continue;
                     }
-                    consumers.put(furnitureId.toLowerCase(),
+                    consumers.put(furnitureId.toLowerCase(java.util.Locale.ROOT),
                             new HeatConsumerDefinition(furnitureId, sourceFurnitureId, lookup));
                 }
             }

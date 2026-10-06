@@ -228,14 +228,6 @@ public class MixingBowlHandler implements Listener {
 
         String expectedSlot = stage.nextIngredientSlot();
 
-        if (expectedSlot == null) {
-
-            return;
-
-        }
-
-
-
         if (furniture.hasActiveSlot(expectedSlot)) {
 
             return;
@@ -276,6 +268,11 @@ public class MixingBowlHandler implements Listener {
 
         boolean waterCup = MixingBowlSlots.WATER.equals(expectedSlot) && ItemCache.isCupOfWater(hand);
 
+        if (!MixingBowlDisplay.showLayer(furniture, expectedSlot)) {
+            event.setCancelled(true);
+            return;
+        }
+
         hand.setAmount(hand.getAmount() - 1);
 
         if (waterCup) {
@@ -289,14 +286,6 @@ public class MixingBowlHandler implements Listener {
                 }
             }
         }
-
-        if (!MixingBowlDisplay.showLayer(furniture, expectedSlot)) {
-
-            return;
-
-        }
-
-
 
         storeIngredientQuality(furniture, expectedSlot, ingredient);
 
@@ -456,6 +445,8 @@ public class MixingBowlHandler implements Listener {
 
         if (count >= ItemCache.mixingStirCount) {
 
+            event.setCancelled(true);
+            completeDough(furniture);
             return;
 
         }
@@ -502,13 +493,13 @@ public class MixingBowlHandler implements Listener {
 
     private void completeDough(Furniture furniture) {
 
+        if (!MixingBowlDisplay.showLayer(furniture, MixingBowlSlots.DOUGH)) return;
+
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.FLOUR);
 
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.WATER);
 
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.YEAST);
-
-        MixingBowlDisplay.showLayer(furniture, MixingBowlSlots.DOUGH);
 
         MixingBowlState.setStage(furniture, MixingBowlStage.DOUGH_READY);
 
@@ -652,21 +643,8 @@ public class MixingBowlHandler implements Listener {
 
 
     private void sendWrongItemFeedback(Player player, MixingBowlStage stage) {
-
-        switch (stage) {
-
-            case EMPTY -> player.sendMessage("§cAdd flour first.");
-
-            case HAS_FLOUR -> player.sendMessage("§cAdd water next.");
-
-            case HAS_WATER -> player.sendMessage("§cAdd yeast next.");
-
-            default -> player.sendMessage("§cThat doesn't go in the bowl.");
-
-        }
-
+        player.sendMessage("§cAdd " + stage.nextIngredientSlot()
+                + (stage == MixingBowlStage.EMPTY ? " first." : " next."));
     }
 
 }
-
-

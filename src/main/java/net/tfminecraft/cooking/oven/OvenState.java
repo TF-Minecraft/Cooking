@@ -71,9 +71,6 @@ public final class OvenState {
     }
 
     public static String findNextFillSlot(Furniture furniture) {
-        if (isFull(furniture)) {
-            return null;
-        }
         OvenSlots.WoodStage[] stages = getStages(furniture);
         for (int i = 0; i < SLOT_COUNT; i++) {
             if (stages[i] == OvenSlots.WoodStage.EMPTY) {

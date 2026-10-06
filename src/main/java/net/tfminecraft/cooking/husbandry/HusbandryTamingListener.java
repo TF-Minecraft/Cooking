@@ -25,9 +25,7 @@ public final class HusbandryTamingListener implements Listener {
         if (result == null || !HusbandryItems.matches(result, HusbandryConfig.tameItem())) {
             return;
         }
-        if (!(event.getView() instanceof AnvilView anvil)) {
-            return;
-        }
+        AnvilView anvil = event.getView();
         String rename = anvil.getRenameText();
         if (rename == null || rename.isBlank()) {
             return;
@@ -36,7 +34,7 @@ public final class HusbandryTamingListener implements Listener {
         event.setResult(result);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void onInteractEntity(PlayerInteractEntityEvent event) {
         if (event.getHand() != EquipmentSlot.HAND) {
             return;
@@ -121,10 +119,6 @@ public final class HusbandryTamingListener implements Listener {
                 return;
             }
             animal = HusbandrySpawner.createWildRecord(entity);
-            if (animal == null) {
-                player.sendMessage("§cCould not tame this animal.");
-                return;
-            }
         } else {
             animal = stored.get();
         }
@@ -144,7 +138,6 @@ public final class HusbandryTamingListener implements Listener {
                     player.sendMessage("§aTamed " + name + ".");
                 }
             }
-            default -> player.sendMessage("§cCould not tame this animal.");
         }
     }
 
@@ -206,7 +199,7 @@ public final class HusbandryTamingListener implements Listener {
             case TARGET_AT_CAP -> actor.sendMessage("§cThat player already owns too many animals.");
             case OK -> {
                 HusbandryItems.consumeOne(hand);
-                String label = animal.name() != null ? animal.name() : "animal";
+                String label = animal.name() != null && !animal.name().isBlank() ? animal.name() : "animal";
                 if (actor.equals(target)) {
                     actor.sendMessage("§aYou are now a co-owner of " + label + ".");
                 } else {
@@ -214,7 +207,6 @@ public final class HusbandryTamingListener implements Listener {
                     target.sendMessage("§aYou are now a co-owner of " + label + ".");
                 }
             }
-            default -> actor.sendMessage("§cCould not share this animal.");
         }
     }
 }

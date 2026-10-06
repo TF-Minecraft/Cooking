@@ -15,7 +15,7 @@ public final class CropHarvestQuality {
 
     public static double[] weights(int fertility, double affection) {
         double aff = affection;
-        if (aff <= 0.0 || aff > 1.0) {
+        if (!Double.isFinite(aff) || aff <= 0.0 || aff > 1.0) {
             aff = 0.5;
         }
         int fert = Math.max(0, Math.min(100, fertility));

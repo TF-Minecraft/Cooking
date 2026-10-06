@@ -73,9 +73,9 @@ public class ModelData {
         this.guiRef = other.guiRef;
         this.displayRef = other.displayRef;
         this.weight = other.weight;
-        this.displayData = other.displayData;
+        this.displayData = copyDisplayData(other.displayData);
         this.overrides = new HashMap<>(other.overrides);
-        this.furnitureDisplayData = new HashMap<>(other.furnitureDisplayData);
+        other.furnitureDisplayData.forEach((key, value) -> this.furnitureDisplayData.put(key, copyDisplayData(value)));
         this.tags.addAll(other.tags);
         this.stage = other.stage;
         this.directItem = other.directItem != null ? other.directItem.clone() : null;
@@ -91,6 +91,20 @@ public class ModelData {
         displayData.setxRot(90f);
         displayData.setzRot(90f);
         displayData.setyPos(-0.25f);
+    }
+
+    private static DisplayData copyDisplayData(DisplayData source) {
+        DisplayData copy = new DisplayData();
+        copy.setxRot(source.getxRot());
+        copy.setyRot(source.getyRot());
+        copy.setzRot(source.getzRot());
+        copy.setxScale(source.getxScale());
+        copy.setyScale(source.getyScale());
+        copy.setzScale(source.getzScale());
+        copy.setxPos(source.getxPos());
+        copy.setyPos(source.getyPos());
+        copy.setzPos(source.getzPos());
+        return copy;
     }
 
     public ItemStack apply(String furniture, ItemStack source) {

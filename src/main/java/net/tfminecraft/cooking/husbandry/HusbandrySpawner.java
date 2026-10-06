@@ -20,11 +20,7 @@ public final class HusbandrySpawner {
             return null;
         }
         Location at = player.getLocation();
-        Entity spawned = player.getWorld().spawnEntity(at, type);
-        if (!(spawned instanceof LivingEntity living)) {
-            spawned.remove();
-            return null;
-        }
+        LivingEntity living = (LivingEntity) player.getWorld().spawnEntity(at, type);
 
         int clampedGenetics = Math.max(0, Math.min(HusbandryConfig.maxGenetics(), genetics));
         int clampedCare = Math.max(0, Math.min(HusbandryConfig.careMax(), care));

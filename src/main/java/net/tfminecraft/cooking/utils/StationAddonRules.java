@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.utils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.bukkit.entity.Player;
@@ -59,10 +60,11 @@ public final class StationAddonRules {
         if (!hasSweetener(slots)) {
             return;
         }
-        TagTrack track = new TagTrack(TrackLoader.getByString("sweet"));
+        TagTrack track = TrackLoader.getByString("sweet");
         if (track == null) {
             return;
         }
+        track = new TagTrack(track);
         track.setValue(0);
         product.addOrModifyTrack(track);
     }
@@ -73,10 +75,7 @@ public final class StationAddonRules {
             return false;
         }
         for (FoodItem existing : slots.values()) {
-            if (existing == null || existing.getOrigin() == null) {
-                continue;
-            }
-            if (existing.getOrigin().equalsIgnoreCase(origin)) {
+            if (existing != null && existing.getOrigin() != null && existing.getOrigin().equalsIgnoreCase(origin)) {
                 return true;
             }
         }
@@ -126,7 +125,7 @@ public final class StationAddonRules {
         boolean hasGarnish = false;
         boolean hasSpice = false;
         for (FoodItem item : addons) {
-            String category = item.getCategory().toLowerCase();
+            String category = item.getCategory().toLowerCase(Locale.ROOT);
             if (category.equals("garnish")) {
                 hasGarnish = true;
             }
@@ -156,10 +155,11 @@ public final class StationAddonRules {
         if (product == null || !hasValuable(slots)) {
             return;
         }
-        TagTrack track = new TagTrack(TrackLoader.getByString("flavourful"));
+        TagTrack track = TrackLoader.getByString("flavourful");
         if (track == null) {
             return;
         }
+        track = new TagTrack(track);
         track.setValue(0);
         product.addOrModifyTrack(track);
     }
@@ -167,14 +167,16 @@ public final class StationAddonRules {
     public static void applyAddonTags(FoodItem product, Map<String, FoodItem> slots) {
         AddonProfile profile = classifyAddons(slots);
         if (profile == AddonProfile.AROMATIC) {
-            TagTrack track = new TagTrack(TrackLoader.getByString("aromatic"));
+            TagTrack track = TrackLoader.getByString("aromatic");
             if (track != null) {
+                track = new TagTrack(track);
                 track.setValue(0);
                 product.addOrModifyTrack(track);
             }
         } else if (profile == AddonProfile.ROUNDED) {
-            TagTrack track = new TagTrack(TrackLoader.getByString("rounded"));
+            TagTrack track = TrackLoader.getByString("rounded");
             if (track != null) {
+                track = new TagTrack(track);
                 track.setValue(0);
                 product.addOrModifyTrack(track);
             }
@@ -196,10 +198,11 @@ public final class StationAddonRules {
         if (count == 0) {
             return;
         }
-        TagTrack track = new TagTrack(TrackLoader.getByString("seasoning"));
+        TagTrack track = TrackLoader.getByString("seasoning");
         if (track == null) {
             return;
         }
+        track = new TagTrack(track);
         track.setValue(count >= 2 ? 1 : 0);
         product.addOrModifyTrack(track);
     }

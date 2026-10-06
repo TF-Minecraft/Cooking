@@ -67,11 +67,13 @@ public final class ButterItems {
         inputs.add(buildMilkStub(milkQuality, dairyFreshness, origin, milkLineage));
 
         if (hasSalt) {
+            if (FoodLoader.getByString("seasoning_1") == null || TrackLoader.getByString("butter_salted") == null) return null;
             inputs.add(buildSaltStub(saltQuality, saltLineage));
         }
 
         boolean hasSpice = spiceOrigin != null && !spiceOrigin.isBlank();
         if (hasSpice) {
+            if (FoodLoader.getByString("spice_1") == null || TrackLoader.getByString("butter_spiced") == null) return null;
             inputs.add(buildSpiceStub(spiceOrigin, spiceQuality, spiceFreshness, spiceLineage));
         }
 

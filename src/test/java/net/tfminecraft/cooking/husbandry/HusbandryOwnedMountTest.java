@@ -240,6 +240,9 @@ class HusbandryOwnedMountTest {
         when(entity.getUniqueId()).thenReturn(uuid);
         HusbandryRepository repository = mock(HusbandryRepository.class);
         when(repository.exists(uuid)).thenReturn(hasRow);
+        when(repository.getAnimal(uuid)).thenReturn(hasRow
+                ? java.util.Optional.of(new HusbandryAnimal(uuid, "HORSE", ""))
+                : java.util.Optional.empty());
         try (MockedStatic<HusbandryEntities> entities = mockStatic(HusbandryEntities.class);
              MockedStatic<HusbandryConfig> config = mockStatic(HusbandryConfig.class);
              MockedStatic<HusbandryOwnershipService> ownership = mockStatic(HusbandryOwnershipService.class)) {

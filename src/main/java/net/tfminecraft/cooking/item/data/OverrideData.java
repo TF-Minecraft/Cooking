@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.item.data;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 
 import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
@@ -37,6 +38,6 @@ public class OverrideData {
         if (trackId == null || age.isEmpty()) {
             return null;
         }
-        return age.get(trackId.toLowerCase());
+        return age.get(trackId.toLowerCase(Locale.ROOT));
     }
 }

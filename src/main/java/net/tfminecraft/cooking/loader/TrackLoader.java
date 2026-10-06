@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -38,7 +40,12 @@ public class TrackLoader {
 		List<String> list = new ArrayList<String>(set);
 		int i = 0;
 		for(String key : list) {
-			TagTrack r = new TagTrack(key, i, config.getConfigurationSection(key));
+			ConfigurationSection section = config.getConfigurationSection(key);
+			if (section == null) {
+			    Bukkit.getLogger().warning("[Cooking] Ignoring non-section TrackLoader entry: " + key);
+			    continue;
+			}
+			TagTrack r = new TagTrack(key, i, section);
 			oList.add(r);
 			i++;
 		}

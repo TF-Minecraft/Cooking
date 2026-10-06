@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.manager.ConversionManager;
 
 public class InventoryAdder {
     public static ItemStack addItem(Player p, ItemStack in) {
@@ -27,8 +28,9 @@ public class InventoryAdder {
             if (fCur == null) continue;
 
             if (!equalsFood(fIn, fCur)) continue;
+            if (!ConversionManager.sameApartFromAging(in, cur)) continue;
 
-            int space = 64 - cur.getAmount();
+            int space = Math.min(cur.getMaxStackSize(), inv.getMaxStackSize()) - cur.getAmount();
             if (space <= 0) continue;
 
             int add = Math.min(space, amount);
@@ -60,4 +62,3 @@ public class InventoryAdder {
         return true;
     }
 }
-

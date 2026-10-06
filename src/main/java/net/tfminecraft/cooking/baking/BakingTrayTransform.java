@@ -65,9 +65,6 @@ public final class BakingTrayTransform {
             }
 
             String[] kv = part.split("\\.", 2);
-            if (kv.length != 2) {
-                continue;
-            }
 
             TagTrack baseTrack = TrackLoader.getByString(kv[0]);
             if (baseTrack == null) {

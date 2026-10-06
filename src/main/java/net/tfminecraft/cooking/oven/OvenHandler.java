@@ -51,15 +51,10 @@ public final class OvenHandler implements Listener {
     }
 
     private void handleAddFuel(Furniture furniture, Player player, ItemStack hand, FurnitureInteractEvent event) {
-        if (OvenState.isFull(furniture)) {
-            event.setCancelled(true);
-            player.sendMessage("§cThe oven is full of wood.");
-            return;
-        }
-
         String slotId = OvenState.findNextFillSlot(furniture);
         if (slotId == null) {
             event.setCancelled(true);
+            player.sendMessage("§cThe oven is full of wood.");
             return;
         }
 

@@ -46,20 +46,16 @@ public final class OvenCavityManager {
 
             for (PlacedFurnitureSlot slot : consumer.getActiveFurnitureSlots().values()) {
                 Furniture tray = slot.getNested();
-                if (tray == null || !BakingTrayRegistry.isTray(tray)) {
+                BakingTrayRecipe recipe = BakingTrayRegistry.getByFurniture(tray);
+                if (recipe == null) {
                     continue;
                 }
-                tickTray(consumer, tray);
+                tickTray(consumer, tray, recipe);
             }
         }
     }
 
-    private void tickTray(Furniture consumer, Furniture tray) {
-        BakingTrayRecipe recipe = BakingTrayRegistry.getByFurniture(tray);
-        if (recipe == null) {
-            return;
-        }
-
+    private void tickTray(Furniture consumer, Furniture tray, BakingTrayRecipe recipe) {
         if (!hasBakeableContent(tray, recipe)) {
             return;
         }
@@ -91,13 +87,13 @@ public final class OvenCavityManager {
             }
 
             TagTrack cooked = foodItem.getTagTrack(COOKED_TRACK);
-            if (cooked == null || cooked.getValue() >= BURNT) {
+            if (cooked != null && cooked.getValue() >= BURNT) {
                 continue;
             }
 
             BakingTrayState.incrementSlotElapsed(tray, slotId);
             int elapsed = BakingTrayState.getSlotElapsed(tray, slotId);
-            int cookedValue = cooked.getValue();
+            int cookedValue = cooked == null ? RAW : cooked.getValue();
 
             if (cookedValue == RAW && elapsed >= bake.getCookSeconds()) {
                 if (BakingTrayBakeApplier.applyCookSlot(tray, slotId)) {

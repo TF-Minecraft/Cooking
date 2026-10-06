@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -23,7 +24,7 @@ public class CarveSequenceLoader {
 
     public static CarveSequence get(String id) {
         if (id == null) return null;
-        return sequences.get(id.toLowerCase());
+        return sequences.get(id.toLowerCase(Locale.ROOT));
     }
 
     public void load(File file) {
@@ -47,6 +48,11 @@ public class CarveSequenceLoader {
             List<CarveCut> cuts = new ArrayList<>();
 
             for (Map<?, ?> map : sec.getMapList("cuts")) {
+                if (!validNumber(map, "food", false) || !validNumber(map, "nutrition", false)
+                        || !validNumber(map, "amount", true)) {
+                    Cooking.plugin.getLogger().warning("Carve sequence '" + key + "' has invalid cut values; skipping.");
+                    continue;
+                }
                 double food = map.containsKey("food")
                         ? ((Number) map.get("food")).doubleValue() : 1.0;
                 double nutrition = map.containsKey("nutrition")
@@ -73,8 +79,16 @@ public class CarveSequenceLoader {
                 }
             }
 
-            sequences.put(key.toLowerCase(), new CarveSequence(key, startRemaining, minFoodCuts, cuts));
+            sequences.put(key.toLowerCase(Locale.ROOT), new CarveSequence(key, startRemaining, minFoodCuts, cuts));
         }
+    }
+
+    private static boolean validNumber(Map<?, ?> cut, String key, boolean amount) {
+        if (!cut.containsKey(key)) return true;
+        if (!(cut.get(key) instanceof Number number)) return false;
+        double value = number.doubleValue();
+        if (!Double.isFinite(value)) return false;
+        return amount ? value > 0 && value <= Integer.MAX_VALUE && value == Math.rint(value) : value >= 0;
     }
 
     /** Used when an older carve-sequences.yml has no min-food-cuts key. */

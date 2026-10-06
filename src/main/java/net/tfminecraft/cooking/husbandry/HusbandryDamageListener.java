@@ -31,9 +31,6 @@ public final class HusbandryDamageListener implements Listener {
     }
 
     private static boolean cancelAttack(Entity victim, Entity attacker) {
-        if (attacker == null) {
-            return false;
-        }
         if (attacker instanceof Player player) {
             boolean owner = HusbandryOwnershipService.isOwner(player, victim.getUniqueId());
             if (owner) {

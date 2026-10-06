@@ -34,9 +34,11 @@ mvn -B --no-transfer-progress clean verify
 The JUnit 5 suite covers food parsing and items, crops, husbandry, nutrition,
 fishing and configuration loading, using MockBukkit and Mockito where Bukkit or
 plugin APIs are involved. The Build and release workflows run the same command,
-and the Build workflow uploads the Surefire reports. No coverage gate is
-enforced. The tests do not replace checking kitchens, crops and livestock on a
-live Paper server with the pinned integrations.
+and the Build workflow uploads the Surefire reports. JaCoCo requires 100% line
+coverage across all production classes, with no coverage exclusions. HTML and XML
+reports are written to `target/site/jacoco/` and uploaded by the Build workflow.
+The tests do not replace checking kitchens, crops and livestock on a live Paper
+server with the pinned integrations.
 
 ## License
 

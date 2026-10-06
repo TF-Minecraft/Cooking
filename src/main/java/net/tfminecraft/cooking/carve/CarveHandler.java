@@ -42,6 +42,7 @@ import net.tfminecraft.cooking.utils.ItemRef;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
@@ -93,48 +94,29 @@ public final class CarveHandler {
 
         ItemStack reward = buildReward(player, roast, stack, cut, sequence);
 
-        if (reward == null) return false;
+        if (reward == null || reward.getType().isAir()) return false;
 
-
-
-        Location dropLoc = furniture.getLoc();
-
-        giveReward(player, dropLoc, reward);
-
-
-
-        CarvableRoastUtils.advanceAfterCarve(roast);
-
-        dropLoc.getWorld().playSound(dropLoc, Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
-
-
-
-        if (roast.getCarveRemaining() <= 0) {
-
+        FoodItem remaining = new FoodItem(roast);
+        CarvableRoastUtils.advanceAfterCarve(remaining);
+        if (remaining.getCarveRemaining() <= 0) {
             slot.clearModel();
-
             furniture.removeActiveSlot(slot.getId());
-
-            return true;
-
+        } else {
+            var model = CarvableRoastUtils.getStageModelData(remaining);
+            if (model == null) return false;
+            ItemStack updated = ItemUpdater.applyItemUpdate(stack.clone(), remaining, furniture.getId());
+            if (updated == null || updated.getType().isAir()) return false;
+            CarvableRoastUtils.writeCarveState(updated, remaining);
+            slot.setCurrentItem(updated);
+            slot.applyDisplayData(model.getDisplayData(furniture.getId()));
         }
 
-
-
-        ItemStack updated = ItemUpdater.applyItemUpdate(stack, roast, furniture.getId());
-
-        if (updated == null) return true;
-
-        CarvableRoastUtils.writeCarveState(updated, roast);
-
-        slot.setCurrentItem(updated);
-
-        slot.applyDisplayData(CarvableRoastUtils.getStageModelData(roast).getDisplayData(furniture.getId()));
-
+        Location dropLoc = furniture.getLoc();
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(furniture);
+        giveReward(player, dropLoc, reward);
+        dropLoc.getWorld().playSound(dropLoc, Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
         return true;
-
     }
-
 
 
     private static ItemStack buildReward(Player player, FoodItem roast, ItemStack stack, CarveCut cut, CarveSequence sequence) {
@@ -219,5 +201,4 @@ public final class CarveHandler {
     }
 
 }
-
 

@@ -157,9 +157,6 @@ public final class HusbandryBreedListener implements Listener {
             LivingEntity mother,
             LivingEntity father,
             ItemStack bredWith) {
-        if (child == null) {
-            return;
-        }
         HusbandryRepository repository = HusbandryEntities.repository();
         if (repository == null) {
             return;

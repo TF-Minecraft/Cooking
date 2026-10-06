@@ -58,6 +58,10 @@ public final class TroughHandler implements Listener {
         }
 
         int perClick = ItemCache.troughItemsPerClick;
+        if (perClick <= 0) {
+            player.sendMessage("§cThe trough is not configured correctly.");
+            return;
+        }
         if (hand.getAmount() < perClick) {
             player.sendMessage("§cAdd " + perClick + " at a time.");
             return;
@@ -117,7 +121,7 @@ public final class TroughHandler implements Listener {
         }
         try {
             ItemStack stack = TLibs.getItemAPI().getCreator().getItemFromPath(path);
-            if (stack == null) {
+            if (stack == null || stack.getType().isAir()) {
                 return null;
             }
             stack.setAmount(1);

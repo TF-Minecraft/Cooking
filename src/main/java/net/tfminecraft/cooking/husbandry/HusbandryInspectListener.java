@@ -74,6 +74,9 @@ public final class HusbandryInspectListener implements Listener {
             return;
         }
         event.setCancelled(true);
+        if (event.getClickedInventory() != event.getInventory() || event.getRawSlot() != 8) {
+            return;
+        }
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }

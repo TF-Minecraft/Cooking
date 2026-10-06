@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.quality;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 
 public final class CompositionConfig {
@@ -78,7 +79,7 @@ public final class CompositionConfig {
         if (category == null) {
             return CompositionRole.MAIN;
         }
-        String key = category.toLowerCase();
+        String key = category.toLowerCase(Locale.ROOT);
         if (neutralCategories.contains(key)) {
             return CompositionRole.NEUTRAL;
         }
@@ -95,7 +96,7 @@ public final class CompositionConfig {
         if (category == null) {
             return CompositionRole.MAIN;
         }
-        String key = category.toLowerCase();
+        String key = category.toLowerCase(Locale.ROOT);
 
         if (context != null) {
             RoleSets override = contextOverrides.get(context);

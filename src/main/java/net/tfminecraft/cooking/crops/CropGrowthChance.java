@@ -29,7 +29,7 @@ public final class CropGrowthChance {
     }
 
     static void validateAffection(double affection) {
-        if (affection <= 0.0 || affection > 1.0) {
+        if (!Double.isFinite(affection) || affection <= 0.0 || affection > 1.0) {
             throw new IllegalArgumentException("affection must be in (0, 1], got " + affection);
         }
     }

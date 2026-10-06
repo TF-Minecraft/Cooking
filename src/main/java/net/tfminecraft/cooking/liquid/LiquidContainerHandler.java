@@ -102,6 +102,10 @@ public final class LiquidContainerHandler implements Listener {
     }
 
     private void handleWaterBucket(Furniture furniture, Player player) {
+        if (ItemCache.blocksPerBucket <= 0) {
+            player.sendMessage("Could not empty this bucket into the container.");
+            return;
+        }
         if (!LiquidContainerState.canAccept(furniture, LiquidContainerState.TYPE_WATER)) {
             player.sendMessage("This container already has milk.");
             return;
@@ -123,6 +127,10 @@ public final class LiquidContainerHandler implements Listener {
     }
 
     private void handleMilkBucket(Furniture furniture, Player player) {
+        if (ItemCache.blocksPerBucket <= 0) {
+            player.sendMessage("Could not empty this bucket into the container.");
+            return;
+        }
         ItemStack hand = player.getInventory().getItemInMainHand();
         ItemStack converted = MilkBucketConverter.convertIfNeeded(player, hand);
         if (converted != hand) {
@@ -167,9 +175,6 @@ public final class LiquidContainerHandler implements Listener {
         }
 
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand == null || hand.getType() == Material.AIR) {
-            return;
-        }
 
         LiquidContainerState.tickAge(furniture);
         String type = LiquidContainerState.getType(furniture);
@@ -184,7 +189,7 @@ public final class LiquidContainerHandler implements Listener {
             cup = CupItems.cupOfWater();
         }
 
-        if (cup == null) {
+        if (cup == null || cup.getType().isAir()) {
             player.sendMessage("Could not fill a cup.");
             return;
         }

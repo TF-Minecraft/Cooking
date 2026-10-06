@@ -39,6 +39,9 @@ public final class IngredientConverter {
                 : OriginQualityResolver.resolve(player, parsed.template);
         quality = HoeQualityBonus.apply(quality, hoeQualityBonusPercent);
         ItemStack converted = ItemBuilder.buildSingleWithQuality(parsed.template, stack, quality);
+        if (converted == null || converted.getType().isAir()) {
+            return stack;
+        }
         converted.setAmount(stack.getAmount());
         return converted;
     }

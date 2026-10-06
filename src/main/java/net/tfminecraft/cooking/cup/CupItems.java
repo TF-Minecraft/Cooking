@@ -13,11 +13,13 @@ public final class CupItems {
     private CupItems() {}
 
     public static ItemStack emptyCup() {
-        return TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.emptyCup).clone();
+        ItemStack item = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.emptyCup);
+        return item == null ? null : item.clone();
     }
 
     public static ItemStack cupOfWater() {
-        return TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.cupOfWater).clone();
+        ItemStack item = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.cupOfWater);
+        return item == null ? null : item.clone();
     }
 
     public static ItemStack cupOfMilk(Player player, int quality, int dairyFreshnessValue) {

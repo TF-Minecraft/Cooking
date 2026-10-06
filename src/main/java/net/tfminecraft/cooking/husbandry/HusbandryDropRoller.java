@@ -148,18 +148,17 @@ public final class HusbandryDropRoller {
         if (pool == null || pool.isEmpty() || random == null) {
             return null;
         }
-        int totalWeight = pool.stream().mapToInt(HusbandryDropEntry::weight).sum();
-        if (totalWeight <= 0) {
-            return null;
-        }
-        int roll = random.nextInt(totalWeight);
-        for (HusbandryDropEntry entry : pool) {
+        long totalWeight = pool.stream().mapToLong(HusbandryDropEntry::weight).sum();
+        long roll = totalWeight <= Integer.MAX_VALUE
+                ? random.nextInt((int) totalWeight) : random.nextLong(totalWeight);
+        for (int index = 0; index < pool.size() - 1; index++) {
+            HusbandryDropEntry entry = pool.get(index);
             roll -= entry.weight();
             if (roll < 0) {
                 return entry;
             }
         }
-        return null;
+        return pool.getLast();
     }
 
     private static HusbandrySpecies speciesOf(HusbandryAnimal animal) {

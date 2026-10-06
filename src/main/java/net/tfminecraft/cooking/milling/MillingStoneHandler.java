@@ -78,17 +78,15 @@ public final class MillingStoneHandler implements Listener {
         }
 
         MillingRecipe recipe = MillingRecipeRegistry.getByFurnitureId(furniture.getId());
-        MillingStoneAnimation.clearAnimating(furniture);
-
         MillingStoneStage stage = resolveStage(furniture);
-        if (recipe != null) {
-            if (stage == MillingStoneStage.READY) {
-                dropFlour(furniture, recipe);
-            } else if (stage == MillingStoneStage.LOADED) {
-                dropWheatRefund(furniture, recipe);
-            }
+        if (stage != MillingStoneStage.EMPTY && (recipe == null
+                || (stage == MillingStoneStage.READY && !dropFlour(furniture, recipe))
+                || (stage == MillingStoneStage.LOADED && !dropWheatRefund(furniture, recipe)))) {
+            event.setCancelled(true);
+            return;
         }
 
+        MillingStoneAnimation.clearAnimating(furniture);
         MillingStoneDisplay.clearAll(furniture);
         MillingStoneState.clear(furniture);
     }
@@ -137,7 +135,7 @@ public final class MillingStoneHandler implements Listener {
     private void handleTake(Furniture furniture, MillingRecipe recipe, Player player) {
         ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture),
                 MillingStoneState.getLineage(furniture));
-        if (flour == null) {
+        if (flour == null || flour.getType().isAir()) {
             player.sendMessage("§cFailed to create flour.");
             return;
         }
@@ -154,22 +152,25 @@ public final class MillingStoneHandler implements Listener {
         markDirty(furniture);
     }
 
-    private void dropFlour(Furniture furniture, MillingRecipe recipe) {
+    private boolean dropFlour(Furniture furniture, MillingRecipe recipe) {
         ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture),
                 MillingStoneState.getLineage(furniture));
-        if (flour != null) {
-            furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), flour);
+        if (flour == null || flour.getType().isAir()) {
+            return false;
         }
+        furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), flour);
+        return true;
     }
 
-    private void dropWheatRefund(Furniture furniture, MillingRecipe recipe) {
+    private boolean dropWheatRefund(Furniture furniture, MillingRecipe recipe) {
         ItemStack wheat = buildWheat(MillingStoneState.getOutputQuality(furniture),
                 MillingStoneState.getLineage(furniture));
-        if (wheat == null) {
-            return;
+        if (wheat == null || wheat.getType().isAir()) {
+            return false;
         }
         wheat.setAmount(recipe.getInputCount());
         furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), wheat);
+        return true;
     }
 
     private static ItemStack buildFlour(MillingRecipe recipe, int quality, IngredientLineage lineage) {

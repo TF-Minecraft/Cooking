@@ -85,7 +85,7 @@ public class ItemBuilder {
 
         if (displayNameOverride == null) {
             if (origin != null) {
-                OverrideData od = item.getOverrides().get(origin.toUpperCase());
+                OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
                 if (od != null) {
                     if (od.getName() != null) displayName = od.getName();
                 }
@@ -97,7 +97,10 @@ public class ItemBuilder {
             }
         }
         
-        if(item.getModel() == null) item.setModel(new FoodModel(base));
+        if (item.getModel() == null) {
+            if (base == null || base.getType().isAir()) return null;
+            item.setModel(new FoodModel(base));
+        }
         if (item.getCarveSequenceId() != null) {
             CarveSequence seq = CarveSequenceLoader.get(item.getCarveSequenceId());
             if (seq != null) {
@@ -105,8 +108,10 @@ public class ItemBuilder {
             }
         }
         ModelData model = item.getModelData();
+        if (model == null) return null;
 
         ItemStack stack = model.apply(null, new ItemStack(Material.DIRT));
+        if (stack == null || stack.getType().isAir()) return null;
         stamp(stack, item, displayName);
 
         if (item.getCarveSequenceId() != null) {
@@ -236,20 +241,17 @@ public class ItemBuilder {
             pdc.remove(Keys.CUSTOM_FISHING_ID);
         }
 
-        if (!indexMap.isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            boolean first = true;
-            for (var e : indexMap.entrySet()) {
-                if (!first) {
-                    sb.append(";");
-                }
-                sb.append(e.getKey()).append(".").append(e.getValue());
-                first = false;
+        // Every lore includes food and nutrition, so their indexes are always present.
+        StringBuilder sb = new StringBuilder();
+        boolean first = true;
+        for (var e : indexMap.entrySet()) {
+            if (!first) {
+                sb.append(";");
             }
-            pdc.set(Keys.LORE_INDEX_MAP, PersistentDataType.STRING, sb.toString());
-        } else {
-            pdc.remove(Keys.LORE_INDEX_MAP);
+            sb.append(e.getKey()).append(".").append(e.getValue());
+            first = false;
         }
+        pdc.set(Keys.LORE_INDEX_MAP, PersistentDataType.STRING, sb.toString());
 
         if (item.getModel() != null) {
             pdc.set(Keys.MODEL, PersistentDataType.STRING, item.getModel().getId());
@@ -415,6 +417,7 @@ public class ItemBuilder {
 
     public static ItemStack buildSingleString(String string, ItemStack base) {
         FoodParser.Result parsed = FoodParser.parse(CookingPathHandler.stripPrefix(string));
+        if (parsed == null || parsed.template == null) return null;
         FoodItem template = parsed.template;
         if (parsed.explicitQuality) {
             return ItemBuilder.buildSingle(template, base);

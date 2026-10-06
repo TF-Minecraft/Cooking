@@ -29,21 +29,21 @@ public final class HeatSources {
         if (furniture == null) {
             return false;
         }
-        return sources.containsKey(furniture.getId().toLowerCase());
+        return sources.containsKey(furniture.getId().toLowerCase(java.util.Locale.ROOT));
     }
 
     public static boolean isConsumer(Furniture furniture) {
         if (furniture == null) {
             return false;
         }
-        return consumers.containsKey(furniture.getId().toLowerCase());
+        return consumers.containsKey(furniture.getId().toLowerCase(java.util.Locale.ROOT));
     }
 
     public static boolean hasHeat(Furniture source) {
         if (source == null) {
             return false;
         }
-        HeatSourceDefinition definition = sources.get(source.getId().toLowerCase());
+        HeatSourceDefinition definition = sources.get(source.getId().toLowerCase(java.util.Locale.ROOT));
         if (definition == null) {
             return false;
         }
@@ -54,7 +54,7 @@ public final class HeatSources {
         if (consumer == null) {
             return Optional.empty();
         }
-        HeatConsumerDefinition definition = consumers.get(consumer.getId().toLowerCase());
+        HeatConsumerDefinition definition = consumers.get(consumer.getId().toLowerCase(java.util.Locale.ROOT));
         if (definition == null) {
             return Optional.empty();
         }
@@ -89,7 +89,7 @@ public final class HeatSources {
         }
 
         Location above = origin.get().getBlock().getRelative(BlockFace.UP).getLocation();
-        String sourceId = source.getId().toLowerCase();
+        String sourceId = source.getId().toLowerCase(java.util.Locale.ROOT);
 
         for (HeatConsumerDefinition definition : consumers.values()) {
             if (!definition.getSourceFurnitureId().equalsIgnoreCase(sourceId)) {
@@ -140,7 +140,7 @@ public final class HeatSources {
 
         Location target = origin.get().getBlock().getRelative(BlockFace.DOWN).getLocation();
         Optional<Furniture> source = findFurnitureAt(sourceFurnitureId, target);
-        if (source.isEmpty() || !sources.containsKey(source.get().getId().toLowerCase())) {
+        if (source.isEmpty() || !sources.containsKey(source.get().getId().toLowerCase(java.util.Locale.ROOT))) {
             return Optional.empty();
         }
         return source;
@@ -151,7 +151,7 @@ public final class HeatSources {
             return Optional.empty();
         }
 
-        String expectedId = furnitureId.toLowerCase();
+        String expectedId = furnitureId.toLowerCase(java.util.Locale.ROOT);
         for (Furniture furniture : InteractibleFurniture.getInstance()
                 .getFurnitureManager()
                 .getPlacedFurniture()
