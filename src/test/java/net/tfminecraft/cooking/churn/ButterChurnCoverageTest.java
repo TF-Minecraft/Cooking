@@ -381,6 +381,7 @@ public class ButterChurnCoverageTest {
         public final Map<UUID, Furniture> placed = new LinkedHashMap<>();
         public final Map<String, FoodItem> templates = new HashMap<>();
         public final MockedStatic<ItemCache> cache;
+        public final MockedStatic<CupItems> cups;
         public final MockedStatic<FoodItem> foods;
         public final MockedStatic<ItemUpdater> updater;
         public final MockedStatic<IngredientConverter> converter;
@@ -423,7 +424,8 @@ public class ButterChurnCoverageTest {
             snapshot.when(() -> MilkBucketSnapshot.readOrigin(any(), any())).thenAnswer(call -> { FoodItem f = resolve(call.getArgument(1)); return f == null ? "Cow" : f.getOrigin(); });
             snapshot.when(() -> MilkBucketSnapshot.readDairyFreshness(any(), any())).thenAnswer(call -> ChurnExtras.readFreshness(resolve(call.getArgument(1))));
             scoped(BucketItems.class).when(BucketItems::empty).thenAnswer(call -> new ItemStack(Material.BUCKET));
-            scoped(CupItems.class).when(CupItems::emptyCup).thenAnswer(call -> new ItemStack(Material.GLASS_BOTTLE));
+            cups = scoped(CupItems.class);
+            cups.when(CupItems::emptyCup).thenAnswer(call -> new ItemStack(Material.GLASS_BOTTLE));
             scoped(TLibs.class).when(TLibs::getItemAPI).thenReturn(itemApi);
             when(itemApi.getCreator().getItemFromPath(anyString())).thenAnswer(call -> new ItemStack(Material.STONE));
             cache = scoped(ItemCache.class);

@@ -266,6 +266,12 @@ public class PotReference extends CookingReference {
             }
             boolean progressed = data.tick();
             if (!progressed) continue;
+            // The displayed main item and its running cooking state are decoded separately.
+            // Preserve freshly accumulated thickness when rendering a cooking transition.
+            if (main != null && main.hasTagTrack("soup_thickness")
+                    && f.getActiveSlots().get(slot) == firstFoodSlot()) {
+                item.addOrModifyTrack(new TagTrack(main.getTagTrack("soup_thickness")));
+            }
             applySlotUpdate(slot, item);
         }
     }

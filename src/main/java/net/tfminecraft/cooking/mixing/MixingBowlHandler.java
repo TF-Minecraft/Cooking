@@ -267,6 +267,12 @@ public class MixingBowlHandler implements Listener {
 
 
         boolean waterCup = MixingBowlSlots.WATER.equals(expectedSlot) && ItemCache.isCupOfWater(hand);
+        ItemStack empty = waterCup ? CupItems.emptyCup() : null;
+        if (waterCup && (empty == null || empty.getType().isAir())) {
+            player.sendMessage("§cCould not return an empty cup.");
+            event.setCancelled(true);
+            return;
+        }
 
         if (!MixingBowlDisplay.showLayer(furniture, expectedSlot)) {
             event.setCancelled(true);
@@ -276,7 +282,6 @@ public class MixingBowlHandler implements Listener {
         hand.setAmount(hand.getAmount() - 1);
 
         if (waterCup) {
-            ItemStack empty = CupItems.emptyCup();
             if (hand.getAmount() <= 0) {
                 player.getInventory().setItemInMainHand(empty);
             } else {

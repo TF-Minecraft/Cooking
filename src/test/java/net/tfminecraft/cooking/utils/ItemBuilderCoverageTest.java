@@ -194,6 +194,23 @@ class ItemBuilderCoverageTest {
         assertNull(ItemBuilder.buildSingleString("bread(type=missing)",null));
     }
 
+    @Test void missingModelsDoNotProduceNullBulkItemsOrCrashBuildCommands() {
+        FoodItem template=food("missing_model","Missing model");
+        template.setModel(null); template.setAmount(2);
+        Player player=mock(Player.class);
+        try (MockedStatic<InventoryAdder> adder=mockStatic(InventoryAdder.class)) {
+            for (boolean unique : List.of(false,true)) {
+                assertTrue(ItemBuilder.build(template,unique,null).isEmpty());
+                for (String quality : List.of("", ";quality=3")) {
+                    ItemBuilder.buildFromString(player,"missing_model(type=missing_model;amount=2;unique="+unique+quality+")",null);
+                }
+            }
+            adder.verifyNoInteractions();
+        }
+        verify(player,times(4)).sendMessage("§cInvalid item string!");
+        verify(player,never()).playSound(any(Location.class),any(Sound.class),anyFloat(),anyFloat());
+    }
+
     @Test void configuredRoastsStartAtTheirFirstCarveStage() throws Exception {
         Path sequences=temporary.resolve("carve.yml");
         Files.writeString(sequences,"roast:\n  start-remaining: 2\n  cuts:\n    - output: bread\n      food: 2\n      nutrition: 1\n    - item: v.bone\n");

@@ -148,6 +148,42 @@ class PotReferenceCoverageTest {
     }
 
     @Test
+    void cookingTheFirstRawIngredientPreservesSoupThicknessOnTheDisplayedFood() {
+        // Serialized food reads and writes create independent values in production.
+        env.foodCodec.when(() -> FoodItem.fromItem(any())).thenAnswer(invocation -> {
+            FoodItem stored = env.resolve(invocation.getArgument(0));
+            return stored == null ? null : new FoodItem(stored);
+        });
+        env.updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenAnswer(invocation -> {
+            ItemStack source = invocation.getArgument(0);
+            FoodItem food = invocation.getArgument(1);
+            return env.stack(new FoodItem(food), source.getType(), source.getAmount());
+        });
+        FoodItem raw = env.food("potato", "vegetable", "Potato", Method.POT);
+        PlacedSlot first = env.place("input_1", env.stack(raw, Material.POTATO, 1));
+        env.place("input_2", env.stack(mashed("carrot"), Material.CARROT, 1));
+        env.place("liquid", new ItemStack(Material.GLASS));
+        PotReference pot = pot();
+        pot.rebuildFromFurniture();
+        assertTrue(pot.isSoup());
+        assertNotSame(pot.getSlot("input_1"), pot.getMain());
+
+        env.heated = true;
+        pot.tick();
+        assertEquals(1, pot.getSlot("input_1").getCookData().getCurrentTime());
+        assertTrue(env.resolve(first.getCurrentItem()).hasTagTrack("soup_thickness"));
+        pot.tick();
+
+        FoodItem displayed = env.resolve(first.getCurrentItem());
+        assertEquals(2, pot.getSlot("input_1").getCookData().getCurrentTime());
+        assertEquals(1, displayed.getTagTrack("cooked").getValue());
+        assertTrue(displayed.hasTagTrack("soup_thickness"),
+                "Rendering the cooking transition must preserve the thickness accumulated by the soup");
+        assertEquals(1, displayed.getTagTrack("soup_thickness").getValue());
+        assertFalse(pot.getSlot("input_2").getCookData().isBeingCooked());
+    }
+
+    @Test
     void additionsRequireBoilingWaterAndAppropriateFoodAndKeepTheFiveMainLimit() {
         PotReference pot = pot();
         ItemStack carrot = env.stack(env.food("carrot", "vegetable", "Carrot", Method.POT), Material.CARROT, 1);

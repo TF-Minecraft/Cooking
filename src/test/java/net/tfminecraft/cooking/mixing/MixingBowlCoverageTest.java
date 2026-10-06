@@ -137,6 +137,23 @@ class MixingBowlCoverageTest {
         assertEquals(MixingBowlStage.EMPTY, MixingBowlState.getStage(s.f)); assertTrue(s.active.isEmpty()); assertTrue(s.variables.isEmpty());
     }
 
+    @Test void missingCupReturnPreservesWaterAndDoesNotDisplayOrAdvanceTheLayer() {
+        var cups = e.cups;
+        for (ItemStack unavailable : Arrays.asList(null, new ItemStack(Material.AIR))) {
+            cups.when(net.tfminecraft.cooking.cup.CupItems::emptyCup).thenReturn(unavailable);
+            for (int amount : List.of(1,2)) {
+                resetBowl(); addFlour();
+                e.hold(new ItemStack(Material.HONEY_BOTTLE, amount));
+                var event = s.interact(); handler.onInteract(event);
+                assertTrue(event.isCancelled());
+                assertEquals(Material.HONEY_BOTTLE, e.player.getInventory().getItemInMainHand().getType());
+                assertEquals(amount, e.player.getInventory().getItemInMainHand().getAmount());
+                assertEquals(MixingBowlStage.HAS_FLOUR, MixingBowlState.getStage(s.f));
+                assertEquals(Set.of("flour"), s.active.keySet());
+            }
+        }
+    }
+
     @Test void aPersistedStageBehindItsVisibleLayerCannotConsumeTheSameIngredientTwice() {
         // Preserve an already loaded layer when saved stage metadata lags the visible model.
         MixingBowlState.setStage(s.f, MixingBowlStage.EMPTY);

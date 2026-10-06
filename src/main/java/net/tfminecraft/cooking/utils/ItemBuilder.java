@@ -35,12 +35,15 @@ public class ItemBuilder {
         int amount = template.getAmount();
 
         if (unique) {
-            for (int i = 0; i < amount; i++)
-                list.add(buildSingle(template, base));
+            for (int i = 0; i < amount; i++) {
+                ItemStack stack = buildSingle(template, base);
+                if (stack != null) list.add(stack);
+            }
             return list;
         }
 
         ItemStack stack = buildSingle(template, base);
+        if (stack == null) return list;
         stack.setAmount(amount);
         list.add(stack);
 
@@ -398,6 +401,10 @@ public class ItemBuilder {
         } else {
             stacks = buildWithOriginQuality(p, template, unique, base);
         }
+        if (stacks.isEmpty()) {
+            p.sendMessage("§cInvalid item string!");
+            return;
+        }
         boolean sound = true;
 
         for (ItemStack is : stacks) {
@@ -433,13 +440,15 @@ public class ItemBuilder {
         if (unique) {
             for (int i = 0; i < amount; i++) {
                 int quality = OriginQualityResolver.resolve(player, template);
-                list.add(buildSingleWithQuality(template, base, quality));
+                ItemStack stack = buildSingleWithQuality(template, base, quality);
+                if (stack != null) list.add(stack);
             }
             return list;
         }
 
         int quality = OriginQualityResolver.resolve(player, template);
         ItemStack stack = buildSingleWithQuality(template, base, quality);
+        if (stack == null) return list;
         stack.setAmount(amount);
         list.add(stack);
         return list;

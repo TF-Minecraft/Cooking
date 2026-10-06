@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import net.tfminecraft.cooking.Cooking;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Cow;
@@ -21,11 +22,28 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.inventory.HorseInventory;
 import org.bukkit.inventory.ItemStack;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 class HusbandryOwnedMountTest {
+    private Cooking previousPlugin;
+
+    @BeforeEach
+    void providePluginForStateDisplayKeys() {
+        previousPlugin = Cooking.plugin;
+        Cooking.plugin = mock(Cooking.class);
+        when(Cooking.plugin.getName()).thenReturn("Cooking");
+        when(Cooking.plugin.namespace()).thenReturn("cooking");
+    }
+
+    @AfterEach
+    void restorePlugin() {
+        Cooking.plugin = previousPlugin;
+    }
+
     @Test
     void tamedNamedSaddledHorseWithoutCookingOwnerIsRemoved() {
         Horse horse = keptLookingHorse();
