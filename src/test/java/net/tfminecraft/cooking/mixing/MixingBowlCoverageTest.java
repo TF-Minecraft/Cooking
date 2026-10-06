@@ -233,13 +233,20 @@ class MixingBowlCoverageTest {
         assertTrue(missing.isCancelled());
         assertEquals(MixingBowlStage.DOUGH_READY, MixingBowlState.getStage(s.f));
 
+        e.messages.clear();
         FurnitureBreakEvent failedBreak = new FurnitureBreakEvent(s.f, e.player);
         handler.onBreak(failedBreak);
         assertTrue(failedBreak.isCancelled(), "A missing dough template must not discard a finished batch");
+        assertEquals(List.of("§cThis dough cannot be collected right now."), e.messages);
         assertEquals(saved, s.variables);
         assertSame(layer, s.active.get("dough"));
         verify(layer, never()).clearModel();
         verify(e.world, never()).dropItemNaturally(any(), any());
+
+        FurnitureBreakEvent automatedBreak = new FurnitureBreakEvent(s.f, null);
+        assertDoesNotThrow(() -> handler.onBreak(automatedBreak));
+        assertTrue(automatedBreak.isCancelled());
+        assertEquals(saved, s.variables);
 
         e.templates.put("dough", e.food("dough", "grain", "Wheat", 3, 0));
         FurnitureBreakEvent repairedBreak = new FurnitureBreakEvent(s.f, e.player);
@@ -264,10 +271,12 @@ class MixingBowlCoverageTest {
         e.templates.get("dough").setModel(new FoodModel(new ItemStack(Material.AIR)));
         e.builder.close(); // Use the real renderer: an AIR model produces no output item.
 
+        e.messages.clear();
         FurnitureBreakEvent event = new FurnitureBreakEvent(s.f, e.player);
         handler.onBreak(event);
 
         assertTrue(event.isCancelled(), "Failed dough rendering must leave the bowl and its batch recoverable");
+        assertEquals(List.of("§cThis dough cannot be collected right now."), e.messages);
         assertEquals(saved, s.variables);
         assertSame(layer, s.active.get("dough"));
         assertEquals(displayed, layer.getCurrentItem());

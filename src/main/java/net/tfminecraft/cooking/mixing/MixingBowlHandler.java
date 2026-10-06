@@ -200,6 +200,9 @@ public class MixingBowlHandler implements Listener {
 
             if (dough == null) {
                 event.setCancelled(true);
+                if (event.hasPlayer()) {
+                    event.getPlayer().sendMessage("§cThis dough cannot be collected right now.");
+                }
                 return;
             }
 
