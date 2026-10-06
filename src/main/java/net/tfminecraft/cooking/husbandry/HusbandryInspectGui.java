@@ -21,7 +21,7 @@ public final class HusbandryInspectGui {
     private static final long MILLIS_PER_HOUR = 3_600_000L;
     private static final int INVENTORY_SIZE = 54;
     private static final int PRODUCTS_SLOT = 3;
-    private static final int REMOVE_SLOT = 8;
+    static final int REMOVE_SLOT = 8;
     private static final int CARE_BAR_START = 20;
     private static final int GENETICS_BAR_START = 38;
     private static final int MOUNT_HEALTH_SLOT = 46;

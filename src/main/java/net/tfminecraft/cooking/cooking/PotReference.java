@@ -257,7 +257,7 @@ public class PotReference extends CookingReference {
             FoodItem item = entry.getValue();
             CookData data = item.getCookData();
             if (!item.canBeCooked()) continue;
-            if (isSoup()) {
+            if (item.hasTag(Tag.MASHED)) {
                 if (data.isBeingCooked()) data.stop();
                 continue;
             }

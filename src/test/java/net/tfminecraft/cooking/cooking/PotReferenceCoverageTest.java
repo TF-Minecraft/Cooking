@@ -131,6 +131,23 @@ class PotReferenceCoverageTest {
     }
 
     @Test
+    void aRawIngredientAddedToExistingSoupStillCooksWhileMashedIngredientsStayStopped() {
+        PotReference pot = preparedSoup();
+        FoodItem mashed = pot.getMain();
+        FoodItem raw = env.food("potato", "vegetable", "Potato", Method.POT);
+        env.place("input_2", env.stack(raw, Material.POTATO, 1));
+        pot.slots.put("input_2", raw);
+        env.heated = true;
+        pot.tick();
+        assertTrue(raw.getCookData().isBeingCooked());
+        assertEquals(1, raw.getCookData().getCurrentTime());
+        assertFalse(mashed.getCookData().isBeingCooked());
+        pot.tick();
+        assertEquals(2, raw.getCookData().getCurrentTime());
+        assertFalse(mashed.getCookData().isBeingCooked());
+    }
+
+    @Test
     void additionsRequireBoilingWaterAndAppropriateFoodAndKeepTheFiveMainLimit() {
         PotReference pot = pot();
         ItemStack carrot = env.stack(env.food("carrot", "vegetable", "Carrot", Method.POT), Material.CARROT, 1);

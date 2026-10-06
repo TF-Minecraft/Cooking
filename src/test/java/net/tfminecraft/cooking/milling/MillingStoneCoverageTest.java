@@ -331,6 +331,7 @@ class MillingStoneCoverageTest {
         var event = new FurnitureBreakEvent(station.furniture, env.player);
         handler.onBreak(event);
         assertTrue(event.isCancelled(), "A failed refund must not silently destroy the paid ingredients");
+        verify(env.player).sendMessage("§cThe mill's contents could not be returned. Please ask staff to check its recipe.");
         assertEquals(saved, station.variables); assertTrue(env.dropped.isEmpty());
         assertEquals(ground ? MillingStoneStage.READY : MillingStoneStage.LOADED, MillingStoneState.getStage(station.furniture));
     }

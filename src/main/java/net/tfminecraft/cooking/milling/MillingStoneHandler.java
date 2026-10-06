@@ -83,6 +83,11 @@ public final class MillingStoneHandler implements Listener {
                 || (stage == MillingStoneStage.READY && !dropFlour(furniture, recipe))
                 || (stage == MillingStoneStage.LOADED && !dropWheatRefund(furniture, recipe)))) {
             event.setCancelled(true);
+            org.bukkit.Bukkit.getLogger().warning("[Cooking] Cannot return contents from milling stone '"
+                    + furniture.getId() + "' (recipe=" + (recipe == null ? "missing" : recipe.getId())
+                    + "). Break cancelled to preserve its contents.");
+            if (event.getPlayer() != null) event.getPlayer().sendMessage(
+                    "§cThe mill's contents could not be returned. Please ask staff to check its recipe.");
             return;
         }
 
