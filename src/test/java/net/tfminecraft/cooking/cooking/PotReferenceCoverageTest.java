@@ -149,16 +149,7 @@ class PotReferenceCoverageTest {
 
     @Test
     void cookingTheFirstRawIngredientPreservesSoupThicknessOnTheDisplayedFood() {
-        // Serialized food reads and writes create independent values in production.
-        env.foodCodec.when(() -> FoodItem.fromItem(any())).thenAnswer(invocation -> {
-            FoodItem stored = env.resolve(invocation.getArgument(0));
-            return stored == null ? null : new FoodItem(stored);
-        });
-        env.updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenAnswer(invocation -> {
-            ItemStack source = invocation.getArgument(0);
-            FoodItem food = invocation.getArgument(1);
-            return env.stack(new FoodItem(food), source.getType(), source.getAmount());
-        });
+        useIndependentFoodSnapshots();
         FoodItem raw = env.food("potato", "vegetable", "Potato", Method.POT);
         PlacedSlot first = env.place("input_1", env.stack(raw, Material.POTATO, 1));
         env.place("input_2", env.stack(mashed("carrot"), Material.CARROT, 1));
@@ -181,6 +172,38 @@ class PotReferenceCoverageTest {
                 "Rendering the cooking transition must preserve the thickness accumulated by the soup");
         assertEquals(1, displayed.getTagTrack("soup_thickness").getValue());
         assertFalse(pot.getSlot("input_2").getCookData().isBeingCooked());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void remashingSoupPreservesItsAccumulatedThickness(boolean rawFirst) {
+        useIndependentFoodSnapshots();
+        FoodItem raw = env.food("potato", "vegetable", "Potato", Method.POT);
+        FoodItem soup = mashed("carrot");
+        PlacedSlot first = env.place("input_1", env.stack(rawFirst ? raw : soup, Material.CARROT, 1));
+        env.place("input_2", env.stack(rawFirst ? soup : raw, Material.POTATO, 1));
+        env.place("liquid", new ItemStack(Material.GLASS));
+        PotReference pot = pot();
+        pot.rebuildFromFurniture();
+        assertTrue(pot.isSoup());
+        env.heated = true;
+        for (int tick = 0; tick < 3; tick++) pot.tick();
+        assertEquals(2, env.resolve(first.getCurrentItem()).getTagTrack("soup_thickness").getValue());
+
+        pot.mash(env.player);
+
+        FoodItem displayed = env.resolve(first.getCurrentItem());
+        assertTrue(displayed.hasTagTrack("soup_thickness"),
+                "Re-mashing must preserve the soup's accumulated thickness");
+        assertEquals(2, displayed.getTagTrack("soup_thickness").getValue());
+        for (FoodItem ingredient : pot.getSlots().values()) {
+            assertTrue(ingredient.hasTag(Tag.MASHED));
+            assertEquals(3, ingredient.getTagTrack("cooked").getValue());
+            assertFalse(ingredient.getCookData().isBeingCooked());
+        }
+        pot.tick();
+        pot.mash(env.player);
+        assertEquals(3, env.resolve(first.getCurrentItem()).getTagTrack("soup_thickness").getValue());
     }
 
     @Test
@@ -507,6 +530,19 @@ class PotReferenceCoverageTest {
         assertTrue(pot.secondaries.isEmpty());
         assertFalse(env.variables.containsKey("pot.soupServings"));
         verify(input, never()).clearModel(); verify(liquid).clearModel();
+    }
+
+    private void useIndependentFoodSnapshots() {
+        // Serialized food reads and writes create independent values in production.
+        env.foodCodec.when(() -> FoodItem.fromItem(any())).thenAnswer(invocation -> {
+            FoodItem stored = env.resolve(invocation.getArgument(0));
+            return stored == null ? null : new FoodItem(stored);
+        });
+        env.updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenAnswer(invocation -> {
+            ItemStack source = invocation.getArgument(0);
+            FoodItem food = invocation.getArgument(1);
+            return env.stack(new FoodItem(food), source.getType(), source.getAmount());
+        });
     }
 
     private PotReference pot() { return new PotReference(env.furniture, Method.POT); }

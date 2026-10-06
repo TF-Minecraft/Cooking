@@ -266,14 +266,22 @@ public class PotReference extends CookingReference {
             }
             boolean progressed = data.tick();
             if (!progressed) continue;
-            // The displayed main item and its running cooking state are decoded separately.
-            // Preserve freshly accumulated thickness when rendering a cooking transition.
-            if (main != null && main.hasTagTrack("soup_thickness")
-                    && f.getActiveSlots().get(slot) == firstFoodSlot()) {
-                item.addOrModifyTrack(new TagTrack(main.getTagTrack("soup_thickness")));
-            }
             applySlotUpdate(slot, item);
         }
+    }
+
+    @Override
+    protected void applySlotUpdate(String slot, FoodItem item) {
+        // The display and running cooking state are decoded separately. Both cooking
+        // transitions and mashing must retain the thickness already on the main item.
+        PlacedSlot mainSlot = firstFoodSlot();
+        if (mainSlot != null && f.getActiveSlots().get(slot) == mainSlot) {
+            FoodItem displayed = FoodItem.fromItem(mainSlot.getCurrentItem());
+            if (displayed.hasTagTrack("soup_thickness")) {
+                item.addOrModifyTrack(new TagTrack(displayed.getTagTrack("soup_thickness")));
+            }
+        }
+        super.applySlotUpdate(slot, item);
     }
 
     public boolean canAdd(Player p, ItemStack i) {
