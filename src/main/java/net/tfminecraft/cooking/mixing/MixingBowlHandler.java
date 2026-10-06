@@ -198,11 +198,12 @@ public class MixingBowlHandler implements Listener {
 
             ItemStack dough = buildDough(furniture, null);
 
-            if (dough != null) {
-
-                furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), dough);
-
+            if (dough == null) {
+                event.setCancelled(true);
+                return;
             }
+
+            furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), dough);
 
             MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.DOUGH);
 

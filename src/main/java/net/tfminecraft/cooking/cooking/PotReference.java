@@ -218,6 +218,10 @@ public class PotReference extends CookingReference {
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
+        if (output == null) {
+            p.sendMessage("§cThis soup cannot be served right now.");
+            return;
+        }
 
         String displayName = applyNameTemplate(soup, DisplayUtils.getMergedColour(colours), "Soup");
         ItemMeta m = output.getItemMeta();

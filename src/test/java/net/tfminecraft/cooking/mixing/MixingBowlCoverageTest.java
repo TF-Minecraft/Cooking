@@ -10,6 +10,7 @@ import net.tfminecraft.cooking.cache.NamingConfig;
 import net.tfminecraft.cooking.churn.ButterChurnCoverageTest.KitchenFixture;
 import net.tfminecraft.cooking.churn.ButterChurnCoverageTest.Station;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
@@ -215,14 +216,63 @@ class MixingBowlCoverageTest {
     }
 
     @Test void takingAndBreakingOnlyReleaseCompletedDoughAndHandleMissingTemplates() {
-        handler.onTake(e.station("other").take(null, "dough")); handler.onTake(s.take(null, "flour"));
-        var unready = s.take(null, "dough"); handler.onTake(unready); assertTrue(unready.isCancelled()); assertTrue(e.messages.getLast().contains("Knead"));
-        MixingBowlState.setStage(s.f, MixingBowlStage.DOUGH_READY); e.templates.remove("dough");
-        var missing = s.take(null, "dough"); handler.onTake(missing); assertTrue(missing.isCancelled()); assertEquals(MixingBowlStage.DOUGH_READY, MixingBowlState.getStage(s.f));
-        handler.onBreak(new FurnitureBreakEvent(s.f, e.player)); assertTrue(s.variables.isEmpty()); verify(e.world, never()).dropItemNaturally(any(), any());
-        e.templates.put("dough", e.food("dough", "grain", "Wheat", 3, 0)); MixingBowlState.setStage(s.f, MixingBowlStage.DOUGH_READY); s.place("dough", new ItemStack(Material.STONE));
-        handler.onBreak(new FurnitureBreakEvent(s.f, e.player)); verify(e.world).dropItemNaturally(eq(s.f.getLoc()), argThat(item -> item.getType() == Material.PAPER)); assertFalse(s.active.containsKey("dough")); assertTrue(s.variables.isEmpty());
-        handler.onBreak(new FurnitureBreakEvent(s.f, e.player)); handler.onBreak(new FurnitureBreakEvent(e.station("other").f, e.player));
+        handler.onTake(e.station("other").take(null, "dough"));
+        handler.onTake(s.take(null, "flour"));
+        var unready = s.take(null, "dough");
+        handler.onTake(unready);
+        assertTrue(unready.isCancelled());
+        assertTrue(e.messages.getLast().contains("Knead"));
+
+        MixingBowlState.setStage(s.f, MixingBowlStage.DOUGH_READY);
+        MixingBowlState.setFlourQuality(s.f, 4);
+        PlacedSlot layer = s.place("dough", new ItemStack(Material.STONE));
+        Map<String, Object> saved = Map.copyOf(s.variables);
+        e.templates.remove("dough");
+        var missing = s.take(null, "dough");
+        handler.onTake(missing);
+        assertTrue(missing.isCancelled());
+        assertEquals(MixingBowlStage.DOUGH_READY, MixingBowlState.getStage(s.f));
+
+        FurnitureBreakEvent failedBreak = new FurnitureBreakEvent(s.f, e.player);
+        handler.onBreak(failedBreak);
+        assertTrue(failedBreak.isCancelled(), "A missing dough template must not discard a finished batch");
+        assertEquals(saved, s.variables);
+        assertSame(layer, s.active.get("dough"));
+        verify(layer, never()).clearModel();
+        verify(e.world, never()).dropItemNaturally(any(), any());
+
+        e.templates.put("dough", e.food("dough", "grain", "Wheat", 3, 0));
+        FurnitureBreakEvent repairedBreak = new FurnitureBreakEvent(s.f, e.player);
+        handler.onBreak(repairedBreak);
+        assertFalse(repairedBreak.isCancelled());
+        verify(e.world).dropItemNaturally(eq(s.f.getLoc()), argThat(item -> item.getType() == Material.PAPER));
+        assertFalse(s.active.containsKey("dough"));
+        assertTrue(s.variables.isEmpty());
+        handler.onBreak(new FurnitureBreakEvent(s.f, e.player));
+        handler.onBreak(new FurnitureBreakEvent(e.station("other").f, e.player));
+    }
+
+    @Test void breakingReadyDoughWithAnAirModelPreservesItsSavedBatchAndVisibleLayer() {
+        prepare();
+        MixingBowlState.setMixCount(s.f, ItemCache.mixingStirCount - 1);
+        e.hold(null);
+        handler.onInteract(s.interact());
+        assertEquals(MixingBowlStage.DOUGH_READY, MixingBowlState.getStage(s.f));
+        PlacedSlot layer = s.active.get("dough");
+        ItemStack displayed = layer.getCurrentItem().clone();
+        Map<String, Object> saved = Map.copyOf(s.variables);
+        e.templates.get("dough").setModel(new FoodModel(new ItemStack(Material.AIR)));
+        e.builder.close(); // Use the real renderer: an AIR model produces no output item.
+
+        FurnitureBreakEvent event = new FurnitureBreakEvent(s.f, e.player);
+        handler.onBreak(event);
+
+        assertTrue(event.isCancelled(), "Failed dough rendering must leave the bowl and its batch recoverable");
+        assertEquals(saved, s.variables);
+        assertSame(layer, s.active.get("dough"));
+        assertEquals(displayed, layer.getCurrentItem());
+        verify(layer, never()).clearModel();
+        verify(e.world, never()).dropItemNaturally(any(), any());
     }
 
     @Test void collectedDoughCarriesAllIngredientSnapshotsAndSweetFruitTags() {

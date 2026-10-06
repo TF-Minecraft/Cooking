@@ -31,6 +31,7 @@ import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.enums.Tag;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.TrackLoader;
+import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
@@ -318,6 +319,30 @@ class PotReferenceCoverageTest {
         assertFalse(env.variables.containsKey("pot.soupServings"));
         assertFalse(env.variables.containsKey("pot.extras"));
         pot.scoop(env.player, ladle);
+    }
+
+    @Test
+    void unavailableSoupOutputKeepsTheLadleAndRemainingServingsAndExplainsTheFailure() {
+        PotReference pot = preparedSoup();
+        env.variables.put("pot.soupServings", 2);
+        ItemStack ladle = new ItemStack(Material.PAPER);
+        env.player.getInventory().setItemInMainHand(ladle);
+        Map<String, Object> saved = Map.copyOf(env.variables);
+        PlacedSlot ingredient = env.active.get("input_1");
+        ItemStack displayed = ingredient.getCurrentItem().clone();
+        when(ItemBuilder.buildSingleWithQuality(any(), any(), anyInt())).thenReturn(null);
+
+        assertDoesNotThrow(() -> pot.scoop(env.player, ladle));
+
+        assertEquals(ladle, env.player.getInventory().getItemInMainHand());
+        assertEquals(saved, env.variables);
+        assertTrue(pot.isSoup());
+        assertEquals(displayed, ingredient.getCurrentItem());
+        verify(ingredient, never()).clearModel();
+        verify(env.active.get("liquid"), never()).applyDisplayData(any());
+        verify(env.player, never()).swingMainHand();
+        verify(env.player).sendMessage(argThat((String message) ->
+                message != null && message.toLowerCase(java.util.Locale.ROOT).contains("soup")));
     }
 
     @ParameterizedTest
