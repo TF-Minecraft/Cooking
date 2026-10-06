@@ -229,6 +229,14 @@ public final class ButterChurnHandler implements Listener {
     }
 
     private void handlePlateCollection(Furniture churn, Furniture plate, Player player, int required) {
+        if (plate.getType().getSlots().isEmpty()) return;
+        for (SlotDefinition def : plate.getType().getSlots().values()) {
+            if (plate.getActiveSlot(def.getId()).map(PlacedSlot::getCurrentItem)
+                    .filter(item -> !item.getType().isAir()).isPresent()) {
+                player.sendMessage("Empty the butter plate first.");
+                return;
+            }
+        }
         int count = ButterChurnState.getChurnCount(churn);
         if (count < required) {
             player.sendMessage("Churn the milk " + required + " times first (" + count + "/" + required + ")");
@@ -256,13 +264,16 @@ public final class ButterChurnHandler implements Listener {
         }
 
         FoodItem butterItem = FoodItem.fromItem(butter);
+        if (butterItem == null) {
+            player.sendMessage("Could not create butter.");
+            return;
+        }
+        ItemStack display = ItemUpdater.applyItemUpdate(butter.clone(), butterItem, plate.getId());
+        if (display == null) display = butter.clone();
         ItemDisplay churnDisplay = (ItemDisplay) Bukkit.getEntity(churn.getEntityId());
         for (SlotDefinition def : plate.getType().getSlots().values()) {
             PlacedSlot slot = plate.getOrCreatePlacedSlot(def.getId());
-            ItemStack display = butterItem == null
-                    ? butter.clone()
-                    : ItemUpdater.applyItemUpdate(butter.clone(), butterItem, plate.getId());
-            slot.forceModel(display);
+            slot.forceModel(display.clone());
             if (churnDisplay != null) {
                 slot.followParentTransform(churnDisplay);
             }
@@ -286,9 +297,6 @@ public final class ButterChurnHandler implements Listener {
         }
 
         FoodItem salt = FoodItem.fromItem(hand);
-        if (salt == null) {
-            return false;
-        }
 
         ButterChurnState.setSalt(furniture, QualityUtils.clamp(salt.getQualityMin()));
         ButterChurnState.setSaltLineage(furniture, salt.getLineage());
@@ -362,9 +370,6 @@ public final class ButterChurnHandler implements Listener {
     }
 
     private void ensureStick(Furniture furniture) {
-        if (!FurnitureCache.isButterChurn(furniture)) {
-            return;
-        }
         if (furniture.getType() == null || furniture.getType().getSlot(STICK_SLOT) == null) {
             return;
         }

@@ -60,6 +60,10 @@ public final class BowlEatHandler implements Listener {
         }
 
         event.setCancelled(true);
+        if (!food.isEdible()) {
+            player.sendMessage("§cThis needs to be prepared before you can eat it.");
+            return;
+        }
         food.updateAge();
         NutritionService.tryApplyEat(player, food);
 

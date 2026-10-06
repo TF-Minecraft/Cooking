@@ -150,7 +150,7 @@ public final class SausageMakerHandler implements Listener {
         }
 
         ItemStack chain = SausageItems.fromMeats(player, meats);
-        if (chain == null) {
+        if (chain == null || chain.getType().isAir()) {
             player.sendMessage("§cCould not make sausage chain.");
             return;
         }
@@ -190,14 +190,8 @@ public final class SausageMakerHandler implements Listener {
             return false;
         }
 
-        PlacedSlot slot = furniture.getActiveSlot(slotId).orElse(null);
-        if (slot == null) {
-            return false;
-        }
+        PlacedSlot slot = furniture.getActiveSlot(slotId).orElseThrow();
         ItemStack item = slot.getCurrentItem();
-        if (item == null || item.getType().isAir()) {
-            return false;
-        }
 
         ItemStack leftover = InventoryAdder.addItem(player, item.clone());
         if (leftover != null) {
@@ -255,9 +249,6 @@ public final class SausageMakerHandler implements Listener {
 
     private static void clearMeatSlots(Furniture furniture) {
         for (String slotId : MEAT_SLOTS) {
-            if (!furniture.hasActiveSlot(slotId)) {
-                continue;
-            }
             furniture.getActiveSlot(slotId).ifPresent(slot -> {
                 slot.clearModel();
                 furniture.removeActiveSlot(slotId);

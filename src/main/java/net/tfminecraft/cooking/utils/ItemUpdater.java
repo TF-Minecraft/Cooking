@@ -45,7 +45,7 @@ public class ItemUpdater {
             }
             TagStep after = track.getCurrentStep();
 
-            if (before != null && after != null && !before.getTag().equals(after.getTag())) {
+            if (before != null && after != null && !before.getId().equals(after.getId())) {
                 changed = true;
             }
         }
@@ -74,7 +74,7 @@ public class ItemUpdater {
         ModelData newModel = fi.getModel() != null ? fi.getModelData() : null;
         if (newModel != null) {
             updated = newModel.apply(furniture, stack);
-            if (updated == null) {
+            if (updated == null || updated.getType().isAir()) {
                 updated = stack;
             }
         }
@@ -109,9 +109,6 @@ public class ItemUpdater {
             if (!broken) {
                 return null;
             }
-            if (!shouldWriteToSlot(held, true, false)) {
-                return null;
-            }
             return applyItemUpdate(stack, fi, furniture);
         }
 
@@ -131,13 +128,11 @@ public class ItemUpdater {
             changed = applyAging(fi, deltaSeconds);
         }
         boolean visual = changed || expired || broken;
-        boolean normalizeNeeded = StackNormalizer.needsNormalize(fi);
         boolean clockOff = fi.getLastUpdate() != now;
-        boolean silent = normalizeNeeded || clockOff;
+        boolean silent = clockOff;
         if (!shouldWriteToSlot(held, visual, silent)) {
             return null;
         }
-        StackNormalizer.normalize(fi);
         fi.setLastUpdate(now);
         return applyItemUpdate(stack, fi, furniture);
     }
@@ -179,7 +174,7 @@ public class ItemUpdater {
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.
     @SuppressWarnings("deprecation")
     private static String existingDisplayName(ItemStack stack) {
-        if (stack == null || !stack.hasItemMeta()) {
+        if (!stack.hasItemMeta()) {
             return null;
         }
         ItemMeta meta = stack.getItemMeta();

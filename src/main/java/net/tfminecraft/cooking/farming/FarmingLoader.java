@@ -72,9 +72,6 @@ public final class FarmingLoader {
 
     private static List<FarmingToolDefinition> parseTools(List<Map<?, ?>> raw) {
         List<FarmingToolDefinition> tools = new ArrayList<>();
-        if (raw == null) {
-            return tools;
-        }
         for (Map<?, ?> entry : raw) {
             Object pathRaw = entry.get("path");
             if (pathRaw == null || String.valueOf(pathRaw).isBlank()) {
@@ -109,9 +106,6 @@ public final class FarmingLoader {
 
     private static Map<Material, FarmingCropDefinition> parseCrops(List<Map<?, ?>> raw) {
         Map<Material, FarmingCropDefinition> crops = new HashMap<>();
-        if (raw == null) {
-            return crops;
-        }
         for (Map<?, ?> entry : raw) {
             Material crop = parseMaterial(entry.get("crop"));
             Material seed = parseMaterial(entry.get("seed"));

@@ -1,6 +1,5 @@
 package net.tfminecraft.cooking.husbandry;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -41,22 +40,13 @@ public final class HusbandryDeathListener implements Listener {
         boolean hasSlaughter = species != null && species.canSlaughter();
         boolean mature = HusbandryGrowth.isMature(animal, now);
         if (HusbandrySlaughterDrops.shouldReplaceVanilla(hasSlaughter, mature)) {
-            Iterator<ItemStack> drops = event.getDrops().iterator();
-            while (drops.hasNext()) {
-                ItemStack drop = drops.next();
-                if (HusbandryHarvest.isWoolDrop(drop)) {
-                    continue;
-                }
-                drops.remove();
-            }
-            if (HusbandrySlaughterDrops.shouldAddRoast(hasSlaughter, mature)) {
-                ItemStack roast = HusbandryHarvest.buildFood(animal, species.slaughterMeat());
-                if (roast != null) {
-                    event.getDrops().add(roast);
-                } else {
-                    Bukkit.getLogger().warning("[Cooking] Slaughter roast failed for "
-                            + entity.getType() + " using " + species.slaughterMeat());
-                }
+            ItemStack roast = HusbandryHarvest.buildFood(animal, species.slaughterMeat());
+            if (roast == null || roast.getType().isAir()) {
+                Bukkit.getLogger().warning("[Cooking] Slaughter roast failed for "
+                        + entity.getType() + " using " + species.slaughterMeat());
+            } else {
+                event.getDrops().removeIf(drop -> !HusbandryHarvest.isWoolDrop(drop));
+                event.getDrops().add(roast);
                 HusbandryDropRoller.rollSlaughterExtras(animal, ThreadLocalRandom.current(), now)
                         .forEach(extra -> event.getDrops().add(extra));
             }

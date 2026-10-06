@@ -86,7 +86,7 @@ public final class CompositionQualityResolver {
     }
 
     public static Map<String, Integer> resolveMainsFreshness(List<FoodItem> mains) {
-        Map<String, Integer> sums = new HashMap<>();
+        Map<String, Long> sums = new HashMap<>();
         Map<String, Integer> counts = new HashMap<>();
 
         if (mains == null) {
@@ -99,13 +99,13 @@ public final class CompositionQualityResolver {
                     continue;
                 }
                 String id = track.getId();
-                sums.merge(id, track.getValue(), Integer::sum);
+                sums.merge(id, (long) track.getValue(), Long::sum);
                 counts.merge(id, 1, Integer::sum);
             }
         }
 
         Map<String, Integer> averaged = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : sums.entrySet()) {
+        for (Map.Entry<String, Long> entry : sums.entrySet()) {
             int count = counts.getOrDefault(entry.getKey(), 1);
             averaged.put(entry.getKey(), (int) Math.round(entry.getValue() / (double) count));
         }
@@ -212,7 +212,7 @@ public final class CompositionQualityResolver {
         }
 
         if (ThreadLocalRandom.current().nextDouble() < best.chance()) {
-            return QualityUtils.clamp(quality + best.boost());
+            return (int) Math.clamp((long) quality + best.boost(), 1L, 5L);
         }
 
         return quality;

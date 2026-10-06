@@ -10,7 +10,7 @@ public final class AgeScale {
     private AgeScale() {}
 
     public static double clamp(double multiplier) {
-        return multiplier > 0 ? multiplier : DEFAULT;
+        return Double.isFinite(multiplier) && multiplier > 0 ? multiplier : DEFAULT;
     }
 
     public static double forFood(String foodId, String trackId) {
@@ -26,8 +26,11 @@ public final class AgeScale {
             return new Scaled(value, leftover);
         }
         double scaled = leftover + deltaSeconds / clamp(multiplier);
-        int whole = (int) Math.floor(scaled);
-        return new Scaled(value + whole, scaled - whole);
+        if (scaled >= (long) Integer.MAX_VALUE - value) {
+            return new Scaled(Integer.MAX_VALUE, 0);
+        }
+        long whole = (long) Math.floor(scaled);
+        return new Scaled((int) (value + whole), scaled - whole);
     }
 
     public static String migrateTrackId(String trackId) {
@@ -42,7 +45,7 @@ public final class AgeScale {
 
     public static int migrateTrackValue(String trackId, int value) {
         if (trackId != null && "dairy_freshness".equalsIgnoreCase(trackId)) {
-            return Math.max(0, value) * DAIRY_SCALE;
+            return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, value) * DAIRY_SCALE);
         }
         return Math.max(0, value);
     }

@@ -87,34 +87,51 @@ public class FoodParser {
     // ============================================================
 
     public static Result parse(String input) {
-        if (input == null || !input.contains("(")) return null;
+        if (input == null) return null;
+        input = input.trim();
+        int firstParen = input.indexOf('(');
+        if (firstParen < 0 || !input.endsWith(")")) return null;
+        int depth = 0;
+        for (int i = firstParen; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c == '(') depth++;
+            if (c == ')') depth--;
+            if (depth == 0 && i != input.length() - 1) return null;
+        }
+        if (depth != 0) return null;
+        try {
+            return parseRecipe(input);
+        } catch (NumberFormatException invalidNumber) {
+            return null;
+        }
+    }
+
+    private static Result parseRecipe(String input) {
 
         String cat = input.substring(0, input.indexOf("(")).trim();
         int firstParen = input.indexOf("(");
         String inside = input.substring(firstParen + 1, input.length() - 1);
 
-        Map<String, String> fields = extractFields(inside);
+        Map<String, String> fields = new LinkedHashMap<>();
+        extractFields(inside).forEach((key, value) -> fields.put(key.toLowerCase(Locale.ROOT), value));
 
-        String foodId = null;
         String originInput = "";
         int amountMin = 1, amountMax = 1;
         int qualMin = 1, qualMax = 5;
         boolean unique = true;
         boolean explicitQuality = false;
 
-        FoodItem item = null;
+        FoodItem base = FoodLoader.getByString(fields.get("type"));
+        if (base == null) return null;
+        FoodItem item = new FoodItem(base);
 
         // ---------------- FIELD PARSING ---------------------
         for (Map.Entry<String, String> e : fields.entrySet()) {
-            String key = e.getKey().trim().toLowerCase();
+            String key = e.getKey();
             String value = e.getValue().trim();
 
             switch (key) {
                 case "type":
-                    foodId = value;
-                    FoodItem base = FoodLoader.getByString(foodId);
-                    if (base == null) return null;
-                    item = new FoodItem(base);
                     break;
 
                 case "origin":
@@ -128,21 +145,27 @@ public class FoodParser {
                 case "quality":
                     if (value.contains("-")) {
                         String[] q = value.split("-");
+                        if (q.length != 2) return null;
                         qualMin = Integer.parseInt(q[0]);
                         qualMax = Integer.parseInt(q[1]);
                     } else {
                         qualMin = qualMax = Integer.parseInt(value);
                     }
 
-                    item._parsedQualMin = qualMin;
-                    item._parsedQualMax = qualMax;
+                    if (qualMin > qualMax) return null;
+                    qualMin = QualityUtils.clamp(qualMin);
+                    qualMax = QualityUtils.clamp(qualMax);
                     explicitQuality = true;
                     break;
                 case "amount":
                     if (value.contains("-")) {
                         String[] q = value.split("-");
-                        amountMin = Math.max(1, Integer.parseInt(q[0]));
-                        amountMax = Math.min(64, Integer.parseInt(q[1]));
+                        if (q.length != 2) return null;
+                        amountMin = Integer.parseInt(q[0]);
+                        amountMax = Integer.parseInt(q[1]);
+                        if (amountMin > amountMax) return null;
+                        amountMin = Math.max(1, Math.min(64, amountMin));
+                        amountMax = Math.max(1, Math.min(64, amountMax));
                     } else {
                         int fixed = Integer.parseInt(value);
                         amountMin = amountMax = Math.max(1, Math.min(64, fixed));
@@ -206,10 +229,6 @@ public class FoodParser {
         }
 
         // ---------------- FINALIZE ---------------------
-        if (item == null) {
-            return null;
-        }
-
         Result r = new Result();
         r.unique = unique;
         r.explicitQuality = explicitQuality;

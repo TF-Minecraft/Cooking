@@ -117,6 +117,7 @@ public class FryingReference extends CookingReference {
         }
 
         ItemStack display = ItemUpdater.applyItemUpdate(item.clone(), butterFi, f.getId());
+        if (display == null) return;
         display.setAmount(1);
         item.setAmount(item.getAmount() - 1);
         butterExtra = new FoodItem(butterFi);
@@ -192,7 +193,7 @@ public class FryingReference extends CookingReference {
 
     @Override
     public void slotRemove(FurnitureSlotItemTakeEvent e) {
-        FoodItem fi = slots.remove(e.getSlot().getId());
+        FoodItem fi = slots.get(e.getSlot().getId());
         ItemStack item = e.getItem();
         if (fi == null) {
             return;
@@ -210,12 +211,14 @@ public class FryingReference extends CookingReference {
             ItemStack returned = ItemUpdater.applyItemUpdate(item, fi, null);
             if (returned != null) {
                 e.setItem(returned);
+                slots.remove(e.getSlot().getId());
+            } else {
+                e.setCancelled(true);
             }
-            slots.put(e.getSlot().getId(), fi);
             return;
         }
         if (!WarmthUtils.applyHot(fi)) {
-            slots.put(e.getSlot().getId(), fi);
+            e.setCancelled(true);
             return;
         }
 
@@ -230,10 +233,11 @@ public class FryingReference extends CookingReference {
 
         item = ItemUpdater.applyItemUpdate(item, fi, null);
         if (item == null) {
-            slots.put(e.getSlot().getId(), fi);
+            e.setCancelled(true);
             return;
         }
 
+        slots.remove(e.getSlot().getId());
         clearButterSecondary();
         e.setItem(item);
         org.bukkit.Bukkit.getPluginManager().callEvent(

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 
 import org.bukkit.configuration.ConfigurationSection;
@@ -47,7 +48,7 @@ public class CompositionConfigLoader {
 
         for (String key : section.getKeys(false)) {
             try {
-                CompositionContext context = CompositionContext.valueOf(key.toUpperCase());
+                CompositionContext context = CompositionContext.valueOf(key.toUpperCase(Locale.ROOT));
                 ConfigurationSection contextSection = section.getConfigurationSection(key);
                 if (contextSection == null) {
                     continue;
@@ -66,7 +67,7 @@ public class CompositionConfigLoader {
         Set<String> set = new HashSet<>();
         for (String entry : config.getStringList(path)) {
             if (entry != null && !entry.isBlank()) {
-                set.add(entry.toLowerCase());
+                set.add(entry.toLowerCase(Locale.ROOT));
             }
         }
         return set;
@@ -76,7 +77,7 @@ public class CompositionConfigLoader {
         Set<String> set = new HashSet<>();
         for (String entry : config.getStringList(path)) {
             if (entry != null && !entry.isBlank()) {
-                set.add(entry.toLowerCase());
+                set.add(entry.toLowerCase(Locale.ROOT));
             }
         }
         return set;

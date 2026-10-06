@@ -30,7 +30,16 @@ public final class NameComposer {
 
         String prefixes = formatPrefixes(item);
         String fillers = formatFillerPhrase(item.getIngredients());
-        String ingredients = formatFillerPhrase(item.getIngredients(), inferTypeLabel(template));
+        String typeLabel = "";
+        int ingredientToken = template.lastIndexOf("{ingredients}");
+        if (ingredientToken >= 0) {
+            String suffix = template.substring(ingredientToken + "{ingredients}".length());
+            if (!suffix.isBlank() && !suffix.contains("{") && !suffix.contains("}")) {
+                typeLabel = suffix.strip();
+                template = template.substring(0, ingredientToken + "{ingredients}".length());
+            }
+        }
+        String ingredients = formatFillerPhrase(item.getIngredients(), typeLabel);
 
         String result = template
                 .replace("{colour}", colour)
@@ -48,9 +57,6 @@ public final class NameComposer {
 
         StringBuilder prefixes = new StringBuilder();
         for (String trackId : NamingConfig.getPrefixTracks()) {
-            if (!item.hasTagTrack(trackId)) {
-                continue;
-            }
             TagTrack track = item.getTagTrack(trackId);
             if (track == null) {
                 continue;
@@ -148,14 +154,4 @@ public final class NameComposer {
         return name;
     }
 
-    private static String inferTypeLabel(String template) {
-        if (template == null) {
-            return "";
-        }
-        int idx = template.lastIndexOf('}');
-        if (idx >= 0 && idx + 1 < template.length()) {
-            return template.substring(idx + 1);
-        }
-        return "";
-    }
 }

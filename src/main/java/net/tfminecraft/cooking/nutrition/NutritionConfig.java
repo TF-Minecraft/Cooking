@@ -48,7 +48,7 @@ public final class NutritionConfig {
         respawnFood = clampFood(section.getInt("respawn-food", DEFAULT_RESPAWN_FOOD));
         maxDiet = section.getInt("max-diet", DEFAULT_MAX_DIET);
         attributeName = section.getString("attribute-name", DEFAULT_ATTRIBUTE_NAME);
-        drainAmount = section.getInt("drain-amount", DEFAULT_DRAIN_AMOUNT);
+        drainAmount = Math.max(0, section.getInt("drain-amount", DEFAULT_DRAIN_AMOUNT));
         drainIntervalSeconds = readDrainIntervalSeconds(section);
         lerpStepRate = section.getDouble("lerp-step-rate", DEFAULT_LERP_STEP_RATE);
         loadVariety(section.getConfigurationSection("variety"));

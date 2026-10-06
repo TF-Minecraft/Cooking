@@ -56,11 +56,6 @@ public class ConversionLoader {
 
             String input = parts[0].trim();
             String output = parts[1].trim();
-            if (input.isEmpty() || output.isEmpty()) {
-                Bukkit.getLogger().warning("[Cooking] Invalid conversion line (empty input or output): " + trimmed);
-                continue;
-            }
-
             conversions.put(input, output);
         }
     }

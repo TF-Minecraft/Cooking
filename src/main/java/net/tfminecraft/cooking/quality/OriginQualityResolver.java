@@ -37,8 +37,8 @@ public final class OriginQualityResolver {
     }
 
     public static int adjust(int rolled, int minQuality, int rollBias) {
-        int quality = rolled + rollBias;
+        long quality = (long) rolled + rollBias;
         quality = Math.max(quality, minQuality);
-        return QualityUtils.clamp(quality);
+        return (int) Math.clamp(quality, 1L, 5L);
     }
 }

@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.heat;
 
+import java.util.Locale;
+
 public enum HeatSourceType {
     OVEN,
     CAMPFIRE;
@@ -8,7 +10,7 @@ public enum HeatSourceType {
         if (value == null) {
             return null;
         }
-        return switch (value.toLowerCase().replace('-', '_')) {
+        return switch (value.toLowerCase(Locale.ROOT).replace('-', '_')) {
             case "oven" -> OVEN;
             case "campfire" -> CAMPFIRE;
             default -> null;

@@ -5,7 +5,6 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 
 import net.tfminecraft.tlibs.TLibs;
-import org.bukkit.persistence.PersistentDataType;
 
 public class ItemRef {
 
@@ -14,7 +13,9 @@ public class ItemRef {
     }
 
     public static ItemStack apply(String ref, ItemStack source) {
-        ItemStack out = resolve(ref).clone();
+        ItemStack template = resolve(ref);
+        if (template == null) return null;
+        ItemStack out = template.clone();
         mergeMeta(out, source);
         return out;
     }
@@ -34,17 +35,7 @@ public class ItemRef {
 
         PersistentDataContainer srcPdc = srcMeta.getPersistentDataContainer();
         PersistentDataContainer outPdc = outMeta.getPersistentDataContainer();
-        srcPdc.getKeys().forEach(key -> {
-            if (srcPdc.has(key, PersistentDataType.STRING)) {
-                outPdc.set(key, PersistentDataType.STRING, srcPdc.get(key, PersistentDataType.STRING));
-            } else if (srcPdc.has(key, PersistentDataType.INTEGER)) {
-                outPdc.set(key, PersistentDataType.INTEGER, srcPdc.get(key, PersistentDataType.INTEGER));
-            } else if (srcPdc.has(key, PersistentDataType.LONG)) {
-                outPdc.set(key, PersistentDataType.LONG, srcPdc.get(key, PersistentDataType.LONG));
-            } else if (srcPdc.has(key, PersistentDataType.DOUBLE)) {
-                outPdc.set(key, PersistentDataType.DOUBLE, srcPdc.get(key, PersistentDataType.DOUBLE));
-            }
-        });
+        srcPdc.copyTo(outPdc, true);
 
         out.setItemMeta(outMeta);
     }

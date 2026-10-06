@@ -85,6 +85,10 @@ public final class OvenBurnManager {
             stopBurning(furniture.getEntityId());
             return;
         }
+        if (!OvenState.isLit(furniture)) {
+            stopBurning(furniture.getEntityId());
+            return;
+        }
 
         boolean changed = false;
         String[] activeLayer = OvenState.getActiveBurnLayer(furniture);

@@ -7,7 +7,7 @@ public enum HeatLookup {
         if (value == null) {
             return null;
         }
-        return switch (value.toLowerCase().replace('-', '_')) {
+        return switch (value.toLowerCase(java.util.Locale.ROOT).replace('-', '_')) {
             case "block_below" -> BLOCK_BELOW;
             default -> null;
         };

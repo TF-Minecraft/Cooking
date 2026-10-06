@@ -344,7 +344,7 @@ public class CommandManager implements CommandExecutor, TabCompleter {
 
         if (args[1].equalsIgnoreCase("compose") && args.length >= 4) {
             try {
-                context = CompositionContext.valueOf(args[end - 1].toUpperCase());
+                context = CompositionContext.valueOf(args[end - 1].toUpperCase(Locale.ROOT));
                 end--;
             } catch (IllegalArgumentException ignored) {
             }
@@ -385,7 +385,7 @@ public class CommandManager implements CommandExecutor, TabCompleter {
 
         if (args.length >= 4) {
             try {
-                context = CompositionContext.valueOf(args[end - 1].toUpperCase());
+                context = CompositionContext.valueOf(args[end - 1].toUpperCase(Locale.ROOT));
                 end--;
             } catch (IllegalArgumentException ignored) {
             }
@@ -602,6 +602,7 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                 continue;
             }
 
+            if (!player.getWorld().equals(furniture.getLoc().getWorld())) continue;
             double distance = furniture.getLoc().distance(player.getLocation());
             if (distance <= nearestDistance) {
                 nearestDistance = distance;
@@ -705,6 +706,7 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                 continue;
             }
 
+            if (!player.getWorld().equals(furniture.getLoc().getWorld())) continue;
             double distance = furniture.getLoc().distance(player.getLocation());
             if (distance <= nearestDistance) {
                 nearestDistance = distance;

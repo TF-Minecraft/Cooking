@@ -117,10 +117,11 @@ public final class MeatHookHandler implements Listener {
             return;
         }
         ItemStack updated = ItemUpdater.updateItem(stack, foodItem, furniture.getId());
-        if (updated == null) {
+        if (updated == null || updated.getType().isAir()) {
             return;
         }
         slot.setCurrentItem(updated);
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(furniture);
         syncRoastDisplay(furniture);
     }
 
@@ -135,7 +136,8 @@ public final class MeatHookHandler implements Listener {
                 return;
             }
             CarvableRoastUtils.readCarveState(foodItem, stack);
-            slot.applyDisplayData(CarvableRoastUtils.getStageModelData(foodItem).getDisplayData(furniture.getId()));
+            var model = CarvableRoastUtils.getStageModelData(foodItem);
+            if (model != null) slot.applyDisplayData(model.getDisplayData(furniture.getId()));
         });
     }
 }

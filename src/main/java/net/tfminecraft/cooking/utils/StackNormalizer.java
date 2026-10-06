@@ -24,9 +24,6 @@ public final class StackNormalizer {
                 continue;
             }
             TagStep step = track.getCurrentStep();
-            if (step == null) {
-                continue;
-            }
             if (track.getValue() != (int) step.getRequiredValue()) {
                 return true;
             }
@@ -46,9 +43,6 @@ public final class StackNormalizer {
                 continue;
             }
             TagStep step = track.getCurrentStep();
-            if (step == null) {
-                continue;
-            }
             track.forceSetValue((int) step.getRequiredValue());
         }
         fi.clearAgeRemainders();

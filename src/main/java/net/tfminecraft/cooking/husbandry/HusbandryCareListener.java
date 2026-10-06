@@ -47,7 +47,6 @@ public final class HusbandryCareListener implements Listener {
             return;
         }
         HusbandryAnimal animal = stored.get();
-        boolean changed = false;
         if (feed) {
             if (animal.hungrySince() == null) {
                 return;
@@ -55,17 +54,12 @@ public final class HusbandryCareListener implements Listener {
             HusbandrySimulator.clearHungry(animal, ThreadLocalRandom.current());
             HusbandryItems.useFromMainHand(player);
             HusbandryFx.playCare(living);
-            changed = true;
-        } else if (glove) {
+        } else {
             if (animal.dirtySince() == null) {
                 return;
             }
             HusbandrySimulator.clearDirty(animal, ThreadLocalRandom.current());
             HusbandryFx.playCare(living);
-            changed = true;
-        }
-        if (!changed) {
-            return;
         }
         repository.upsertAnimal(animal);
         HusbandryStateDisplay.sync(living, animal);

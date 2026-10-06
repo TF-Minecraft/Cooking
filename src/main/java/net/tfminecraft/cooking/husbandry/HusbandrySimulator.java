@@ -165,11 +165,7 @@ public final class HusbandrySimulator {
             animal.setAfflictionAt(rollAfflictionHours(random));
         }
         animal.setAfflictionElapsed(animal.afflictionElapsed() + loadedHours);
-        int guard = 0;
         while (animal.hungrySince() == null || animal.dirtySince() == null) {
-            if (guard++ > 8) {
-                break;
-            }
             if (animal.afflictionElapsed() < animal.afflictionAt()) {
                 break;
             }
@@ -185,9 +181,6 @@ public final class HusbandrySimulator {
     private static void applyMissingState(HusbandryAnimal animal, long nowMillis, Random random) {
         boolean hungry = animal.hungrySince() != null;
         boolean dirty = animal.dirtySince() != null;
-        if (hungry && dirty) {
-            return;
-        }
         if (!hungry && !dirty) {
             if (random.nextBoolean()) {
                 animal.setHungrySince(nowMillis);

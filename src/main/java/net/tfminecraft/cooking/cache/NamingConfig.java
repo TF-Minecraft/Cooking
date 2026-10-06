@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 
 public final class NamingConfig {
@@ -65,7 +66,7 @@ public final class NamingConfig {
         if (category == null) {
             return false;
         }
-        return getCategories(bucket).contains(category.toLowerCase());
+        return getCategories(bucket).contains(category.toLowerCase(Locale.ROOT));
     }
 
     public static Set<String> allCategoryBuckets() {
@@ -76,21 +77,21 @@ public final class NamingConfig {
         if (category == null || trackId == null || stepId == null) {
             return null;
         }
-        Map<String, Map<String, String>> byTrack = tagLabelDefaults.get(category.toLowerCase());
+        Map<String, Map<String, String>> byTrack = tagLabelDefaults.get(category.toLowerCase(Locale.ROOT));
         if (byTrack == null) {
             return null;
         }
-        Map<String, String> byStep = byTrack.get(trackId.toLowerCase());
+        Map<String, String> byStep = byTrack.get(trackId.toLowerCase(Locale.ROOT));
         if (byStep == null) {
             return null;
         }
-        return byStep.get(stepId.toLowerCase());
+        return byStep.get(stepId.toLowerCase(Locale.ROOT));
     }
 
     public static String getOriginAdjective(String origin) {
         if (origin == null) {
             return null;
         }
-        return originAdjectives.get(origin.toLowerCase());
+        return originAdjectives.get(origin.toLowerCase(Locale.ROOT));
     }
 }

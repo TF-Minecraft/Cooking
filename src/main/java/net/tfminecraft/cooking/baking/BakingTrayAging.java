@@ -35,9 +35,10 @@ public final class BakingTrayAging {
                 .getPlacedFurniture();
 
         for (Furniture furniture : placed.values()) {
-            if (BakingTrayRegistry.isTray(furniture) && !furniture.isAttached()) {
+            BakingTrayRecipe recipe = BakingTrayRegistry.getByFurniture(furniture);
+            if (recipe != null && !furniture.isAttached()) {
                 if (visited.add(furniture.getEntityId())) {
-                    ageTray(furniture);
+                    ageTray(furniture, recipe);
                 }
             }
 
@@ -47,22 +48,18 @@ public final class BakingTrayAging {
 
             for (PlacedFurnitureSlot slot : furniture.getActiveFurnitureSlots().values()) {
                 Furniture nested = slot.getNested();
-                if (nested == null || !BakingTrayRegistry.isTray(nested)) {
+                BakingTrayRecipe nestedRecipe = BakingTrayRegistry.getByFurniture(nested);
+                if (nestedRecipe == null) {
                     continue;
                 }
                 if (visited.add(nested.getEntityId())) {
-                    ageTray(nested);
+                    ageTray(nested, nestedRecipe);
                 }
             }
         }
     }
 
-    private void ageTray(Furniture tray) {
-        BakingTrayRecipe recipe = BakingTrayRegistry.getByFurniture(tray);
-        if (recipe == null) {
-            return;
-        }
-
+    private void ageTray(Furniture tray, BakingTrayRecipe recipe) {
         boolean changed = false;
         for (String slotId : recipe.getAllSlotIds()) {
             if (!tray.hasActiveSlot(slotId)) {
@@ -94,7 +91,7 @@ public final class BakingTrayAging {
         }
 
         ItemStack updated = ItemUpdater.updateItem(item, foodItem, tray.getId());
-        if (updated == null) {
+        if (updated == null || updated.getType().isAir()) {
             return false;
         }
 

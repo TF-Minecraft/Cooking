@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -28,7 +29,7 @@ public class QualityConfigLoader {
         Set<String> excludes = new HashSet<>();
         for (String entry : config.getStringList("composition.exclude-categories")) {
             if (entry != null && !entry.isBlank()) {
-                excludes.add(entry.toLowerCase());
+                excludes.add(entry.toLowerCase(Locale.ROOT));
             }
         }
 

@@ -121,13 +121,14 @@ public class CookingReference {
         if(!slot.contains("input")) return false;
         FoodItem fi = FoodItem.fromItem(item);
         if(fi == null) return false;
-        slots.put(slot, fi);
         if(f.getType() == null || f.getType().getSlot(slot) == null) return false;
-        PlacedSlot fslot = f.getOrCreatePlacedSlot(slot);
         ItemStack model = new ItemStack(item);
         model = ItemUpdater.applyItemUpdate(model, fi, f.getId());
+        if(model == null) return false;
         model.setAmount(1);
+        PlacedSlot fslot = f.getOrCreatePlacedSlot(slot);
         fslot.forceModel(model);
+        slots.put(slot, fi);
         addColour(ItemCache.getColour(item));
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
         item.setAmount(item.getAmount()-1);
@@ -206,7 +207,7 @@ public class CookingReference {
     }
 
     public void slotRemove(FurnitureSlotItemTakeEvent e) {
-        FoodItem fi = slots.remove(e.getSlot().getId());
+        FoodItem fi = slots.get(e.getSlot().getId());
         ItemStack item = e.getItem();
         if(fi != null) {
             if(!fi.canBeCooked()) {
@@ -218,11 +219,21 @@ public class CookingReference {
                 e.setCancelled(true);
                 return;
             }
-            if(data.getCurrentTime() < 5) return;
-            if (!WarmthUtils.applyHot(fi)) return;
+            if(data.getCurrentTime() < 5) {
+                slots.remove(e.getSlot().getId());
+                return;
+            }
+            if (!WarmthUtils.applyHot(fi)) {
+                e.setCancelled(true);
+                return;
+            }
             item = ItemUpdater.applyItemUpdate(item, fi, f.getId());
-            if(item == null) return;
+            if(item == null) {
+                e.setCancelled(true);
+                return;
+            }
             e.setItem(item);
+            slots.remove(e.getSlot().getId());
             org.bukkit.Bukkit.getPluginManager().callEvent(
                     new net.tfminecraft.cooking.events.DishCookedEvent(e.getPlayer(), item, "station"));
         }

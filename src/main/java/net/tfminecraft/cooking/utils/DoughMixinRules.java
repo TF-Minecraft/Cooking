@@ -59,8 +59,9 @@ public final class DoughMixinRules {
 
     public static void applyDoughTags(FoodItem dough, boolean hasSugar, List<String> fruitOrigins) {
         if (hasSugar) {
-            TagTrack sweet = new TagTrack(TrackLoader.getByString("sweet"));
+            TagTrack sweet = TrackLoader.getByString("sweet");
             if (sweet != null) {
+                sweet = new TagTrack(sweet);
                 sweet.setValue(0);
                 dough.addOrModifyTrack(sweet);
             }
@@ -68,14 +69,16 @@ public final class DoughMixinRules {
 
         int fruitCount = fruitOrigins == null ? 0 : fruitOrigins.size();
         if (fruitCount >= 2) {
-            TagTrack richlyFruity = new TagTrack(TrackLoader.getByString("richly_fruity"));
+            TagTrack richlyFruity = TrackLoader.getByString("richly_fruity");
             if (richlyFruity != null) {
+                richlyFruity = new TagTrack(richlyFruity);
                 richlyFruity.setValue(0);
                 dough.addOrModifyTrack(richlyFruity);
             }
         } else if (fruitCount == 1) {
-            TagTrack fruity = new TagTrack(TrackLoader.getByString("fruity"));
+            TagTrack fruity = TrackLoader.getByString("fruity");
             if (fruity != null) {
+                fruity = new TagTrack(fruity);
                 fruity.setValue(0);
                 dough.addOrModifyTrack(fruity);
             }

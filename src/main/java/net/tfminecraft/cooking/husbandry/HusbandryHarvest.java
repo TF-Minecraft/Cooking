@@ -122,7 +122,10 @@ public final class HusbandryHarvest {
             return;
         }
         for (ItemStack drop : HusbandryDropRoller.rollShearDrops(animal, ThreadLocalRandom.current(), nowMillis)) {
-            InventoryAdder.addItem(player, drop);
+            ItemStack overflow = InventoryAdder.addItem(player, drop);
+            if (overflow != null) {
+                player.getWorld().dropItemNaturally(player.getLocation(), overflow);
+            }
         }
     }
 
@@ -194,7 +197,7 @@ public final class HusbandryHarvest {
         item.setCarveState(seqId, portion.nextIndex(), portion.remaining());
         CarvableRoastUtils.writeCarveState(stack, item);
         ItemStack updated = ItemUpdater.applyItemUpdate(stack, item, null);
-        if (updated != null) {
+        if (updated != null && !updated.getType().isAir()) {
             stack = updated;
         }
         return stack;
@@ -206,7 +209,7 @@ public final class HusbandryHarvest {
         }
         try {
             ItemStack stack = TLibs.getItemAPI().getCreator().getItemFromPath(path);
-            if (stack == null) {
+            if (stack == null || stack.getType().isAir()) {
                 return null;
             }
             stack.setAmount(Math.max(1, Math.min(64, amount)));

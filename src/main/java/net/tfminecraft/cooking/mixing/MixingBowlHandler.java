@@ -198,11 +198,15 @@ public class MixingBowlHandler implements Listener {
 
             ItemStack dough = buildDough(furniture, null);
 
-            if (dough != null) {
-
-                furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), dough);
-
+            if (dough == null) {
+                event.setCancelled(true);
+                if (event.hasPlayer()) {
+                    event.getPlayer().sendMessage("§cThis dough cannot be collected right now.");
+                }
+                return;
             }
+
+            furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), dough);
 
             MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.DOUGH);
 
@@ -227,14 +231,6 @@ public class MixingBowlHandler implements Listener {
             MixingBowlStage stage, ItemStack hand) {
 
         String expectedSlot = stage.nextIngredientSlot();
-
-        if (expectedSlot == null) {
-
-            return;
-
-        }
-
-
 
         if (furniture.hasActiveSlot(expectedSlot)) {
 
@@ -275,11 +271,21 @@ public class MixingBowlHandler implements Listener {
 
 
         boolean waterCup = MixingBowlSlots.WATER.equals(expectedSlot) && ItemCache.isCupOfWater(hand);
+        ItemStack empty = waterCup ? CupItems.emptyCup() : null;
+        if (waterCup && (empty == null || empty.getType().isAir())) {
+            player.sendMessage("§cCould not return an empty cup.");
+            event.setCancelled(true);
+            return;
+        }
+
+        if (!MixingBowlDisplay.showLayer(furniture, expectedSlot)) {
+            event.setCancelled(true);
+            return;
+        }
 
         hand.setAmount(hand.getAmount() - 1);
 
         if (waterCup) {
-            ItemStack empty = CupItems.emptyCup();
             if (hand.getAmount() <= 0) {
                 player.getInventory().setItemInMainHand(empty);
             } else {
@@ -289,14 +295,6 @@ public class MixingBowlHandler implements Listener {
                 }
             }
         }
-
-        if (!MixingBowlDisplay.showLayer(furniture, expectedSlot)) {
-
-            return;
-
-        }
-
-
 
         storeIngredientQuality(furniture, expectedSlot, ingredient);
 
@@ -456,6 +454,8 @@ public class MixingBowlHandler implements Listener {
 
         if (count >= ItemCache.mixingStirCount) {
 
+            event.setCancelled(true);
+            completeDough(furniture);
             return;
 
         }
@@ -502,13 +502,13 @@ public class MixingBowlHandler implements Listener {
 
     private void completeDough(Furniture furniture) {
 
+        if (!MixingBowlDisplay.showLayer(furniture, MixingBowlSlots.DOUGH)) return;
+
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.FLOUR);
 
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.WATER);
 
         MixingBowlDisplay.clearLayer(furniture, MixingBowlSlots.YEAST);
-
-        MixingBowlDisplay.showLayer(furniture, MixingBowlSlots.DOUGH);
 
         MixingBowlState.setStage(furniture, MixingBowlStage.DOUGH_READY);
 
@@ -652,21 +652,8 @@ public class MixingBowlHandler implements Listener {
 
 
     private void sendWrongItemFeedback(Player player, MixingBowlStage stage) {
-
-        switch (stage) {
-
-            case EMPTY -> player.sendMessage("§cAdd flour first.");
-
-            case HAS_FLOUR -> player.sendMessage("§cAdd water next.");
-
-            case HAS_WATER -> player.sendMessage("§cAdd yeast next.");
-
-            default -> player.sendMessage("§cThat doesn't go in the bowl.");
-
-        }
-
+        player.sendMessage("§cAdd " + stage.nextIngredientSlot()
+                + (stage == MixingBowlStage.EMPTY ? " first." : " next."));
     }
 
 }
-
-

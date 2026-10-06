@@ -63,20 +63,24 @@ public class PlateManager implements Listener{
             f.removeActiveSlot("sauce");
             InteractibleFurniture.getInstance().getFurnitureManager().persistFurniture(f);
         }
+        boolean changed = false;
         for(PlacedSlot slot : f.getActiveSlots().values()) {
-            if(slot.getId().contains("display")) continue;
+            if(slot == null || slot.getId().contains("display")) continue;
             ItemStack item = slot.getCurrentItem();
             if(item == null) continue;
             FoodItem fi = FoodItem.fromItem(item);
             if(fi == null) continue;
             item = ItemUpdater.updateItem(item, fi, f.getId());
-            if(item == null) continue;
+            if(item == null || item.getType().isAir()) continue;
             slot.forceModel(item);
+            changed = true;
         }
+        if (changed) InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
     }
 
     public void clear(Furniture f) {
         for(PlacedSlot slot : new ArrayList<>(f.getActiveSlots().values())) {
+            if (slot == null) continue;
             if(slot.getId().contains("display") || FurnitureCache.isBowl(f)) {
                 slot.clearModel();
             }
@@ -93,6 +97,7 @@ public class PlateManager implements Listener{
 
     public boolean hasSauce(Furniture f) {
         for(PlacedSlot slot : new ArrayList<>(f.getActiveSlots().values())) {
+            if (slot == null) continue;
             if(!slot.getId().contains("display")) {
                 ItemStack item = slot.getCurrentItem();
                 if(item == null) continue;
@@ -100,7 +105,7 @@ public class PlateManager implements Listener{
                 if(slot.getId().equals("sauce")) return true;
                 FoodItem sauce = FoodItem.fromItem(item);
                 if(sauce == null) continue;
-                if(sauce.getCategory().equalsIgnoreCase("sauce")) return true;
+                if(sauce.hasSauce() || "sauce".equalsIgnoreCase(sauce.getCategory())) return true;
             }
         }
         return false;
@@ -125,16 +130,6 @@ public class PlateManager implements Listener{
         return false;
     }
 
-    // Food addSauce can actually apply the sauce to.
-    private boolean hasSauceableFood(Furniture f) {
-        for(PlacedSlot slot : f.getActiveSlots().values()) {
-            if(slot.getId().equals("sauce") || slot.getId().contains("display")) continue;
-            ItemStack item = slot.getCurrentItem();
-            if(item != null && FoodItem.fromItem(item) != null) return true;
-        }
-        return false;
-    }
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void takeItem(FurnitureSlotItemTakeEvent e) {
         Furniture f = e.getFurniture();
@@ -149,44 +144,37 @@ public class PlateManager implements Listener{
     @SuppressWarnings("deprecation")
     public void addSauce(Player p, Furniture f, FoodItem sauce, ItemStack base) {
         if (hasSauce(f)) return;
-        // Sauce with no food to take it would never reach food added later, so keep the ladle full.
-        if (!hasSauceableFood(f)) return;
-
-        // Replace player ladle with empty ladle
-        p.getInventory().setItemInMainHand(
-            TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle)
-        );
-        p.swingMainHand();
-
+        Map<PlacedSlot, ItemStack> updates = new java.util.LinkedHashMap<>();
         for (PlacedSlot slot : f.getActiveSlots().values()) {
-
-            if (slot.getId().contains("display")) continue;
-
+            if (slot == null || slot.getId().equals("sauce") || slot.getId().contains("display")) continue;
             ItemStack item = slot.getCurrentItem();
             if (item == null) continue;
-
-            FoodItem fi = FoodItem.fromItem(item);
-            if (fi == null) continue;
-
-            // Apply sauce
+            FoodItem parsed = FoodItem.fromItem(item);
+            if (parsed == null) continue;
+            FoodItem fi = new FoodItem(parsed);
             fi.setSauce(new FoodItem(sauce));
             fi.setSauceName(base.getItemMeta().getDisplayName());
-
-            // Update the item
-            item = ItemUpdater.applyItemUpdate(item, fi, f.getId());
-            if (item == null) continue;
-
-            slot.forceModel(item);
+            ItemStack updated = ItemUpdater.applyItemUpdate(item.clone(), fi, f.getId());
+            if (updated == null || updated.getType().isAir()) return;
+            updates.put(slot, updated);
         }
+        if (updates.isEmpty()) return;
+        ItemStack emptyLadle = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
+        if (emptyLadle == null || emptyLadle.getType().isAir()) return;
+
+        updates.forEach(PlacedSlot::forceModel);
+        p.getInventory().setItemInMainHand(emptyLadle.clone());
+        p.swingMainHand();
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
 
         if (f.getType() == null || f.getType().getSlot("sauce") == null) return;
-        if(f.hasActiveSlot("sauce")) return;
         ItemMeta baseMeta = base.getItemMeta();
         String saucePath = CategoryDictionary.getSauceItemPath(sauceColour(
             baseMeta.getPersistentDataContainer().get(Keys.SAUCE_COLOUR, PersistentDataType.STRING),
             baseMeta.getDisplayName()), 1);
-        f.getOrCreatePlacedSlot("sauce").forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(saucePath));
-        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
+        ItemStack visual = TLibs.getItemAPI().getCreator().getItemFromPath(saucePath);
+        if (visual != null && !visual.getType().isAir()) f.getOrCreatePlacedSlot("sauce").forceModel(visual);
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
     }
 
     /** Sauce colour stored at scoop time; ladles scooped before it existed fall back to the name's colour. */
@@ -195,14 +183,15 @@ public class PlateManager implements Listener{
     }
 
     public void addSoup(Player p, Furniture f, FoodItem soup, ItemStack base) {
-        p.getInventory().setItemInMainHand(
-            TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle)
-        );
-        p.swingMainHand();
+        if (f.getType() == null || f.getType().getSlot("food_item") == null) return;
+        PlacedSlot current = f.getActiveSlot("food_item").orElse(null);
+        if (current != null && current.getCurrentItem() != null && !current.getCurrentItem().getType().isAir()) return;
+        ItemStack emptyLadle = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
+        if (emptyLadle == null || emptyLadle.getType().isAir()) return;
         Map<String, ItemStack> map = Encoder.decodeSlots(base.getItemMeta().getPersistentDataContainer().get(Keys.SLOT_DATA, PersistentDataType.STRING));
         for(Map.Entry<String, ItemStack> entry : map.entrySet()) {
             if(f.hasActiveSlot(entry.getKey())) continue;
-            if (f.getType() == null || f.getType().getSlot(entry.getKey()) == null) continue;
+            if (f.getType().getSlot(entry.getKey()) == null) continue;
             PlacedSlot placed = f.getOrCreatePlacedSlot(entry.getKey());
             placed.forceModel(entry.getValue());
             DisplayData spread = BowlIngredientLayout.offsetFor(entry.getKey());
@@ -210,8 +199,10 @@ public class PlateManager implements Listener{
                 placed.applyDisplayData(spread);
             }
         }
-        if (f.getType() == null || f.getType().getSlot("food_item") == null) return;
         f.getOrCreatePlacedSlot("food_item").forceModel(base);
+        p.getInventory().setItemInMainHand(emptyLadle.clone());
+        p.swingMainHand();
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
     }
 
@@ -248,6 +239,7 @@ public class PlateManager implements Listener{
         ItemStack item = e.getItem();
         FoodItem fi = FoodItem.fromItem(item);
         if(fi == null) return;
-        e.setDisplayData(fi.getModelData().getDisplayData(f.getId()));
+        var model = fi.getModelData();
+        if (model != null) e.setDisplayData(model.getDisplayData(f.getId()));
     }
 }

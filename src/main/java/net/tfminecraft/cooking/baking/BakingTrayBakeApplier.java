@@ -69,7 +69,6 @@ public final class BakingTrayBakeApplier {
                 return false;
             }
             cookedTrack = new TagTrack(baseTrack);
-            foodItem.addOrModifyTrack(cookedTrack);
         }
 
         if (cookedTrack.getValue() != fromValue) {
@@ -77,8 +76,9 @@ public final class BakingTrayBakeApplier {
         }
 
         cookedTrack.setValue(toValue);
+        foodItem.addOrModifyTrack(cookedTrack);
         ItemStack updated = ItemUpdater.applyItemUpdate(item, foodItem, tray.getId());
-        if (updated == null) {
+        if (updated == null || updated.getType().isAir()) {
             return false;
         }
 

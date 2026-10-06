@@ -218,6 +218,10 @@ public class PotReference extends CookingReference {
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
+        if (output == null) {
+            p.sendMessage("§cThis soup cannot be served right now.");
+            return;
+        }
 
         String displayName = applyNameTemplate(soup, DisplayUtils.getMergedColour(colours), "Soup");
         ItemMeta m = output.getItemMeta();
@@ -257,8 +261,8 @@ public class PotReference extends CookingReference {
             FoodItem item = entry.getValue();
             CookData data = item.getCookData();
             if (!item.canBeCooked()) continue;
-            if (isSoup() && data.isBeingCooked()) {
-                data.stop();
+            if (item.hasTag(Tag.MASHED)) {
+                if (data.isBeingCooked()) data.stop();
                 continue;
             }
             if (!data.isBeingCooked()) {
@@ -268,6 +272,20 @@ public class PotReference extends CookingReference {
             if (!progressed) continue;
             applySlotUpdate(slot, item);
         }
+    }
+
+    @Override
+    protected void applySlotUpdate(String slot, FoodItem item) {
+        // The display and running cooking state are decoded separately. Both cooking
+        // transitions and mashing must retain the thickness already on the main item.
+        PlacedSlot mainSlot = firstFoodSlot();
+        if (mainSlot != null && f.getActiveSlots().get(slot) == mainSlot) {
+            FoodItem displayed = FoodItem.fromItem(mainSlot.getCurrentItem());
+            if (displayed.hasTagTrack("soup_thickness")) {
+                item.addOrModifyTrack(new TagTrack(displayed.getTagTrack("soup_thickness")));
+            }
+        }
+        super.applySlotUpdate(slot, item);
     }
 
     public boolean canAdd(Player p, ItemStack i) {
@@ -452,9 +470,11 @@ public class PotReference extends CookingReference {
         stored.setAmount(1);
         FoodItem food = FoodItem.fromItem(stored);
         if (food == null) return;
+        Map<String, ItemStack> updated = new HashMap<>(extraItems);
+        updated.put(extraKey, stored);
+        if (!saveExtras(updated)) return;
         extraItems.put(extraKey, stored);
         slots.put(extraKey, food);
-        saveExtras();
         item.setAmount(item.getAmount() - 1);
         p.swingMainHand();
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
@@ -493,27 +513,18 @@ public class PotReference extends CookingReference {
         return count;
     }
 
-    private void saveExtras() {
-        if (f == null) return;
-        if (extraItems.isEmpty()) {
-            f.getVariables().remove(VAR_EXTRAS);
-        } else {
-            StringBuilder encoded = new StringBuilder();
-            boolean first = true;
-            for (Map.Entry<String, ItemStack> entry : extraItems.entrySet()) {
-                String payload = encodeStack(entry.getValue());
-                if (payload == null) continue;
-                if (!first) encoded.append('|');
-                first = false;
-                encoded.append(entry.getKey()).append('.').append(payload);
-            }
-            if (encoded.isEmpty()) {
-                f.getVariables().remove(VAR_EXTRAS);
-            } else {
-                f.getVariables().put(VAR_EXTRAS, encoded.toString());
-            }
+    private boolean saveExtras(Map<String, ItemStack> updated) {
+        if (f == null) return false;
+        StringBuilder encoded = new StringBuilder();
+        for (Map.Entry<String, ItemStack> entry : updated.entrySet()) {
+            String payload = encodeStack(entry.getValue());
+            if (payload == null) return false;
+            if (!encoded.isEmpty()) encoded.append('|');
+            encoded.append(entry.getKey()).append('.').append(payload);
         }
+        f.getVariables().put(VAR_EXTRAS, encoded.toString());
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+        return true;
     }
 
     private void restoreExtras() {
@@ -562,7 +573,7 @@ public class PotReference extends CookingReference {
                     return stack;
                 }
             }
-        } catch (IOException | ClassNotFoundException ignored) {
+        } catch (IOException | ClassNotFoundException | IllegalArgumentException ignored) {
             return null;
         }
         return null;
@@ -697,9 +708,6 @@ public class PotReference extends CookingReference {
     }
 
     private static boolean isWrongPotWaterSource(ItemStack item) {
-        if (item == null || item.getType() == Material.AIR) {
-            return false;
-        }
         return ItemCache.isCupOfWater(item)
                 || ItemCache.isWater(item)
                 || ItemCache.isLiquid(item);

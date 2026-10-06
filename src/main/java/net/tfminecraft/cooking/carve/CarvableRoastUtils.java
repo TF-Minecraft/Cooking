@@ -47,8 +47,10 @@ public final class CarvableRoastUtils {
     }
 
     public static boolean isCarvable(FoodItem item) {
-        return item != null && item.hasCarveState() && item.getCarveRemaining() > 0
-                && item.getCarveNextIndex() < getSequence(item).getCuts().size();
+        if (item == null || !item.hasCarveState() || item.getCarveRemaining() <= 0
+                || item.getCarveNextIndex() < 0) return false;
+        CarveSequence sequence = getSequence(item);
+        return sequence != null && item.getCarveNextIndex() < sequence.getCuts().size();
     }
 
     public static boolean isCarvable(ItemStack stack) {
@@ -162,16 +164,13 @@ public final class CarvableRoastUtils {
     }
 
     public static ModelData getStageModelData(FoodItem item) {
+        FoodModel model = item.getModel();
+        if (model == null || model.getStates().isEmpty()) return null;
         if (!item.hasCarveState() || item.getCarveRemaining() <= 0) {
-            FoodModel model = item.getModel();
-            ModelData fallback = model != null ? model.getModel(item) : null;
-            return fallback != null ? fallback : item.getModel().getModel(item);
+            return model.getModel(item);
         }
         String cookTag = resolveCookTag(item);
-        ModelData staged = item.getModel().getModelByStageAndTag(getVisualCarveStage(item), cookTag);
-        if (staged != null) return staged;
-        FoodModel model = item.getModel();
-        return model != null ? model.getModel(item) : null;
+        return model.getModelByStageAndTag(getVisualCarveStage(item), cookTag);
     }
 
     public static String resolveCookTag(FoodItem item) {

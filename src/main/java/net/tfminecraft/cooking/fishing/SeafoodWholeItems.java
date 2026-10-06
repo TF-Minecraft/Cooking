@@ -51,9 +51,6 @@ public final class SeafoodWholeItems {
     }
 
     private static ItemStack build(ItemStack caught, FoodItem item, int quality) {
-        if (item == null || caught == null) {
-            return null;
-        }
         return ItemBuilder.buildSingleWithQuality(item, caught, quality);
     }
 }

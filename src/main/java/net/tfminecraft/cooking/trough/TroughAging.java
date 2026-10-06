@@ -70,6 +70,9 @@ public final class TroughAging {
         }
 
         ItemStack updated = ItemUpdater.updateItem(item, foodItem, furniture.getId());
+        if (updated != null && updated.getType().isAir()) {
+            updated = null;
+        }
         if (updated != null) {
             item = updated;
             slot.setCurrentItem(updated);

@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.quality;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 
 public final class QualityConfig {
@@ -34,8 +35,8 @@ public final class QualityConfig {
     }
 
     public static void apply(int min, int max, Set<String> excludes, Map<Integer, Double> nutrition) {
-        pickupMin = Math.max(1, min);
-        pickupMax = Math.max(pickupMin, max);
+        pickupMin = Math.clamp(min, 1, 5);
+        pickupMax = Math.clamp(max, pickupMin, 5);
         excludeCategories = excludes == null || excludes.isEmpty()
                 ? defaultExcludes()
                 : Set.copyOf(excludes);
@@ -62,7 +63,7 @@ public final class QualityConfig {
         if (category == null) {
             return false;
         }
-        return excludeCategories.contains(category.toLowerCase());
+        return excludeCategories.contains(category.toLowerCase(Locale.ROOT));
     }
 
     public static double nutritionMultiplier(int quality) {

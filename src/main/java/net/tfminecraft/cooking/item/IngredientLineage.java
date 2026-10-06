@@ -43,19 +43,18 @@ public final class IngredientLineage {
             return result;
         }
         for (FoodItem item : inputs) {
-            if (item == null) {
-                continue;
-            }
-            IngredientLineage existing = item.getLineage();
-            if (existing != null && !existing.isEmpty()) {
-                result = result.merge(existing);
-                continue;
-            }
-            CompositionRole role = CompositionConfig.getRole(item.getCategory(), context);
-            if (role == CompositionRole.EXTRA) {
-                result = result.withExtra(item.getOrigin());
-            } else if (role == CompositionRole.MAIN) {
-                result = result.withMain(item.getOrigin());
+            if (item != null) {
+                IngredientLineage existing = item.getLineage();
+                if (existing != null && !existing.isEmpty()) {
+                    result = result.merge(existing);
+                } else {
+                    CompositionRole role = CompositionConfig.getRole(item.getCategory(), context);
+                    if (role == CompositionRole.EXTRA) {
+                        result = result.withExtra(item.getOrigin());
+                    } else if (role == CompositionRole.MAIN) {
+                        result = result.withMain(item.getOrigin());
+                    }
+                }
             }
         }
         return result;

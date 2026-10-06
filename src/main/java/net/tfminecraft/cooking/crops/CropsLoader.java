@@ -89,7 +89,7 @@ public final class CropsLoader {
     }
 
     private static double clampAffection(double affection) {
-        if (affection <= 0.0 || affection > 1.0) {
+        if (!Double.isFinite(affection) || affection <= 0.0 || affection > 1.0) {
             return 0.5;
         }
         return affection;

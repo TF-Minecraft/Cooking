@@ -104,16 +104,11 @@ public final class HusbandryEntities {
         String raw = type.name().toLowerCase(Locale.ROOT).replace('_', ' ');
         StringBuilder out = new StringBuilder();
         for (String word : raw.split(" ")) {
-            if (word.isEmpty()) {
-                continue;
-            }
             if (!out.isEmpty()) {
                 out.append(' ');
             }
             out.append(Character.toUpperCase(word.charAt(0)));
-            if (word.length() > 1) {
-                out.append(word.substring(1));
-            }
+            out.append(word.substring(1));
         }
         return out.toString();
     }

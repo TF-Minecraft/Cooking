@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.item.tag;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
 public class TagTrack {
@@ -20,6 +21,10 @@ public class TagTrack {
         for (String id : config.getKeys(false)) {
             if(id.equalsIgnoreCase("ageable")) continue;
             ConfigurationSection section = config.getConfigurationSection(id);
+            if (section == null) {
+                Bukkit.getLogger().warning("[Cooking] Ignoring non-section tag step: " + key + "." + id);
+                continue;
+            }
             steps.add(new TagStep(id, section));
         }
     }
@@ -60,6 +65,7 @@ public class TagTrack {
     public boolean isAgeable() { return ageable; }
 
     public TagStep getCurrentStep() {
+        if (steps.isEmpty()) return null;
         TagStep current = null;
         for (TagStep step : steps) {
             if (value >= step.getRequiredValue()) {

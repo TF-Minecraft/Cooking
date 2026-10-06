@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.cache;
 
+import java.util.Locale;
+
 import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
@@ -94,6 +96,6 @@ public class FurnitureCache {
     // Other plugins' furniture (pedestals, displays) keeps its own slot display.
     public static boolean isCookingFurniture(Furniture f) {
         return f.getType() != null
-            && f.getType().getItemPath().toLowerCase().startsWith("ia.tfmc_cooking:");
+            && f.getType().getItemPath().toLowerCase(Locale.ROOT).startsWith("ia.tfmc_cooking:");
     }
 }

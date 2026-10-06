@@ -109,6 +109,6 @@ public class FoodModel {
     }
 
     private ModelData getFirstModel() {
-        return states.values().iterator().next();
+        return states.isEmpty() ? null : states.values().iterator().next();
     }
 }

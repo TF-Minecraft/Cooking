@@ -93,13 +93,9 @@ public final class NutritionService {
         }
 
         int priorFood = character.getFoodValue();
-        int newValue = Math.min(priorFood + gained, NutritionConfig.maxFood());
-        if (newValue == priorFood) {
-            return 0;
-        }
-
+        int newValue = (int) Math.min((long) priorFood + gained, NutritionConfig.maxFood());
         character.setFoodValue(newValue);
-        return newValue - priorFood;
+        return character.getFoodValue() - priorFood;
     }
 
     static int foodAfterDeath(int current, int respawnFood, boolean inBattle) {

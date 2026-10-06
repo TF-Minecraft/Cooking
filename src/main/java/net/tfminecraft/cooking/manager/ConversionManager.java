@@ -27,7 +27,7 @@ import net.tfminecraft.cooking.utils.Keys;
 
 public class ConversionManager implements Listener {
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true)
     public void pickup(EntityPickupItemEvent e) {
         ItemStack item = e.getItem().getItemStack();
         if (FoodItem.fromItem(item) != null) return;
@@ -88,6 +88,7 @@ public class ConversionManager implements Listener {
     }
 
     private void giveConverted(EntityPickupItemEvent event, Player player, ItemStack stack) {
+        if (stack == null || stack.getType().isAir()) return;
         stack.setAmount(event.getItem().getItemStack().getAmount());
         event.setCancelled(true);
         event.getItem().remove();

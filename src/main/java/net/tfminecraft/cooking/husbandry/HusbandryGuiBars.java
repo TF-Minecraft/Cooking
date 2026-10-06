@@ -18,9 +18,6 @@ final class HusbandryGuiBars {
         }
         int effective = HusbandryConfig.effectiveGenetics(animal);
         int max = HusbandryConfig.maxGenetics();
-        if (max <= 0) {
-            return 0;
-        }
         return (int) Math.round(100.0 * effective / max);
     }
 
@@ -28,7 +25,7 @@ final class HusbandryGuiBars {
         if (max <= 0 || value <= 0) {
             return 0;
         }
-        return Math.max(0, Math.min(BAR_SLOTS, (int) Math.round(BAR_SLOTS * value / (double) max)));
+        return Math.max(0, Math.min(BAR_SLOTS, (int) Math.round(BAR_SLOTS * (double) value / max)));
     }
 
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.

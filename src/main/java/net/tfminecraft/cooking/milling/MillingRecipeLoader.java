@@ -36,16 +36,23 @@ public final class MillingRecipeLoader {
                 continue;
             }
 
+            int inputCount = section.getInt("input-count", 8);
+            int durationTicks = section.getInt("duration-ticks", 60);
+            if (inputCount <= 0 || durationTicks <= 0) {
+                Bukkit.getLogger().warning("[Cooking] milling-recipes entry '" + recipeId + "' requires positive input-count and duration-ticks");
+                continue;
+            }
+
             recipes.put(recipeId, new MillingRecipe(
                     recipeId,
                     furnitureId,
-                    section.getInt("input-count", 8),
+                    inputCount,
                     section.getString("input-food"),
                     section.getString("input"),
                     section.getString("vanilla-fallback"),
                     outputFood,
                     section.getInt("revolutions", 4),
-                    section.getInt("duration-ticks", 60)));
+                    durationTicks));
         }
 
         MillingRecipeRegistry.load(recipes);

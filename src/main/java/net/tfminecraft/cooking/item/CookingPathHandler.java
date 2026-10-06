@@ -116,9 +116,6 @@ public final class CookingPathHandler implements ItemPathHandler {
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             if (entry.getKey() != null && key.equalsIgnoreCase(entry.getKey().trim())) {
                 String value = entry.getValue();
-                if (value == null) {
-                    return null;
-                }
                 String trimmed = value.trim();
                 return trimmed.isEmpty() ? null : trimmed;
             }
@@ -155,9 +152,6 @@ public final class CookingPathHandler implements ItemPathHandler {
                 continue;
             }
             String[] kv = t.split("\\.", 2);
-            if (kv.length != 2) {
-                continue;
-            }
             int expected;
             try {
                 expected = Integer.parseInt(kv[1].trim());
@@ -175,9 +169,6 @@ public final class CookingPathHandler implements ItemPathHandler {
     }
 
     private static TagTrack findTrack(FoodItem food, String trackId) {
-        if (trackId == null) {
-            return null;
-        }
         TagTrack direct = food.getTagTrack(trackId);
         if (direct != null) {
             return direct;

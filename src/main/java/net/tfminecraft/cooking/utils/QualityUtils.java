@@ -16,7 +16,7 @@ public final class QualityUtils {
         if (qualities == null || qualities.length == 0) {
             return MIN_QUALITY;
         }
-        int sum = 0;
+        long sum = 0;
         for (int quality : qualities) {
             sum += quality;
         }

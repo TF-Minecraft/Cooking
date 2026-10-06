@@ -199,13 +199,14 @@ final class HusbandryEntityScan {
     private static void readEntityChunk(DataInputStream in, String world, Set<UUID> targets, Map<UUID, Found> found)
             throws IOException {
         if (in.readByte() != COMPOUND) {
-            return;
+            throw new IOException("Entity chunk NBT root is not a compound");
         }
         in.readUTF();
         byte type;
         while ((type = in.readByte()) != END) {
             String key = in.readUTF();
-            if (type == LIST && key.equals("Entities")) {
+            if (key.equals("Entities")) {
+                if (type != LIST) throw new IOException("Invalid Entities tag");
                 readEntityList(in, world, targets, found);
             } else {
                 skip(in, type);
@@ -216,17 +217,19 @@ final class HusbandryEntityScan {
     private static void readPlayer(DataInputStream in, Set<UUID> targets, Map<UUID, Found> found)
             throws IOException {
         if (in.readByte() != COMPOUND) {
-            return;
+            throw new IOException("Player NBT root is not a compound");
         }
         in.readUTF();
         byte type;
         while ((type = in.readByte()) != END) {
             String key = in.readUTF();
-            if (type == COMPOUND && key.equals("RootVehicle")) {
+            if (key.equals("RootVehicle")) {
+                if (type != COMPOUND) throw new IOException("Invalid RootVehicle tag");
                 byte inner;
                 while ((inner = in.readByte()) != END) {
                     String innerKey = in.readUTF();
-                    if (inner == COMPOUND && innerKey.equals("Entity")) {
+                    if (innerKey.equals("Entity")) {
+                        if (inner != COMPOUND) throw new IOException("Invalid root vehicle Entity tag");
                         readEntity(in, "", targets, found);
                     } else {
                         skip(in, inner);
@@ -242,11 +245,8 @@ final class HusbandryEntityScan {
             throws IOException {
         byte element = in.readByte();
         int size = in.readInt();
-        if (element != COMPOUND) {
-            for (int i = 0; i < size; i++) {
-                skip(in, element);
-            }
-            return;
+        if (size < 0 || (size > 0 && element != COMPOUND)) {
+            throw new IOException("Invalid entity list");
         }
         for (int i = 0; i < size; i++) {
             readEntity(in, world, targets, found);
@@ -260,32 +260,39 @@ final class HusbandryEntityScan {
         byte type;
         while ((type = in.readByte()) != END) {
             String key = in.readUTF();
-            if (type == INT_ARRAY && key.equals("UUID")) {
+            if (key.equals("UUID")) {
+                if (type != INT_ARRAY) throw new IOException("Invalid entity UUID tag");
                 int size = in.readInt();
                 if (size == 4) {
                     uuid = new UUID(
                             ((long) in.readInt() << 32) | (in.readInt() & 0xFFFFFFFFL),
                             ((long) in.readInt() << 32) | (in.readInt() & 0xFFFFFFFFL));
                 } else {
-                    in.skipNBytes(4L * size);
+                    throw new IOException("Invalid entity UUID length");
                 }
-            } else if (type == LIST && key.equals("Pos")) {
+            } else if (key.equals("Pos")) {
+                if (type != LIST) throw new IOException("Invalid entity position tag");
                 byte element = in.readByte();
                 int size = in.readInt();
                 if (element == DOUBLE && size == 3) {
                     pos = new double[] {in.readDouble(), in.readDouble(), in.readDouble()};
-                } else {
-                    for (int i = 0; i < size; i++) {
-                        skip(in, element);
+                    if (!Double.isFinite(pos[0]) || !Double.isFinite(pos[1]) || !Double.isFinite(pos[2])) {
+                        throw new IOException("Non-finite entity position");
                     }
+                } else {
+                    throw new IOException("Invalid entity position list");
                 }
-            } else if (type == LIST && key.equals("Passengers")) {
+            } else if (key.equals("Passengers")) {
+                if (type != LIST) throw new IOException("Invalid Passengers tag");
                 readEntityList(in, world, targets, found);
             } else {
                 skip(in, type);
             }
         }
-        if (uuid != null && pos != null && targets.contains(uuid)) {
+        if (uuid == null || pos == null) {
+            throw new IOException("Entity is missing UUID or position");
+        }
+        if (targets.contains(uuid)) {
             found.putIfAbsent(uuid, new Found(
                     world, (int) Math.floor(pos[0]), (int) Math.floor(pos[1]), (int) Math.floor(pos[2])));
         }

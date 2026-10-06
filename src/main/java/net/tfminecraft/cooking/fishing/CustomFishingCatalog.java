@@ -255,7 +255,8 @@ public final class CustomFishingCatalog {
 
     private static Double decimal(String raw) {
         try {
-            return Double.valueOf(raw.trim());
+            double value = Double.parseDouble(raw.trim());
+            return Double.isFinite(value) ? value : null;
         } catch (NumberFormatException exception) {
             return null;
         }

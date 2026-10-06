@@ -112,13 +112,31 @@ public final class CropCustomCropsListener implements Listener {
             PlayerInventory inventory = online.getInventory();
             ItemStack[] now = inventory.getStorageContents();
             int length = Math.min(before.length, now.length);
+            java.util.List<ItemStack> additions = new java.util.ArrayList<>();
             for (int i = 0; i < length; i++) {
                 if (sameStack(before[i], now[i])) {
                     continue;
                 }
-                ItemStack rewritten = CropHarvestItems.rewriteCustomDrop(now[i], crop, quality);
-                if (rewritten != null && rewritten != now[i]) {
+                ItemStack candidate = now[i];
+                boolean grewExisting = before[i] != null && candidate != null && before[i].isSimilar(candidate);
+                if (grewExisting) {
+                    int gained = candidate.getAmount() - before[i].getAmount();
+                    if (gained <= 0) continue;
+                    candidate = candidate.clone();
+                    candidate.setAmount(gained);
+                }
+                ItemStack rewritten = CropHarvestItems.rewriteCustomDrop(candidate, crop, quality);
+                if (rewritten == null || rewritten == candidate || rewritten.getType().isAir()) continue;
+                if (grewExisting) {
+                    inventory.setItem(i, before[i].clone());
+                    additions.add(rewritten);
+                } else {
                     inventory.setItem(i, rewritten);
+                }
+            }
+            for (ItemStack addition : additions) {
+                for (ItemStack leftover : inventory.addItem(addition).values()) {
+                    online.getWorld().dropItemNaturally(online.getLocation(), leftover);
                 }
             }
         }, 1L);

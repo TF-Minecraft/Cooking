@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.bukkit.Bukkit;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -43,7 +45,12 @@ public class ModelLoader {
         Set<String> keys = config.getKeys(false);
 
         for (String key : keys) {
-            FoodModel model = new FoodModel(key, config.getConfigurationSection(key));
+            ConfigurationSection section = config.getConfigurationSection(key);
+            if (section == null) {
+                Bukkit.getLogger().warning("[Cooking] Ignoring non-section ModelLoader entry: " + key);
+                continue;
+            }
+            FoodModel model = new FoodModel(key, section);
             models.add(model);
         }
     }

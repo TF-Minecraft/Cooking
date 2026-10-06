@@ -307,6 +307,10 @@ public class SauceReference extends CookingReference {
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(sauce, ladle, quality);
+        if (output == null) {
+            p.sendMessage("§cThis sauce cannot be served right now.");
+            return;
+        }
 
 
 
@@ -505,5 +509,4 @@ public class SauceReference extends CookingReference {
         }
     }
 }
-
 

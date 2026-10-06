@@ -154,15 +154,8 @@ public final class BakingTrayHandler implements Listener {
             return false;
         }
 
-        PlacedSlot slot = furniture.getActiveSlot(slotId).orElse(null);
-        if (slot == null) {
-            return false;
-        }
-
+        PlacedSlot slot = furniture.getActiveSlot(slotId).orElseThrow();
         ItemStack item = slot.getCurrentItem();
-        if (item == null || item.getType().isAir()) {
-            return false;
-        }
 
         FoodItem foodItem = FoodItem.fromItem(item);
         if (foodItem == null) {
@@ -173,7 +166,7 @@ public final class BakingTrayHandler implements Listener {
         if (WarmthUtils.isHeated(foodItem, 1)) {
             WarmthUtils.applyHot(foodItem);
             toGive = ItemUpdater.applyItemUpdate(item, foodItem, furniture.getId());
-            if (toGive == null) {
+            if (toGive == null || toGive.getType().isAir()) {
                 return false;
             }
         } else {
@@ -201,9 +194,6 @@ public final class BakingTrayHandler implements Listener {
     }
 
     private static boolean matchesFillInput(BakingTrayRecipe recipe, ItemStack hand) {
-        if (hand == null) {
-            return false;
-        }
         BakingTrayFill fill = recipe.getFill();
         if (fill.getInputFood() != null) {
             FoodItem foodItem = FoodItem.fromItem(hand);
@@ -219,9 +209,6 @@ public final class BakingTrayHandler implements Listener {
     }
 
     private static boolean matchesPlaceableLoaf(BakingTrayRecipe recipe, ItemStack hand) {
-        if (hand == null || hand.getType().isAir()) {
-            return false;
-        }
         FoodItem foodItem = FoodItem.fromItem(hand);
         if (foodItem == null) {
             return false;

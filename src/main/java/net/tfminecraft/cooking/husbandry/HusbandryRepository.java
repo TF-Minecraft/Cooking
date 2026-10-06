@@ -272,7 +272,6 @@ public final class HusbandryRepository {
             if (animal == null || animal.uuid() == null) {
                 continue;
             }
-            sanitizeName(animal);
             valid.add(animal);
         }
         if (valid.isEmpty()) {
@@ -424,13 +423,6 @@ public final class HusbandryRepository {
             // still close
         }
         database.close();
-    }
-
-    private static void sanitizeName(HusbandryAnimal animal) {
-        String name = animal.name() == null ? "" : animal.name();
-        if ("???".equals(name.trim())) {
-            animal.setName("");
-        }
     }
 
     private static void bindAnimal(PreparedStatement statement, HusbandryAnimal animal) throws SQLException {

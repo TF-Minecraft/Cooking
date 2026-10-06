@@ -44,7 +44,7 @@ public class TagManager implements ItemScanHandler {
         }
         boolean held = isHeldSlot(player, inventory, slot);
         ItemStack updated = ItemUpdater.updateItem(stack, food, null, held);
-        if (updated != null && inventory != null && slot >= 0) {
+        if (updated != null && !updated.getType().isAir() && inventory != null && slot >= 0) {
             inventory.setItem(slot, updated);
         }
     }
