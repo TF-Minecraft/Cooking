@@ -2,11 +2,17 @@ package net.tfminecraft.cooking.manager;
 
 import net.tfminecraft.cooking.util.LegacyModelData;
 
+import java.util.UUID;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -33,6 +39,8 @@ public class ConversionManager implements Listener {
         if (!(e.getEntity() instanceof Player)) return;
 
         Player p = (Player) e.getEntity();
+        // Paper fires pickup events before it refuses an item that belongs to another player.
+        if (!mayTake(p, e.getItem())) return;
         if (FoodItem.fromItem(item) != null) {
             stackOntoAgedFood(e, p, item);
             return;
@@ -58,13 +66,40 @@ public class ConversionManager implements Listener {
     }
 
     /**
+     * Paper only fires the pickup event when the item fits as it is. Food that only fits on an equal
+     * food that aged differently never gets one, so offer it, leaving other plugins their say.
+     */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void attemptPickup(PlayerAttemptPickupItemEvent e) {
+        Item entity = e.getItem();
+        ItemStack item = entity.getItemStack();
+        if (e.getRemaining() < item.getAmount()) return;
+        Player player = e.getPlayer();
+        if (!player.getCanPickupItems() || !mayTake(player, entity)) return;
+        if (!InventoryAdder.hasStackFor(player, item)) return;
+        Bukkit.getPluginManager().callEvent(new EntityPickupItemEvent(player, entity, 0));
+    }
+
+    private static boolean mayTake(Player player, Item entity) {
+        UUID owner = entity.getOwner();
+        return owner == null || owner.equals(player.getUniqueId());
+    }
+
+    /** Paper shrinks the ground item to what fits while the event runs; the rest is in getRemaining. */
+    private static int groundAmount(EntityPickupItemEvent event) {
+        return event.getItem().getItemStack().getAmount() + event.getRemaining();
+    }
+
+    /**
      * Food on the ground keeps the clock it was made with, so a vanilla pickup starts a new stack
      * beside an equal food that only aged differently. Add it the way Cooking adds food instead.
      */
     private void stackOntoAgedFood(EntityPickupItemEvent event, Player player, ItemStack item) {
         if (!InventoryAdder.hasStackFor(player, item)) return;
         event.setCancelled(true);
-        ItemStack leftover = InventoryAdder.addItem(player, item.clone());
+        ItemStack ground = item.clone();
+        ground.setAmount(groundAmount(event));
+        ItemStack leftover = InventoryAdder.addItem(player, ground);
         if (leftover == null) {
             event.getItem().remove();
         } else {
@@ -108,7 +143,7 @@ public class ConversionManager implements Listener {
 
     private void giveConverted(EntityPickupItemEvent event, Player player, ItemStack stack) {
         if (stack == null || stack.getType().isAir()) return;
-        stack.setAmount(event.getItem().getItemStack().getAmount());
+        stack.setAmount(groundAmount(event));
         event.setCancelled(true);
         event.getItem().remove();
         ItemStack leftover = InventoryAdder.addItem(player, stack);

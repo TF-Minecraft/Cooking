@@ -52,7 +52,8 @@ public class InventoryAdder {
     }
 
     private static int room(PlayerInventory inv, FoodItem fIn, ItemStack in, ItemStack cur) {
-        if (cur == null) return 0;
+        // Equal foods share a material; checking it first keeps per-tick pickup attempts cheap.
+        if (cur == null || cur.getType() != in.getType()) return 0;
 
         FoodItem fCur = FoodItem.fromItem(cur);
         if (fCur == null) return 0;

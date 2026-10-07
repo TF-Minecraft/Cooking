@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.bukkit.Material;
 import org.bukkit.block.BlockState;
 import org.bukkit.entity.Item;
+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityPickupItemEvent;
@@ -351,6 +352,44 @@ public class MealManagersCoverageTest {
         var event = pickup(ground); conversions.pickup(event);
         assertTrue(event.isCancelled()); verify(event.getItem()).remove();
         assertEquals(5, env.player.getInventory().getItem(4).getAmount()); assertNull(env.player.getInventory().getItem(0));
+    }
+
+    @Test
+    void aPartialPickupAddsTheWholeGroundStackNotJustWhatPaperSaidFits() {
+        ItemStack held = age(pickupOutput, 100L, "freshness.1"); held.setAmount(3); env.player.getInventory().setItem(4, held);
+        ItemStack fits = age(pickupOutput, 900L, "freshness.4"); fits.setAmount(2);
+        Item item = mock(Item.class); when(item.getItemStack()).thenReturn(fits);
+        var event = new EntityPickupItemEvent(env.player, item, 4); conversions.pickup(event);
+        assertTrue(event.isCancelled()); verify(item).remove(); assertEquals(9, env.player.getInventory().getItem(4).getAmount());
+    }
+
+    @Test
+    void foodOwnedByAnotherPlayerIsLeftForVanillaToRefuse() {
+        ItemStack held = age(pickupOutput, 100L, "freshness.1"); env.player.getInventory().setItem(4, held);
+        var owned = pickup(age(pickupOutput, 900L, "freshness.4")); when(owned.getItem().getOwner()).thenReturn(UUID.randomUUID());
+        conversions.pickup(owned); assertFalse(owned.isCancelled()); assertEquals(1, env.player.getInventory().getItem(4).getAmount());
+        UUID me = UUID.randomUUID(); when(env.player.getUniqueId()).thenReturn(me);
+        var mine = pickup(age(pickupOutput, 900L, "freshness.4")); when(mine.getItem().getOwner()).thenReturn(me);
+        conversions.pickup(mine); assertTrue(mine.isCancelled()); assertEquals(2, env.player.getInventory().getItem(4).getAmount());
+    }
+
+    @Test
+    void attemptedPickupWithNoVanillaRoomOffersFoodToItsAgedStack() {
+        env.server.getPluginManager().registerEvents(conversions, org.mockbukkit.mockbukkit.MockBukkit.createMockPlugin("AttemptPickup"));
+        ItemStack held = age(pickupOutput, 100L, "freshness.1"); held.setAmount(3); env.player.getInventory().setItem(4, held);
+        ItemStack ground = age(pickupOutput, 900L, "freshness.4"); ground.setAmount(2);
+        Item item = mock(Item.class); when(item.getItemStack()).thenReturn(ground);
+        conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 1));
+        assertEquals(3, env.player.getInventory().getItem(4).getAmount(), "Paper fires its own pickup when some of it fits");
+        Item other = mock(Item.class); when(other.getItemStack()).thenReturn(ground.clone()); when(other.getOwner()).thenReturn(UUID.randomUUID());
+        when(env.player.getCanPickupItems()).thenReturn(true); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, other, 2));
+        Item stone = mock(Item.class); when(stone.getItemStack()).thenReturn(new ItemStack(Material.STONE));
+        conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, stone, 1));
+        when(env.player.getCanPickupItems()).thenReturn(false);
+        conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 2));
+        assertEquals(3, env.player.getInventory().getItem(4).getAmount(), "A player who cannot pick items up is left alone");
+        when(env.player.getCanPickupItems()).thenReturn(true); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 2));
+        assertEquals(5, env.player.getInventory().getItem(4).getAmount()); verify(item).remove(); verify(other, never()).remove();
     }
 
     @Test
