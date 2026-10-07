@@ -22,15 +22,7 @@ public class InventoryAdder {
 
         for (int slot = 0; slot < inv.getSize(); slot++) {
             ItemStack cur = inv.getItem(slot);
-            if (cur == null) continue;
-
-            FoodItem fCur = FoodItem.fromItem(cur);
-            if (fCur == null) continue;
-
-            if (!equalsFood(fIn, fCur)) continue;
-            if (!ConversionManager.sameApartFromAging(in, cur)) continue;
-
-            int space = Math.min(cur.getMaxStackSize(), inv.getMaxStackSize()) - cur.getAmount();
+            int space = room(inv, fIn, in, cur);
             if (space <= 0) continue;
 
             int add = Math.min(space, amount);
@@ -46,6 +38,29 @@ public class InventoryAdder {
         HashMap<Integer, ItemStack> left = inv.addItem(rest);
         if (left.isEmpty()) return null;
         return left.values().iterator().next();
+    }
+
+    /** True when the player holds an equal food, differing at most in aging, with room for more. */
+    public static boolean hasStackFor(Player p, ItemStack in) {
+        FoodItem fIn = FoodItem.fromItem(in);
+        if (fIn == null) return false;
+        PlayerInventory inv = p.getInventory();
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            if (room(inv, fIn, in, inv.getItem(slot)) > 0) return true;
+        }
+        return false;
+    }
+
+    private static int room(PlayerInventory inv, FoodItem fIn, ItemStack in, ItemStack cur) {
+        if (cur == null) return 0;
+
+        FoodItem fCur = FoodItem.fromItem(cur);
+        if (fCur == null) return 0;
+
+        if (!equalsFood(fIn, fCur)) return 0;
+        if (!ConversionManager.sameApartFromAging(in, cur)) return 0;
+
+        return Math.min(cur.getMaxStackSize(), inv.getMaxStackSize()) - cur.getAmount();
     }
 
     public static boolean equalsFood(FoodItem a, FoodItem b) {

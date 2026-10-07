@@ -344,6 +344,26 @@ public class MealManagersCoverageTest {
         var empty = pickup(new ItemStack(Material.WHEAT)); conversions.pickup(empty); assertFalse(empty.isCancelled());
     }
 
+    @Test
+    void pickedUpFoodStacksOntoTheSameFoodThatOnlyAgedDifferently() {
+        ItemStack held = age(pickupOutput, 100L, "freshness.1"); held.setAmount(3); env.player.getInventory().setItem(4, held);
+        ItemStack ground = age(pickupOutput, 900L, "freshness.4"); ground.setAmount(2);
+        var event = pickup(ground); conversions.pickup(event);
+        assertTrue(event.isCancelled()); verify(event.getItem()).remove();
+        assertEquals(5, env.player.getInventory().getItem(4).getAmount()); assertNull(env.player.getInventory().getItem(0));
+    }
+
+    @Test
+    void pickedUpFoodThatDoesNotAllFitStaysOnTheGroundWithTheRest() {
+        ItemStack ground = age(pickupOutput, 900L, "freshness.4"); ground.setAmount(5); ItemStack rest = ground.clone(); rest.setAmount(2);
+        try (MockedStatic<InventoryAdder> delivery = mockStatic(InventoryAdder.class)) {
+            delivery.when(() -> InventoryAdder.hasStackFor(any(), any())).thenReturn(true);
+            delivery.when(() -> InventoryAdder.addItem(any(), any())).thenReturn(rest);
+            var event = pickup(ground); conversions.pickup(event);
+            assertTrue(event.isCancelled()); verify(event.getItem()).setItemStack(rest); verify(event.getItem(), never()).remove();
+        }
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"null", "air", "legacy-air", "fish-air"})
     void unusablePickupReplacementsKeepTheOriginalItemEntity(String failure) {

@@ -24,6 +24,7 @@ import net.momirealms.customcrops.api.event.CropInteractEvent;
 import net.momirealms.customcrops.api.event.CropPlantEvent;
 
 import net.tfminecraft.cooking.Cooking;
+import net.tfminecraft.cooking.utils.InventoryAdder;
 
 public final class CropCustomCropsListener implements Listener {
 
@@ -127,15 +128,13 @@ public final class CropCustomCropsListener implements Listener {
                 }
                 ItemStack rewritten = CropHarvestItems.rewriteCustomDrop(candidate, crop, quality);
                 if (rewritten == null || rewritten == candidate || rewritten.getType().isAir()) continue;
-                if (grewExisting) {
-                    inventory.setItem(i, before[i].clone());
-                    additions.add(rewritten);
-                } else {
-                    inventory.setItem(i, rewritten);
-                }
+                // Take the harvest back out and add it as food, so it joins produce that only aged differently.
+                inventory.setItem(i, grewExisting ? before[i].clone() : null);
+                additions.add(rewritten);
             }
             for (ItemStack addition : additions) {
-                for (ItemStack leftover : inventory.addItem(addition).values()) {
+                ItemStack leftover = InventoryAdder.addItem(online, addition);
+                if (leftover != null) {
                     online.getWorld().dropItemNaturally(online.getLocation(), leftover);
                 }
             }

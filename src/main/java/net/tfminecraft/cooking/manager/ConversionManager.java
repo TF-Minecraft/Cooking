@@ -30,10 +30,13 @@ public class ConversionManager implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void pickup(EntityPickupItemEvent e) {
         ItemStack item = e.getItem().getItemStack();
-        if (FoodItem.fromItem(item) != null) return;
         if (!(e.getEntity() instanceof Player)) return;
 
         Player p = (Player) e.getEntity();
+        if (FoodItem.fromItem(item) != null) {
+            stackOntoAgedFood(e, p, item);
+            return;
+        }
         if (replaceLegacyFish(e, p, item)) {
             return;
         }
@@ -52,6 +55,22 @@ public class ConversionManager implements Listener {
                     : OriginQualityResolver.resolve(p, parsed.template);
             giveConverted(e, p, ItemBuilder.buildSingleWithQuality(parsed.template, item, quality));
         }
+    }
+
+    /**
+     * Food on the ground keeps the clock it was made with, so a vanilla pickup starts a new stack
+     * beside an equal food that only aged differently. Add it the way Cooking adds food instead.
+     */
+    private void stackOntoAgedFood(EntityPickupItemEvent event, Player player, ItemStack item) {
+        if (!InventoryAdder.hasStackFor(player, item)) return;
+        event.setCancelled(true);
+        ItemStack leftover = InventoryAdder.addItem(player, item.clone());
+        if (leftover == null) {
+            event.getItem().remove();
+        } else {
+            event.getItem().setItemStack(leftover);
+        }
+        player.playSound(player.getLocation(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
     }
 
     private boolean replaceLegacyFish(EntityPickupItemEvent event, Player player, ItemStack item) {
