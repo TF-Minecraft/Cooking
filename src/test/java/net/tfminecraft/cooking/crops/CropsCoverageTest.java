@@ -163,6 +163,13 @@ class CropsCoverageTest {
         assertEquals(3,f.inventoryCount(Material.CARROT),"Harvesting two carrots must not convert three carrots already held");assertEquals(2,f.inventoryCount(Material.BREAD));
     }
 
+    @Test void inventoryRewriteStacksTheHarvestOntoTheSameFoodThatAgedDifferently(){
+        configureCustom();f.food("carrot",Material.BREAD);ConversionLoader.conversions.put("v.carrot","vegetable(type=carrot;origin=Carrot)");
+        ItemStack held=CropHarvestItems.rewriteCustomDrop(new ItemStack(Material.CARROT,3),null,4);var meta=held.getItemMeta();meta.getPersistentDataContainer().set(Keys.LAST_UPDATE,org.bukkit.persistence.PersistentDataType.LONG,1L);held.setItemMeta(meta);f.player.getInventory().setItem(5,held);
+        try(MockedStatic<CropHarvestQuality> quality=mockStatic(CropHarvestQuality.class)){quality.when(()->CropHarvestQuality.roll(anyString(),any(),any())).thenReturn(4);listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,2));f.server.getScheduler().performOneTick();}
+        assertNull(f.player.getInventory().getItem(0));assertEquals(5,f.player.getInventory().getItem(5).getAmount());assertEquals(5,f.inventoryCount(Material.BREAD));
+    }
+
     @Test void inventoryRewriteDoesNotConvertAStackThatShrankDuringHarvest(){
         configureCustom();f.food("carrot",Material.BREAD);ConversionLoader.conversions.put("v.carrot","vegetable(type=carrot;origin=Carrot)");f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,5));listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,3));f.server.getScheduler().performOneTick();assertEquals(3,f.inventoryCount(Material.CARROT));assertEquals(0,f.inventoryCount(Material.BREAD));
     }
