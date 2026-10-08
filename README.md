@@ -11,7 +11,7 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 - **Serving and sharing** — plate dishes, ladle soup into bowls, and carve foods into portions for the table.
 - **Quality and freshness** — ingredient quality and composition influence finished dishes, while aging and food tags carry preparation history through the kitchen.
 - **Farming and husbandry** — crop fertility and harvest quality sit alongside animal care, breeding, genetics, and produce collection.
-- **Fish and seafood** — turn supported catches into cooking ingredients, with catch size affecting portion yields.
+- **Fish and seafood** — turn supported catches into cooking ingredients while preserving catch size.
 - **Character nutrition** — meals feed a character's food reserve and influence diet quality, with variety rewarding a broader selection of ingredients.
 
 ## A complete food journey
