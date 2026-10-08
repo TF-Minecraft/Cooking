@@ -11,6 +11,7 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 - **Serving and sharing** — plate dishes, ladle soup into bowls, and carve foods into portions for the table.
 - **Quality and freshness** — ingredient quality and composition influence finished dishes, while aging and food tags carry preparation history through the kitchen.
 - **Farming and husbandry** — crop fertility and harvest quality sit alongside animal care, breeding, genetics, and produce collection.
+- **Fish and seafood** — turn supported catches into cooking ingredients while preserving catch size.
 - **Character nutrition** — meals feed a character's food reserve and influence diet quality, with variety rewarding a broader selection of ingredients.
 
 ## A complete food journey
@@ -25,7 +26,7 @@ Technical documentation is maintained in [TF-Minecraft/Docs](https://github.com/
 
 ## Tests
 
-With Java 21 and the pinned plugin dependencies installed (see the build workflow), run:
+With Java 21 and the [build dependencies](https://github.com/TF-Minecraft/Docs/blob/main/projects/Cooking/README.md#build-and-dependencies) prepared, run:
 
 ```sh
 mvn -B --no-transfer-progress clean verify
@@ -33,10 +34,12 @@ mvn -B --no-transfer-progress clean verify
 
 The JUnit 5 suite covers food parsing and items, crops, husbandry, nutrition,
 fishing and configuration loading, using MockBukkit and Mockito where Bukkit or
-plugin APIs are involved. The Build and release workflows run the same command,
-and the Build workflow uploads the Surefire reports. JaCoCo requires 100% line
-coverage across all production classes, with no coverage exclusions. HTML and XML
-reports are written to `target/site/jacoco/` and uploaded by the Build workflow.
+plugin APIs are involved. Build and release CI run the same verification. The
+Build workflow uploads Surefire results from `target/surefire-reports/`. JaCoCo
+requires 100% line coverage across all production classes, with no coverage
+exclusions. HTML and XML
+reports are `target/site/jacoco/index.html` and `target/site/jacoco/jacoco.xml`,
+and the Build workflow uploads that directory.
 The tests do not replace checking kitchens, crops and livestock on a live Paper
 server with the pinned integrations.
 
