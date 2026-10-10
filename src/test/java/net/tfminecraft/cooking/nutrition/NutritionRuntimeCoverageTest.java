@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+import io.lumine.mythic.lib.player.resource.ResourceUpdateReason;
 import net.Indyuce.mmocore.api.player.PlayerData;
 import net.Indyuce.mmocore.api.player.attribute.PlayerAttributes.AttributeInstance;
 import net.tfminecraft.cooking.Cooking;
@@ -19,6 +20,7 @@ import net.tfminecraft.cooking.quality.QualityConfig;
 import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.rpcharacters.managers.PlayerManager;
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterEach;
@@ -203,6 +205,39 @@ class NutritionRuntimeCoverageTest {
             when(pd.getAttributes().getInstance(key)).thenReturn(attribute);
             character.setDietScore(12); NutritionAttributeBridge.apply(player,character);
             verify(attribute).setBase(12);
+            when(attribute.getBase()).thenReturn(12);
+            NutritionAttributeBridge.apply(player,character);
+            verify(attribute).setBase(12);
+        }
+    }
+
+    @Test void attributeBridgeGivesBackHealthAndManaClampedWhileTheBuffsAreReplaced() {
+        MockBukkit.createMockPlugin("MMOCore");
+        try (MockedStatic<PlayerData> data = mockStatic(PlayerData.class)) {
+            PlayerData pd = mock(PlayerData.class,RETURNS_DEEP_STUBS);
+            data.when(() -> PlayerData.get(player)).thenReturn(pd);
+            AttributeInstance attribute = mock(AttributeInstance.class);
+            when(pd.getAttributes().getInstance(NutritionConfig.attributeName())).thenReturn(attribute);
+            when(pd.getStats().getStat("MAX_MANA")).thenReturn(30.0);
+            when(pd.getStats().getStat("MAX_STAMINA")).thenReturn(10.0);
+            when(pd.getStats().getStat("MAX_STELLIUM")).thenReturn(40.0);
+            double[] mana = {30};
+            when(pd.getMana()).thenAnswer(call -> mana[0]);
+            when(pd.getStamina()).thenReturn(5.0);
+            when(pd.getStellium()).thenReturn(50.0, 40.0);
+            player.setHealth(20);
+            doAnswer(call -> { player.setHealth(16); mana[0] = 21; return null; }).when(attribute).setBase(36);
+            character.setDietScore(36); NutritionAttributeBridge.apply(player,character);
+            assertEquals(20, player.getHealth());
+            verify(pd).setMana(30.0, ResourceUpdateReason.CLAMPING);
+            verify(pd,never()).setStamina(anyDouble(),any(ResourceUpdateReason.class));
+            verify(pd,never()).setStellium(anyDouble(),any(ResourceUpdateReason.class));
+
+            doAnswer(call -> {
+                player.getAttribute(Attribute.MAX_HEALTH).setBaseValue(18); player.setHealth(14); return null;
+            }).when(attribute).setBase(10);
+            character.setDietScore(10); NutritionAttributeBridge.apply(player,character);
+            assertEquals(18, player.getHealth());
         }
     }
 
