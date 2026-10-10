@@ -44,6 +44,7 @@ import io.lumine.mythic.lib.api.item.NBTItem;
 import net.Indyuce.mmoitems.MMOItems;
 import net.Indyuce.mmoitems.api.crafting.ConditionalDisplay;
 import net.Indyuce.mmoitems.api.crafting.ingredient.Ingredient;
+import net.Indyuce.mmoitems.api.crafting.ingredient.IngredientType;
 import net.Indyuce.mmoitems.manager.CraftingManager;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
@@ -202,12 +203,14 @@ class MMOItemsIngredientTest {
         ItemStack built = new ItemStack(Material.SALMON);
         try (MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class)) {
             ArgumentCaptor<FoodItem> food = ArgumentCaptor.forClass(FoodItem.class);
-            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), anyInt())).thenReturn(built);
+            ArgumentCaptor<ItemStack> base = ArgumentCaptor.forClass(ItemStack.class);
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), base.capture(), anyInt())).thenReturn(built);
             ItemStack preview = ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon)\",amount=99}")
                     .generateItemStack(null, true);
             assertSame(built, preview);
             assertEquals(preview.getMaxStackSize(), preview.getAmount());
-            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), eq(StationFood.PLAIN_QUALITY)));
+            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), any(), eq(StationFood.PLAIN_QUALITY)));
+            assertEquals(Material.SALMON, base.getValue().getType());
             assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
             assertEquals("Salmon", food.getValue().getOrigin());
         }
@@ -217,7 +220,7 @@ class MMOItemsIngredientTest {
     void refundIsTheLeastTheLineAccepts() {
         try (MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class)) {
             ArgumentCaptor<FoodItem> food = ArgumentCaptor.forClass(FoodItem.class);
-            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), anyInt()))
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), any(), anyInt()))
                     .thenAnswer(call -> new ItemStack(Material.SALMON));
 
             ItemStack refund = ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon)\",amount=99}")
@@ -226,12 +229,12 @@ class MMOItemsIngredientTest {
             assertEquals(StationFoodTemplates.ROTTEN, food.getValue().getTagTrack("freshness").getValue());
             assertEquals(0, food.getValue().getTagTrack("salted").getValue());
             assertEquals(0, food.getValue().getTagTrack("warmth").getValue());
-            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), eq(StationFood.PLAIN_QUALITY)));
+            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), any(), eq(StationFood.PLAIN_QUALITY)));
 
             ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;quality=3-5;tags=freshness.0)\"}")
                     .generateItemStack(null, false);
             assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
-            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), eq(3)));
+            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), any(), eq(3)));
         }
     }
 
@@ -244,7 +247,7 @@ class MMOItemsIngredientTest {
         assertEquals(2, unknown.getAmount());
 
         try (MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class)) {
-            builder.when(() -> ItemBuilder.buildSingleWithQuality(any(), anyInt())).thenReturn(null);
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(any(), any(), anyInt())).thenReturn(null);
             ItemStack unbuilt = ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon)\"}")
                     .generateItemStack(null, true);
             assertEquals(Material.PAPER, unbuilt.getType());
@@ -259,6 +262,39 @@ class MMOItemsIngredientTest {
         assertSame(stack, ingredient.getItem());
         assertEquals(5, ingredient.getAmount());
         assertEquals("Salmon", ingredient.getFood().getOrigin());
+    }
+
+    @Test
+    void plainSourceIsTheItemThatBecomesTheFood() {
+        ConversionLoader.conversions.put("ia.tfmc_cooking:tomato", "vegetable(type=wheat;origin=Tomato)");
+        ConversionLoader.conversions.put("v.not_a_material", "grain(type=wheat;origin=Oats)");
+        assertEquals(Material.SALMON, StationFood.plainSource("seafood(type=seafood_whole;origin=Salmon)").getType());
+        assertEquals(Material.WHEAT, StationFood.plainSource("grain(type=wheat;origin=Wheat)").getType());
+        assertNull(StationFood.plainSource("vegetable(type=wheat;origin=Tomato)"));
+        assertNull(StationFood.plainSource("grain(type=wheat;origin=Oats)"));
+        assertNull(StationFood.plainSource("meat(type=meat_red_meat;origin=Beef)"));
+    }
+
+    @Test
+    void cookingMovesBackInFrontOfLaterTypes() {
+        List<IngredientType<?>> types = new ArrayList<>(List.of(type("itemsadder"), type("mythicitem"),
+                type("cooking"), type("vanilla")));
+        CraftingManager crafting = mock(CraftingManager.class);
+        when(crafting.getIngredients()).thenReturn(types);
+        MMOItems previous = MMOItems.plugin;
+        MMOItems.plugin = mock(MMOItems.class);
+        try {
+            when(MMOItems.plugin.getCrafting()).thenReturn(crafting);
+            MMOItemsIngredients.claimFirst(logger);
+        } finally {
+            MMOItems.plugin = previous;
+        }
+        assertEquals(List.of("cooking", "itemsadder", "mythicitem", "vanilla"), ids(types));
+        MMOItemsIngredients.claimFirst(crafting, logger);
+        assertEquals(List.of("cooking", "itemsadder", "mythicitem", "vanilla"), ids(types));
+        types.remove(0);
+        MMOItemsIngredients.claimFirst(crafting, logger);
+        assertEquals(List.of("itemsadder", "mythicitem", "vanilla"), ids(types));
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -302,7 +338,24 @@ class MMOItemsIngredientTest {
             assertFalse(MMOItemsSupport.registerIfPresent(plugins, logger));
             registry.when(() -> MMOItemsIngredients.register(any(Logger.class))).thenThrow(new IllegalStateException("x"));
             assertFalse(MMOItemsSupport.registerIfPresent(plugins, logger));
+
+            assertTrue(MMOItemsSupport.claimFirstIfPresent(plugins, logger));
+            registry.verify(() -> MMOItemsIngredients.claimFirst(logger));
+            registry.when(() -> MMOItemsIngredients.claimFirst(any(Logger.class))).thenThrow(new NoSuchMethodError("x"));
+            assertFalse(MMOItemsSupport.claimFirstIfPresent(plugins, logger));
+            when(plugins.getPlugin("MMOItems")).thenReturn(null);
+            assertFalse(MMOItemsSupport.claimFirstIfPresent(plugins, logger));
         }
+    }
+
+    private static IngredientType<?> type(String id) {
+        IngredientType<?> type = mock(IngredientType.class);
+        when(type.getId()).thenReturn(id);
+        return type;
+    }
+
+    private static List<String> ids(List<IngredientType<?>> types) {
+        return types.stream().map(IngredientType::getId).toList();
     }
 
     private static CookingStationIngredient ingredient(String line) {

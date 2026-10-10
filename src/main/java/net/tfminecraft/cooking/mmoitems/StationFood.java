@@ -3,11 +3,14 @@ package net.tfminecraft.cooking.mmoitems;
 import java.util.Locale;
 import java.util.Map;
 
+import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
 import net.tfminecraft.cooking.fishing.SeafoodWholeItems;
+import net.tfminecraft.cooking.fishing.VanillaFish;
 import net.tfminecraft.cooking.fishing.VanillaFishAdapter;
+import net.tfminecraft.cooking.item.CookingPathHandler;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.ConversionLoader;
 import net.tfminecraft.cooking.loader.FoodLoader;
@@ -56,6 +59,32 @@ public final class StationFood {
         }
         return SeafoodWholeItems.describe(template, decision.fish().origin(), decision.fish().cut(),
                 decision.fish().sizeCm(), PLAIN_QUALITY, null);
+    }
+
+    /**
+     * The plain item that becomes food matching {@code path}, e.g. a salmon for a whole salmon.
+     * Foods without a model of their own (whole fish) are built on that item. Null when none.
+     */
+    public static ItemStack plainSource(String path) {
+        for (VanillaFish fish : CustomFishingCatalog.vanillaFish()) {
+            ItemStack source = source(fish.material());
+            if (source != null && CookingPathHandler.matches(vanillaFish(source), path)) {
+                return source;
+            }
+        }
+        for (Map.Entry<String, String> entry : ConversionLoader.get().entrySet()) {
+            String key = entry.getKey().toLowerCase(Locale.ROOT);
+            ItemStack source = key.startsWith("v.") ? source(key.substring(2)) : null;
+            if (source != null && CookingPathHandler.matches(conversion(key), path)) {
+                return source;
+            }
+        }
+        return null;
+    }
+
+    private static ItemStack source(String material) {
+        Material type = Material.matchMaterial(material);
+        return type == null || !type.isItem() || type.isAir() ? null : new ItemStack(type);
     }
 
     /** Plain items only have a {@code v.} path, so compare it to the conversion keys directly. */

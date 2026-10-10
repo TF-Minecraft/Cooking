@@ -1,9 +1,11 @@
 package net.tfminecraft.cooking.mmoitems;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 import net.Indyuce.mmoitems.MMOItems;
 import net.Indyuce.mmoitems.api.crafting.ConditionalDisplay;
+import net.Indyuce.mmoitems.api.crafting.ingredient.IngredientType;
 import net.Indyuce.mmoitems.manager.CraftingManager;
 
 /**
@@ -26,5 +28,25 @@ public final class MMOItemsIngredients {
                 nbt -> StationFood.describe(nbt.getItem()) != null,
                 CookingStationPlayerIngredient::new);
         logger.info("Registered the MMOItems crafting station ingredient cooking{item=...}.");
+    }
+
+    static void claimFirst(Logger logger) {
+        claimFirst(MMOItems.plugin.getCrafting(), logger);
+    }
+
+    /**
+     * MMOItems registers its ItemsAdder (and Nexo, Oraxen, MythicMobs) types while it enables,
+     * after onLoad, and each goes in front. Cooking food built on an ItemsAdder model would then
+     * be read as an ItemsAdder item, so put cooking back in front once everything has enabled.
+     */
+    static void claimFirst(CraftingManager crafting, Logger logger) {
+        List<IngredientType<?>> types = crafting.getIngredients();
+        for (int i = 1; i < types.size(); i++) {
+            if (ID.equals(types.get(i).getId())) {
+                types.add(0, types.remove(i));
+                logger.info("Moved the cooking station ingredient ahead of " + types.get(1).getId() + ".");
+                return;
+            }
+        }
     }
 }

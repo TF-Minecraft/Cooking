@@ -160,6 +160,7 @@ public class Cooking extends JavaPlugin {
             HusbandryLifecycleListener.resumeLoadedWorlds();
             HusbandryTickTask.start();
             HusbandryLocator.scanUnloaded();
+            MMOItemsSupport.claimFirstIfPresent(getServer().getPluginManager(), getLogger());
         });
 
         getCommand("cooking").setExecutor(commands);

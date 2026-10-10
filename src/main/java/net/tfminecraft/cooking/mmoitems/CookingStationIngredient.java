@@ -103,8 +103,8 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
             if (!forDisplay) {
                 ageOpenTracks(food);
             }
-            stack = ItemBuilder.buildSingleWithQuality(food, parsed.explicitQuality
-                    ? food._parsedQualMin : StationFood.PLAIN_QUALITY);
+            stack = ItemBuilder.buildSingleWithQuality(food, StationFood.plainSource(path),
+                    parsed.explicitQuality ? food._parsedQualMin : StationFood.PLAIN_QUALITY);
         }
         if (stack == null) {
             // Cooking does not know this food type (yet).
