@@ -322,13 +322,13 @@ class MMOItemsIngredientTest {
             assertNull(food.getValue().getTagTrack("spiciness"));
             assertEquals(Material.WHEAT, base.getValue().getType());
 
-            // A track named without a usable value is pinned as it is: not set, not aged.
+            // Matching ignores a tag without a usable value, so it constrains nothing: still aged.
             ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;tags=freshness)\"}")
                     .generateItemStack(null, false);
-            assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
+            assertEquals(StationFoodTemplates.ROTTEN, food.getValue().getTagTrack("freshness").getValue());
             ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;tags=freshness.x)\"}")
                     .generateItemStack(null, false);
-            assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
+            assertEquals(StationFoodTemplates.ROTTEN, food.getValue().getTagTrack("freshness").getValue());
         }
     }
 

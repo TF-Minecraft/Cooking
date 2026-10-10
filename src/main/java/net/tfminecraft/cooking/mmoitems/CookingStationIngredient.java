@@ -123,9 +123,6 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
 
     private static void applyPins(FoodItem food, Map<String, Integer> pins) {
         for (Map.Entry<String, Integer> pin : pins.entrySet()) {
-            if (pin.getValue() == null) {
-                continue;
-            }
             TagTrack track = track(food, pin.getKey());
             if (track != null) {
                 track.forceSetValue(pin.getValue());
@@ -158,23 +155,26 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
         }
     }
 
-    /** Track id to pinned value (null when the line names the track without a value). */
+    /**
+     * Track id to the value the line requires. Matching ignores a tag without a usable value, so
+     * such a tag constrains nothing and its track still ages out on a refund.
+     */
     private Map<String, Integer> pinnedTracks() {
         Map<String, Integer> pinned = new HashMap<>();
         String tags = field("tags");
         if (tags != null) {
             for (String tag : tags.split("[,:]")) {
                 String[] parts = tag.split("\\.", 2);
-                String raw = parts[0].trim();
-                Integer value = null;
-                if (parts.length == 2) {
-                    try {
-                        value = AgeScale.migrateTrackValue(raw, Integer.parseInt(parts[1].trim()));
-                    } catch (NumberFormatException e) {
-                        value = null; // not a number: the track is named, with no value to set
-                    }
+                if (parts.length < 2) {
+                    continue;
                 }
-                pinned.put(AgeScale.migrateTrackId(raw).toLowerCase(Locale.ROOT), value);
+                String raw = parts[0].trim();
+                try {
+                    int value = AgeScale.migrateTrackValue(raw, Integer.parseInt(parts[1].trim()));
+                    pinned.put(AgeScale.migrateTrackId(raw).toLowerCase(Locale.ROOT), value);
+                } catch (NumberFormatException e) {
+                    // Not a number: the line accepts nothing for this tag, so there is no value to keep.
+                }
             }
         }
         return pinned;
