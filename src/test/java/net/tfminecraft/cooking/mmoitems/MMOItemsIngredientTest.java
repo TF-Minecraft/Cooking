@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.mmoitems;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -292,6 +293,43 @@ class MMOItemsIngredientTest {
         assertNull(StationFood.plainSource("vegetable(type=wheat;origin=Tomato)"));
         assertNull(StationFood.plainSource("grain(type=wheat;origin=Oats)"));
         assertNull(StationFood.plainSource("meat(type=meat_red_meat;origin=Beef)"));
+        // Quality and tag values are the line's to set, not the plain item's.
+        assertEquals(Material.SALMON, StationFood.plainSource(
+                "seafood(type=seafood_whole;origin=Salmon;quality=4;tags=freshness.259200)").getType());
+        assertNotNull(StationFood.plainSource("seafood"));
+        // A salmon is read as a whole fish first, so it never stands in for another food.
+        ConversionLoader.conversions.put("v.salmon", "grain(type=wheat;origin=Salmonish)");
+        assertNull(StationFood.plainSource("grain(type=wheat;origin=Salmonish)"));
+    }
+
+    @Test
+    void refundSetsTheTagValuesTheLinePins() {
+        try (MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class)) {
+            ArgumentCaptor<FoodItem> food = ArgumentCaptor.forClass(FoodItem.class);
+            ArgumentCaptor<ItemStack> base = ArgumentCaptor.forClass(ItemStack.class);
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), base.capture(), anyInt()))
+                    .thenAnswer(call -> new ItemStack(Material.SALMON));
+
+            ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;tags=freshness.7)\"}")
+                    .generateItemStack(null, false);
+            assertEquals(7, food.getValue().getTagTrack("freshness").getValue());
+            assertEquals(Material.SALMON, base.getValue().getType());
+
+            // Wheat's type has no tracks and this conversion adds none: the pin adds freshness.
+            ingredient("cooking{item=\"grain(type=wheat;origin=Wheat;tags=freshness.5:spiciness.2)\"}")
+                    .generateItemStack(null, true);
+            assertEquals(5, food.getValue().getTagTrack("freshness").getValue());
+            assertNull(food.getValue().getTagTrack("spiciness"));
+            assertEquals(Material.WHEAT, base.getValue().getType());
+
+            // A track named without a usable value is pinned as it is: not set, not aged.
+            ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;tags=freshness)\"}")
+                    .generateItemStack(null, false);
+            assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
+            ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;tags=freshness.x)\"}")
+                    .generateItemStack(null, false);
+            assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
+        }
     }
 
     @Test

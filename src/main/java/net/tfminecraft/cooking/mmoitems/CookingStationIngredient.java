@@ -1,6 +1,6 @@
 package net.tfminecraft.cooking.mmoitems;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -18,6 +18,7 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.AgeScale;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
+import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 
@@ -91,9 +92,10 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
 
     /**
      * The food is what its plain item becomes on pickup (a whole salmon, wheat with its freshness
-     * track), else the food the path names. The preview shows it fresh. A refund (forDisplay
-     * false) cannot know what was spent, so it is the least the line accepts: its lowest quality,
-     * aged out on every track the line leaves open. Cancelling never improves food.
+     * track), else the food the path names, with the tag values the line pins. The preview shows
+     * it fresh. A refund (forDisplay false) cannot know what was spent, so it is the least the
+     * line accepts: its lowest quality, aged out on every track the line leaves open. Cancelling
+     * never improves food.
      */
     @Override
     public ItemStack generateItemStack(RPGPlayer player, boolean forDisplay) {
@@ -102,8 +104,10 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
         FoodItem food = source != null ? StationFood.describe(source) : parsed == null ? null : parsed.template;
         ItemStack stack = null;
         if (food != null) {
+            Map<String, Integer> pins = pinnedTracks();
+            applyPins(food, pins);
             if (!forDisplay) {
-                ageOpenTracks(food);
+                ageOpenTracks(food, pins.keySet());
             }
             boolean explicit = parsed != null && parsed.explicitQuality;
             stack = ItemBuilder.buildSingleWithQuality(food, source,
@@ -117,8 +121,35 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
         return stack;
     }
 
-    private void ageOpenTracks(FoodItem food) {
-        Set<String> pinned = pinnedTracks();
+    private static void applyPins(FoodItem food, Map<String, Integer> pins) {
+        for (Map.Entry<String, Integer> pin : pins.entrySet()) {
+            if (pin.getValue() == null) {
+                continue;
+            }
+            TagTrack track = track(food, pin.getKey());
+            if (track != null) {
+                track.forceSetValue(pin.getValue());
+                continue;
+            }
+            TagTrack base = TrackLoader.getByString(pin.getKey());
+            if (base != null) {
+                TagTrack added = new TagTrack(base);
+                added.forceSetValue(pin.getValue());
+                food.addOrModifyTrack(added);
+            }
+        }
+    }
+
+    private static TagTrack track(FoodItem food, String id) {
+        for (TagTrack track : food.getTagTracks()) {
+            if (track.getId().equalsIgnoreCase(id)) {
+                return track;
+            }
+        }
+        return null;
+    }
+
+    private static void ageOpenTracks(FoodItem food, Set<String> pinned) {
         for (TagTrack track : food.getTagTracks()) {
             List<TagStep> steps = track.getSteps();
             if (track.isAgeable() && !steps.isEmpty() && !pinned.contains(track.getId().toLowerCase(Locale.ROOT))) {
@@ -127,13 +158,23 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
         }
     }
 
-    private Set<String> pinnedTracks() {
-        Set<String> pinned = new HashSet<>();
+    /** Track id to pinned value (null when the line names the track without a value). */
+    private Map<String, Integer> pinnedTracks() {
+        Map<String, Integer> pinned = new HashMap<>();
         String tags = field("tags");
         if (tags != null) {
             for (String tag : tags.split("[,:]")) {
-                String id = tag.split("\\.", 2)[0].trim();
-                pinned.add(AgeScale.migrateTrackId(id).toLowerCase(Locale.ROOT));
+                String[] parts = tag.split("\\.", 2);
+                String raw = parts[0].trim();
+                Integer value = null;
+                if (parts.length == 2) {
+                    try {
+                        value = AgeScale.migrateTrackValue(raw, Integer.parseInt(parts[1].trim()));
+                    } catch (NumberFormatException e) {
+                        value = null; // not a number: the track is named, with no value to set
+                    }
+                }
+                pinned.put(AgeScale.migrateTrackId(raw).toLowerCase(Locale.ROOT), value);
             }
         }
         return pinned;

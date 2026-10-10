@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.mmoitems;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -41,10 +43,7 @@ public final class StationFood {
         if (path == null || !path.toLowerCase(Locale.ROOT).startsWith("v.")) {
             return null;
         }
-        FoodItem converted = vanillaFish(item);
-        if (converted == null) {
-            converted = conversion(path);
-        }
+        FoodItem converted = plainFood(item, path);
         if (converted != null) {
             converted.setQualityRange(PLAIN_QUALITY, PLAIN_QUALITY);
         }
@@ -61,36 +60,52 @@ public final class StationFood {
                 decision.fish().sizeCm(), PLAIN_QUALITY, null);
     }
 
+    /** What a plain item becomes on pickup: vanilla fish first, then the conversions. */
+    private static FoodItem plainFood(ItemStack item, String path) {
+        FoodItem fish = vanillaFish(item);
+        return fish != null ? fish : conversion(path);
+    }
+
     /**
-     * The plain item that becomes food matching {@code path}, e.g. a salmon for a whole salmon.
-     * Foods without a model of their own (whole fish) are built on that item. Null when none.
-     * Quality is not the item's to decide, so a quality filter does not rule a source out.
+     * The plain item that becomes the food {@code path} names, e.g. a salmon for a whole salmon.
+     * Foods without a model of their own (whole fish) are built on that item. Only the food's
+     * identity (category, type, origin) counts: quality and tag values are the line's to set.
+     * Null when no plain item becomes that food.
      */
     public static ItemStack plainSource(String path) {
+        String identity = identity(path);
         for (VanillaFish fish : CustomFishingCatalog.vanillaFish()) {
             ItemStack source = source(fish.material());
-            if (source != null && matchesAtSomeQuality(vanillaFish(source), path)) {
+            FoodItem food = source == null ? null : plainFood(source, "v." + fish.material());
+            if (CookingPathHandler.matches(food, identity)) {
                 return source;
             }
         }
         for (Map.Entry<String, String> entry : ConversionLoader.get().entrySet()) {
             String key = entry.getKey().toLowerCase(Locale.ROOT);
             ItemStack source = key.startsWith("v.") ? source(key.substring(2)) : null;
-            if (source != null && matchesAtSomeQuality(conversion(key), path)) {
+            if (source != null && CookingPathHandler.matches(plainFood(source, key), identity)) {
                 return source;
             }
         }
         return null;
     }
 
-    private static boolean matchesAtSomeQuality(FoodItem food, String path) {
-        for (int quality = 1; food != null && quality <= 5; quality++) {
-            food.setQualityRange(quality, quality);
-            if (CookingPathHandler.matches(food, path)) {
-                return true;
+    /** {@code path} with only its category, type and origin. */
+    static String identity(String path) {
+        int paren = path.indexOf('(');
+        if (paren < 0 || !path.endsWith(")")) {
+            return path;
+        }
+        List<String> kept = new ArrayList<>();
+        String inside = path.substring(paren + 1, path.length() - 1);
+        for (Map.Entry<String, String> field : FoodParser.extractFields(inside).entrySet()) {
+            String key = field.getKey().trim().toLowerCase(Locale.ROOT);
+            if (key.equals("type") || key.equals("origin")) {
+                kept.add(key + "=" + field.getValue().trim());
             }
         }
-        return false;
+        return path.substring(0, paren) + "(" + String.join(";", kept) + ")";
     }
 
     private static ItemStack source(String material) {
