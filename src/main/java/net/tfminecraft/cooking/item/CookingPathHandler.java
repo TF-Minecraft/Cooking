@@ -65,7 +65,7 @@ public final class CookingPathHandler implements ItemPathHandler {
         return matches(FoodItem.fromItem(item), fullPath);
     }
 
-    static boolean matches(FoodItem food, String fullPath) {
+    public static boolean matches(FoodItem food, String fullPath) {
         if (food == null || fullPath == null) {
             return false;
         }

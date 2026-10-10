@@ -66,6 +66,7 @@ import net.tfminecraft.cooking.sausagemaker.SausageMakerHandler;
 import net.tfminecraft.cooking.milling.MillingStoneHandler;
 import net.tfminecraft.cooking.mixing.MixingBowlHandler;
 import net.tfminecraft.cooking.heat.HeatPickupGuard;
+import net.tfminecraft.cooking.mmoitems.MMOItemsSupport;
 import net.tfminecraft.cooking.nutrition.BowlEatHandler;
 import net.tfminecraft.cooking.nutrition.FoodConsumeListener;
 import net.tfminecraft.cooking.nutrition.FoodLevelChangeGuard;
@@ -125,6 +126,11 @@ public class Cooking extends JavaPlugin {
     private final CraftingManager craftingManager = new CraftingManager();
 
     @Override
+    public void onLoad() {
+        MMOItemsSupport.registerIfPresent(getServer().getPluginManager(), getLogger());
+    }
+
+    @Override
     public void onEnable() {
         plugin = this;
 
@@ -154,6 +160,7 @@ public class Cooking extends JavaPlugin {
             HusbandryLifecycleListener.resumeLoadedWorlds();
             HusbandryTickTask.start();
             HusbandryLocator.scanUnloaded();
+            MMOItemsSupport.claimFirstIfPresent(getServer().getPluginManager(), getLogger());
         });
 
         getCommand("cooking").setExecutor(commands);

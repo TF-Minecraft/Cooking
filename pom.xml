@@ -113,6 +113,12 @@
         </dependency>
         <dependency>
             <groupId>local</groupId>
+            <artifactId>MMOItems</artifactId>
+            <version>6.10.1-SNAPSHOT-tfmc-a37f7789fcdc</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>local</groupId>
             <artifactId>MMOCore</artifactId>
             <version>1.13.1-SNAPSHOT-tfmc-81d511d08309</version>
             <scope>provided</scope>

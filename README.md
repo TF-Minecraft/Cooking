@@ -13,6 +13,7 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 - **Farming and husbandry** — crop fertility and harvest quality sit alongside animal care, breeding, genetics, and produce collection.
 - **Fish and seafood** — turn supported catches into cooking ingredients while preserving catch size.
 - **Character nutrition** — meals feed a character's food reserve and influence diet quality, with variety rewarding a broader selection of ingredients.
+- **MMOItems crafting stations** — the `cooking{item="seafood(type=seafood_whole;origin=Salmon)",amount=64,display="Salmon"}` ingredient takes Cooking food, plus the plain items Cooking converts on pickup (a fresh catch counts as the salmon it becomes). `item` is a `c.` path without the prefix and must name a food `type`; quality and tags filters work too. Cooking claims those items before MMOItems' `vanilla{}` type, so use `cooking{}` for salmon, wheat, sugar, beef and the other converted foods. Cancelling a queued craft refunds the least the line accepts: its lowest quality, aged out unless the line pins that tag.
 
 ## A complete food journey
 
