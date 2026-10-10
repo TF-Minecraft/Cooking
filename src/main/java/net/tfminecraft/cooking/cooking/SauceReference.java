@@ -64,6 +64,8 @@ import net.tfminecraft.cooking.utils.Keys;
 
 import net.tfminecraft.cooking.utils.StationAddonRules;
 
+import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
+
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -73,6 +75,9 @@ import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
 
 public class SauceReference extends CookingReference {
+
+    private static final String VAR_COLOURS = "sauce.colours";
+    private static final String VAR_LIQUID = "sauce.liquid";
 
     private FoodItem liquidSource;
 
@@ -382,6 +387,7 @@ public class SauceReference extends CookingReference {
             if (poured != null) {
                 liquidSource = new FoodItem(poured);
             }
+            saveLiquid(poured != null ? item : null);
 
             PlacedSlot slot = f.getOrCreatePlacedSlot("liquid");
 
@@ -392,6 +398,7 @@ public class SauceReference extends CookingReference {
             slot.forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(modelPath));
 
             addColour(ItemCache.getColour(item));
+            saveColours();
 
             consumeSaucepanPour(p, item);
 
@@ -412,6 +419,8 @@ public class SauceReference extends CookingReference {
             for(String slot : f.getType().getSlots().keySet()) {
 
                 if(add(slot, item)) {
+
+                    saveColours();
 
                     updateModel();
 
@@ -443,6 +452,70 @@ public class SauceReference extends CookingReference {
     public void clear() {
         liquidSource = null;
         super.clear();
+        if (f == null) return;
+        f.getVariables().remove(VAR_COLOURS);
+        f.getVariables().remove(VAR_LIQUID);
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+    }
+
+    /**
+     * The base rebuild keeps raw food only. A chunk reload or restart dropped the liquid, so the
+     * saucepan still showed sauce that the ladle could no longer scoop.
+     */
+    @Override
+    public void rebuildFromFurniture() {
+        super.rebuildFromFurniture();
+        if (f == null || f.getType() == null) return;
+        restoreIngredients();
+        if (!f.hasActiveSlot("liquid")) return;
+        secondaries.put("liquid", -1);
+        ItemStack liquid = PotReference.decodeStack(stringVariable(VAR_LIQUID));
+        liquidSource = liquid == null ? null : FoodItem.fromItem(liquid);
+        restoreColours();
+    }
+
+    /** Seasonings, sweeteners and other additions are not raw, so the base rebuild skips them. */
+    private void restoreIngredients() {
+        for (String slotId : f.getType().getSlots().keySet()) {
+            if (!slotId.contains("input") || slots.containsKey(slotId)) continue;
+            PlacedSlot placed = f.getActiveSlot(slotId).orElse(null);
+            if (placed == null) continue;
+            FoodItem fi = FoodItem.fromItem(placed.getCurrentItem());
+            if (fi != null) slots.put(slotId, fi);
+        }
+    }
+
+    /** Saucepans filled before colours were saved fall back to their ingredients' colours. */
+    private void restoreColours() {
+        String saved = stringVariable(VAR_COLOURS);
+        if (saved != null && !saved.isBlank()) {
+            for (String hex : saved.split(",")) addColour(hex);
+            return;
+        }
+        for (String slotId : slots.keySet()) {
+            f.getActiveSlot(slotId).ifPresent(placed -> addColour(ItemCache.getColour(placed.getCurrentItem())));
+        }
+    }
+
+    private String stringVariable(String key) {
+        return f.getVariables().get(key) instanceof String text ? text : null;
+    }
+
+    private void saveColours() {
+        f.getVariables().put(VAR_COLOURS, String.join(",", colours));
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+    }
+
+    /** Keeps the poured liquid's food data for the scoop's quality after a reload. */
+    private void saveLiquid(ItemStack poured) {
+        String payload = null;
+        if (poured != null) {
+            ItemStack single = poured.clone();
+            single.setAmount(1);
+            payload = PotReference.encodeStack(single);
+        }
+        if (payload == null) f.getVariables().remove(VAR_LIQUID);
+        else f.getVariables().put(VAR_LIQUID, payload);
     }
 
     private static boolean canPourSaucepanLiquid(ItemStack item) {
