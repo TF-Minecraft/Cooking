@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.doReturn;
@@ -234,7 +235,25 @@ class MMOItemsIngredientTest {
             ingredient("cooking{item=\"seafood(type=seafood_whole;origin=Salmon;quality=3-5;tags=freshness.0)\"}")
                     .generateItemStack(null, false);
             assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
-            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), any(), eq(3)));
+            builder.verify(() -> ItemBuilder.buildSingleWithQuality(any(), argThat(base -> base != null
+                    && base.getType() == Material.SALMON), eq(3)));
+        }
+    }
+
+    @Test
+    void refundIsWhatThePlainItemBecomesAgedOut() {
+        // The wheat type has no tracks; the pickup conversion adds freshness.
+        ConversionLoader.conversions.put("V.WHEAT", "grain(type=wheat;origin=Wheat;tags=freshness.0)");
+        try (MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class)) {
+            ArgumentCaptor<FoodItem> food = ArgumentCaptor.forClass(FoodItem.class);
+            ArgumentCaptor<ItemStack> base = ArgumentCaptor.forClass(ItemStack.class);
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(food.capture(), base.capture(), anyInt()))
+                    .thenAnswer(call -> new ItemStack(Material.WHEAT));
+            ingredient("cooking{item=\"grain(type=wheat;origin=Wheat)\",amount=2}").generateItemStack(null, false);
+            assertEquals(StationFoodTemplates.ROTTEN, food.getValue().getTagTrack("freshness").getValue());
+            assertEquals(Material.WHEAT, base.getValue().getType());
+            ingredient("cooking{item=\"grain(type=wheat;origin=Wheat)\"}").generateItemStack(null, true);
+            assertEquals(0, food.getValue().getTagTrack("freshness").getValue());
         }
     }
 

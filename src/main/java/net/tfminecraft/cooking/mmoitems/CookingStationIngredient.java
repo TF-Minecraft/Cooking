@@ -90,21 +90,24 @@ public class CookingStationIngredient extends Ingredient<CookingStationPlayerIng
     }
 
     /**
-     * The preview shows the food fresh. A refund (forDisplay false) cannot know what was spent,
-     * so it is the least the line accepts: its lowest quality, aged out on every track the line
-     * leaves open. Cancelling never improves food.
+     * The food is what its plain item becomes on pickup (a whole salmon, wheat with its freshness
+     * track), else the food the path names. The preview shows it fresh. A refund (forDisplay
+     * false) cannot know what was spent, so it is the least the line accepts: its lowest quality,
+     * aged out on every track the line leaves open. Cancelling never improves food.
      */
     @Override
     public ItemStack generateItemStack(RPGPlayer player, boolean forDisplay) {
         FoodParser.Result parsed = FoodParser.parse(path);
+        ItemStack source = StationFood.plainSource(path);
+        FoodItem food = source != null ? StationFood.describe(source) : parsed == null ? null : parsed.template;
         ItemStack stack = null;
-        if (parsed != null && parsed.template != null) {
-            FoodItem food = parsed.template;
+        if (food != null) {
             if (!forDisplay) {
                 ageOpenTracks(food);
             }
-            stack = ItemBuilder.buildSingleWithQuality(food, StationFood.plainSource(path),
-                    parsed.explicitQuality ? food._parsedQualMin : StationFood.PLAIN_QUALITY);
+            boolean explicit = parsed != null && parsed.explicitQuality;
+            stack = ItemBuilder.buildSingleWithQuality(food, source,
+                    explicit ? parsed.template._parsedQualMin : StationFood.PLAIN_QUALITY);
         }
         if (stack == null) {
             // Cooking does not know this food type (yet).

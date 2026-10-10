@@ -64,22 +64,33 @@ public final class StationFood {
     /**
      * The plain item that becomes food matching {@code path}, e.g. a salmon for a whole salmon.
      * Foods without a model of their own (whole fish) are built on that item. Null when none.
+     * Quality is not the item's to decide, so a quality filter does not rule a source out.
      */
     public static ItemStack plainSource(String path) {
         for (VanillaFish fish : CustomFishingCatalog.vanillaFish()) {
             ItemStack source = source(fish.material());
-            if (source != null && CookingPathHandler.matches(vanillaFish(source), path)) {
+            if (source != null && matchesAtSomeQuality(vanillaFish(source), path)) {
                 return source;
             }
         }
         for (Map.Entry<String, String> entry : ConversionLoader.get().entrySet()) {
             String key = entry.getKey().toLowerCase(Locale.ROOT);
             ItemStack source = key.startsWith("v.") ? source(key.substring(2)) : null;
-            if (source != null && CookingPathHandler.matches(conversion(key), path)) {
+            if (source != null && matchesAtSomeQuality(conversion(key), path)) {
                 return source;
             }
         }
         return null;
+    }
+
+    private static boolean matchesAtSomeQuality(FoodItem food, String path) {
+        for (int quality = 1; food != null && quality <= 5; quality++) {
+            food.setQualityRange(quality, quality);
+            if (CookingPathHandler.matches(food, path)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static ItemStack source(String material) {
