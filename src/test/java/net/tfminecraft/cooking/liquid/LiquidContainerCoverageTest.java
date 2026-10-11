@@ -115,7 +115,7 @@ class LiquidContainerCoverageTest {
         fill("milk", 2); LiquidContainerState.setMilkSnapshot(barrel.furniture, 3, 7, "Cow");
         barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() + 100_000L);
         LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
-        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis());
+        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() - 500L);
         LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
         barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() - 2_000L);
         LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
