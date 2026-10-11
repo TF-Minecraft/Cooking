@@ -2,6 +2,8 @@ package net.tfminecraft.cooking.manager;
 
 import net.tfminecraft.cooking.util.LegacyModelData;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -172,28 +174,33 @@ public class ConversionManager implements Listener {
         int topSize = top.getSize();
         int total = topSize + bottom.getSize();
 
-        for (int i = total - 1; i >= 0; i--) {
-            ItemStack a = getSlot(i, top, bottom, topSize);
-            if (a == null) continue;
+        ItemStack[] items = new ItemStack[total];
+        FoodItem[] foods = new FoodItem[total];
+        for (int i = 0; i < total; i++) {
+            items[i] = getSlot(i, top, bottom, topSize);
+            foods[i] = items[i] == null ? null : FoodItem.fromItem(items[i]);
+        }
 
-            FoodItem fa = FoodItem.fromItem(a);
-            if (fa == null) continue;
+        // Equal foods all take the data of the most aged one, so opening a chest never makes food
+        // fresher. Ties go to the first slot.
+        for (int i = 0; i < total; i++) {
+            if (foods[i] == null) continue;
 
-            for (int j = 0; j < total; j++) {
-                if (i == j) continue;
+            List<Integer> group = new ArrayList<>(List.of(i));
+            ItemStack oldest = items[i];
+            for (int j = i + 1; j < total; j++) {
+                if (foods[j] == null) continue;
+                if (!InventoryAdder.equalsFood(foods[i], foods[j]) || !sameApartFromAging(items[i], items[j])) continue;
+                group.add(j);
+                foods[j] = null;
+                oldest = BundleFoodStacker.moreAged(oldest, items[j]);
+            }
 
-                ItemStack b = getSlot(j, top, bottom, topSize);
-                if (b == null) continue;
-
-                FoodItem fb = FoodItem.fromItem(b);
-                if (fb == null) continue;
-
-                if (InventoryAdder.equalsFood(fa, fb) && sameApartFromAging(a, b)) {
-                    ItemStack clone = b.clone();
-                    clone.setAmount(a.getAmount());
-                    setSlot(i, clone, top, bottom, topSize);
-                    break;
-                }
+            for (int k : group) {
+                if (oldest.isSimilar(items[k])) continue;
+                ItemStack clone = oldest.clone();
+                clone.setAmount(items[k].getAmount());
+                setSlot(k, clone, top, bottom, topSize);
             }
         }
     }
