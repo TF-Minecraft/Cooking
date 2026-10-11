@@ -43,6 +43,7 @@ import net.tfminecraft.cooking.husbandry.HusbandryTickTask;
 import net.tfminecraft.cooking.loader.PermissionEffectsLoader;
 import net.tfminecraft.cooking.loader.CompositionConfigLoader;
 import net.tfminecraft.cooking.loader.QualityConfigLoader;
+import net.tfminecraft.cooking.manager.BundleFoodStacker;
 import net.tfminecraft.cooking.manager.CommandManager;
 import net.tfminecraft.cooking.manager.ConversionManager;
 import net.tfminecraft.cooking.manager.CookingManager;
@@ -262,6 +263,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new HusbandryMountListener(), this);
         getServer().getPluginManager().registerEvents(new HusbandryDamageListener(), this);
         getServer().getPluginManager().registerEvents(new ConversionManager(), this);
+        getServer().getPluginManager().registerEvents(new BundleFoodStacker(), this);
         getServer().getPluginManager().registerEvents(new RegenBlocker(), this);
         getServer().getPluginManager().registerEvents(new SaturationGuard(), this);
         getServer().getPluginManager().registerEvents(new NutritionLifecycleListener(), this);
