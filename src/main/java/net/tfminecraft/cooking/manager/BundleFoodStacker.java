@@ -29,6 +29,8 @@ import net.tfminecraft.cooking.utils.InventoryAdder;
  */
 public class BundleFoodStacker implements Listener {
 
+    private static final String FRESHNESS = "freshness";
+
     private final Consumer<Runnable> nextTick;
 
     public BundleFoodStacker() {
@@ -115,19 +117,30 @@ public class BundleFoodStacker implements Listener {
                 && ConversionManager.sameApartFromAging(item, other);
     }
 
-    /** Equal foods age at the same rate, so whichever is further along now is the older one. */
+    /**
+     * Equal foods age at the same rate, so whichever is further along now is the older one.
+     * Freshness decides, so food never gets fresher; the other aging tracks, such as warmth, only
+     * break a tie.
+     */
     static ItemStack moreAged(ItemStack a, ItemStack b) {
-        return age(a) >= age(b) ? a : b;
+        double[] ageA = age(a);
+        double[] ageB = age(b);
+        int order = Double.compare(ageA[0], ageB[0]);
+        if (order == 0) order = Double.compare(ageA[1], ageB[1]);
+        return order >= 0 ? a : b;
     }
 
-    private static double age(ItemStack item) {
+    /** How far the food has aged by now: freshness first, then every other aging track. */
+    private static double[] age(ItemStack item) {
         FoodItem food = FoodItem.fromItem(item);
         food.updateAge();
-        double total = 0;
+        double[] age = new double[2];
         for (TagTrack track : food.getTagTracks()) {
-            if (track.isAgeable()) total += track.getValue() + food.getAgeRemainder(track.getId());
+            if (!track.isAgeable()) continue;
+            int index = FRESHNESS.equals(track.getId()) ? 0 : 1;
+            age[index] += track.getValue() + food.getAgeRemainder(track.getId());
         }
-        return total;
+        return age;
     }
 
     private static boolean isBundle(ItemStack item) {

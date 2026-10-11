@@ -56,8 +56,10 @@ class BundleFoodStackerTest {
         TrackLoader.oList.clear();
         TrackLoader.oList.add(new TagTrack("freshness", true, List.of(
                 new TagStep("fresh", "Fresh", 0, 1, 1), new TagStep("stale", "Stale", 1_000_000, 1, 1))));
+        TrackLoader.oList.add(new TagTrack("warmth", true, List.of(new TagStep("hot", "Hot", 0, 1, 1))));
         food("beef");
         food("pork");
+        FoodLoader.getByString("pork").addOrModifyTrack(TrackLoader.getByString("warmth"));
         now = System.currentTimeMillis();
     }
 
@@ -85,6 +87,15 @@ class BundleFoodStackerTest {
         food.getTagTrack("freshness").setValue(value);
         food.setLastUpdate(now - secondsAgo * 1000L);
         return ItemBuilder.stamp(new ItemStack(type, amount), food, id);
+    }
+
+    /** Hot pork with the given freshness and warmth, stored now. */
+    private ItemStack hotPork(int freshness, int warmth) {
+        FoodItem food = new FoodItem(FoodLoader.getByString("pork"));
+        food.getTagTrack("freshness").setValue(freshness);
+        food.getTagTrack("warmth").forceSetValue(warmth);
+        food.setLastUpdate(now);
+        return ItemBuilder.stamp(new ItemStack(Material.PORKCHOP), food, "pork");
     }
 
     private ItemStack beef(int amount, int value, long secondsAgo) {
@@ -153,6 +164,18 @@ class BundleFoodStackerTest {
 
         assertSame(a, BundleFoodStacker.moreAged(a, b));
         assertSame(b, BundleFoodStacker.moreAged(beef(1, 1, 0), b));
+    }
+
+    @Test
+    void freshnessDecidesWhichIsOlderAndWarmthOnlyBreaksATie() {
+        ItemStack staleButHot = hotPork(15, 10);
+        ItemStack freshButCool = hotPork(10, 19);
+        assertSame(staleButHot, BundleFoodStacker.moreAged(freshButCool, staleButHot));
+        assertSame(staleButHot, BundleFoodStacker.moreAged(staleButHot, freshButCool));
+
+        ItemStack hot = hotPork(10, 5);
+        ItemStack cooler = hotPork(10, 9);
+        assertSame(cooler, BundleFoodStacker.moreAged(hot, cooler));
     }
 
     @Test
