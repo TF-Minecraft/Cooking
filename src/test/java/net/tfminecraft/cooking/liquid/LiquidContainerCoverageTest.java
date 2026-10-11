@@ -113,15 +113,16 @@ class LiquidContainerCoverageTest {
         fill("water", 2); LiquidContainerState.tickAge(barrel.furniture); assertFalse(barrel.variables.containsKey(LiquidContainerState.VAR_LAST_UPDATE));
         fill("milk", 0); LiquidContainerState.tickAge(barrel.furniture); assertFalse(barrel.variables.containsKey(LiquidContainerState.VAR_LAST_UPDATE));
         fill("milk", 2); LiquidContainerState.setMilkSnapshot(barrel.furniture, 3, 7, "Cow");
-        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() + 100_000L);
-        LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
-        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() - 500L);
-        LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
-        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() - 2_000L);
-        LiquidContainerState.tickAge(barrel.furniture); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
+        long now = 1_000_000L;
+        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, now + 100_000L);
+        LiquidContainerState.tickAge(barrel.furniture, now); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
+        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, now - 500L);
+        LiquidContainerState.tickAge(barrel.furniture, now); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
+        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, now - 2_000L);
+        LiquidContainerState.tickAge(barrel.furniture, now); assertEquals(7, LiquidContainerState.getDairyFreshness(barrel.furniture));
         assertEquals(0.5, (Double) barrel.variables.get(LiquidContainerState.VAR_FRESHNESS_REMAINDER), 0.001);
-        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, System.currentTimeMillis() - 2_000L);
-        LiquidContainerState.tickAge(barrel.furniture); assertEquals(8, LiquidContainerState.getDairyFreshness(barrel.furniture));
+        barrel.variables.put(LiquidContainerState.VAR_LAST_UPDATE, now - 2_000L);
+        LiquidContainerState.tickAge(barrel.furniture, now); assertEquals(8, LiquidContainerState.getDairyFreshness(barrel.furniture));
         assertEquals(0.0, (Double) barrel.variables.get(LiquidContainerState.VAR_FRESHNESS_REMAINDER), 0.001);
     }
 

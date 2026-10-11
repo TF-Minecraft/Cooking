@@ -114,10 +114,13 @@ public final class LiquidContainerState {
     }
 
     public static void tickAge(Furniture furniture) {
+        tickAge(furniture, System.currentTimeMillis());
+    }
+
+    static void tickAge(Furniture furniture, long now) {
         if (!TYPE_MILK.equalsIgnoreCase(getType(furniture)) || isEmpty(furniture)) {
             return;
         }
-        long now = System.currentTimeMillis();
         long last = getLastUpdate(furniture);
         long elapsedMs = now - last;
         if (elapsedMs <= 0) {
