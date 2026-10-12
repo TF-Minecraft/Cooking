@@ -81,10 +81,12 @@ import net.tfminecraft.cooking.oven.OvenCavityManager;
 import net.tfminecraft.cooking.oven.OvenHandler;
 import net.tfminecraft.cooking.oven.OvenLifecycleHandler;
 import net.tfminecraft.tlibs.itemscan.ItemScanService;
+import net.tfminecraft.tlibs.character.Characters;
 
 public class Cooking extends JavaPlugin {
 
     public static Cooking plugin;
+    private boolean incompatibleCharacterApi;
 
     private final CommandManager commands = new CommandManager();
 
@@ -133,6 +135,15 @@ public class Cooking extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        try {
+            // Registration may arrive later; this checks API compatibility only.
+            Characters.available();
+        } catch (LinkageError error) {
+            incompatibleCharacterApi = true;
+            getLogger().severe("Cooking requires TLibs 2.3.0 or newer; disabling.");
+            Bukkit.getPluginManager().disablePlugin(this);
+            return;
+        }
         plugin = this;
 
         createFolders();
@@ -158,6 +169,7 @@ public class Cooking extends JavaPlugin {
             meatHookHandler.resumeLoadedHooks();
             SaturationGuard.start();
             NutritionDrainTask.start();
+            Bukkit.getOnlinePlayers().forEach(NutritionLifecycleListener::initializeCurrent);
             HusbandryLifecycleListener.resumeLoadedWorlds();
             HusbandryTickTask.start();
             HusbandryLocator.scanUnloaded();
@@ -177,6 +189,7 @@ public class Cooking extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (incompatibleCharacterApi) return;
         SaturationGuard.stop();
         NutritionDrainTask.stop();
         HusbandryTickTask.stop();

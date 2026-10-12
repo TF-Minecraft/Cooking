@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -20,6 +21,7 @@ import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.InventoryAdder;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
@@ -65,6 +67,11 @@ public final class SausageMakerHandler implements Listener {
         }
 
         Player player = event.getPlayer();
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
+            event.setCancelled(true);
+            return;
+        }
         ItemStack hand = player.getInventory().getItemInMainHand();
         boolean emptyHand = hand == null || hand.getType() == Material.AIR;
         FoodItem heldFood = emptyHand ? null : FoodItem.fromItem(hand);
@@ -108,8 +115,11 @@ public final class SausageMakerHandler implements Listener {
         }
 
         event.setCancelled(true);
+        if (!context.isCurrent()) {
+            return;
+        }
         player.swingMainHand();
-        startCrank(furniture, player);
+        startCrank(furniture, context);
     }
 
     @EventHandler
@@ -121,49 +131,59 @@ public final class SausageMakerHandler implements Listener {
         }
     }
 
-    private void startCrank(Furniture furniture, Player player) {
-        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.BLOCK_WET_GRASS_BREAK, 1f, 0.8f);
-        furniture.getLoc().getWorld().spawnParticle(
+    private void startCrank(Furniture furniture, PlayerActionContext context) {
+        Location dropLocation = furniture.getLoc().clone();
+        dropLocation.getWorld().playSound(dropLocation, Sound.BLOCK_WET_GRASS_BREAK, 1f, 0.8f);
+        dropLocation.getWorld().spawnParticle(
                 Particle.ITEM,
-                furniture.getLoc().clone().add(0, 0.2, 0),
+                dropLocation.clone().add(0, 0.2, 0),
                 8,
                 0.15, 0.05, 0.15,
                 0.02,
                 new ItemStack(Material.PORKCHOP));
 
-        SausageMakerAnimation.playWobble(furniture, () -> finishCrank(furniture, player));
+        SausageMakerAnimation.playWobble(furniture, () -> finishCrank(furniture, context, dropLocation));
         startCooldown(furniture, ItemCache.sausageMakerCooldownTicks);
     }
 
-    private void finishCrank(Furniture furniture, Player player) {
-        if (!player.isOnline()) {
+    private void finishCrank(Furniture furniture, PlayerActionContext context, Location dropLocation) {
+        if (!context.isCurrent()) {
             return;
         }
+        Player player = context.player();
         List<FoodItem> meats = collectMeats(furniture);
-        if (meats.size() < MEAT_SLOTS.length) {
+        if (!context.isCurrent() || meats.size() < MEAT_SLOTS.length) {
             return;
         }
         // The paper was checked when the crank started; it could have been put away since.
-        if (!hasPaper(player)) {
+        boolean paperAvailable = hasPaper(player);
+        if (!context.isCurrent()) {
+            return;
+        }
+        if (!paperAvailable) {
             player.sendMessage("§cHold paper to casing.");
             return;
         }
 
         ItemStack chain = SausageItems.fromMeats(player, meats);
+        if (!context.isCurrent()) {
+            return;
+        }
         if (chain == null || chain.getType().isAir()) {
             player.sendMessage("§cCould not make sausage chain.");
             return;
         }
 
-        ItemStack leftover = InventoryAdder.addItem(player, chain);
-        if (leftover != null) {
-            furniture.getLoc().getWorld().dropItemNaturally(furniture.getLoc(), leftover);
+        if (!consumePaper(context)) {
+            return;
         }
-
         clearMeatSlots(furniture);
-        consumePaper(player);
         markDirty(furniture);
-        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
+        ItemStack leftover = context.isCurrent() ? InventoryAdder.addItem(player, chain) : chain;
+        if (leftover != null) {
+            dropLocation.getWorld().dropItemNaturally(dropLocation, leftover);
+        }
+        dropLocation.getWorld().playSound(dropLocation, Sound.ENTITY_ITEM_PICKUP, 1f, 1f);
     }
 
     private static boolean tryFillFirstEmpty(Furniture furniture, Player player, ItemStack hand) {
@@ -275,17 +295,27 @@ public final class SausageMakerHandler implements Listener {
                 || CasingPaper.isCasing(inv.getItemInOffHand());
     }
 
-    private static void consumePaper(Player player) {
-        PlayerInventory inv = player.getInventory();
+    private static boolean consumePaper(PlayerActionContext context) {
+        PlayerInventory inv = context.player().getInventory();
         ItemStack main = inv.getItemInMainHand();
-        if (CasingPaper.isCasing(main)) {
+        boolean mainIsCasing = CasingPaper.isCasing(main);
+        if (!context.isCurrent()) {
+            return false;
+        }
+        if (mainIsCasing) {
             main.setAmount(main.getAmount() - 1);
-            return;
+            return true;
         }
         ItemStack off = inv.getItemInOffHand();
-        if (CasingPaper.isCasing(off)) {
-            off.setAmount(off.getAmount() - 1);
+        boolean offIsCasing = CasingPaper.isCasing(off);
+        if (!context.isCurrent()) {
+            return false;
         }
+        if (offIsCasing) {
+            off.setAmount(off.getAmount() - 1);
+            return true;
+        }
+        return false;
     }
 
     private static boolean isMeatSlot(String slotId) {

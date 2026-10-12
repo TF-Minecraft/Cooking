@@ -8,7 +8,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.cooking.Cooking;
 
 public final class FoodLevelChangeGuard implements Listener {
@@ -18,9 +17,8 @@ public final class FoodLevelChangeGuard implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
-        RPCharacter character = Bukkit.getPluginManager().isPluginEnabled("RPCharacters")
-                ? RPCharacters.getActiveCharacter(player)
-                : null;
+        NutritionContext context = NutritionContext.capture(player);
+        RPCharacter character = context == null ? null : context.character();
         if (NutritionDisplayService.isSyncing(player)) {
             NutritionLog.append("VANILLA_FOOD_EVENT", player, character,
                     "current=" + player.getFoodLevel()
@@ -33,7 +31,9 @@ public final class FoodLevelChangeGuard implements Listener {
                 + " proposed=" + event.getFoodLevel()
                 + " action=cancel-and-defer");
         event.setCancelled(true);
-        Bukkit.getScheduler().runTask(Cooking.plugin,
-                () -> NutritionDisplayService.syncFromPlayer(player, "vanilla-change"));
+        if (context != null) {
+            Bukkit.getScheduler().runTask(Cooking.plugin,
+                    () -> NutritionDisplayService.sync(context, "vanilla-change"));
+        }
     }
 }

@@ -11,6 +11,7 @@ import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.farming.FarmingCoverageTest.Plot;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.loader.ConversionLoader;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.*;
 import net.tfminecraft.simplefactions.map.fertility.FertilityProvinceResolver;
 import net.momirealms.customcrops.api.context.*;
@@ -32,7 +33,10 @@ import org.bukkit.inventory.*;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
 import org.mockito.MockedStatic;
 
 class CropsCoverageTest {
@@ -200,7 +204,7 @@ class CropsCoverageTest {
     @Test void newlyConvertedHarvestDropsOnlyItsOverflowWhenInventoryIsFull(){
         configureCustom();f.food("carrot",Material.BREAD);ConversionLoader.conversions.put("v.carrot","vegetable(type=carrot;origin=Carrot)");f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,3));for(int i=1;i<36;i++)f.player.getInventory().setItem(i,new ItemStack(Material.STONE,64));Player full=f.fullStoragePlayer();
         listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),full));f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,5));
-        try(MockedStatic<Bukkit> bukkit=mockStatic(Bukkit.class,CALLS_REAL_METHODS)){bukkit.when(()->Bukkit.getPlayer(f.player.getUniqueId())).thenReturn(full);f.server.getScheduler().performOneTick();}
+        assertSame(full,f.server.getPlayer(full.getUniqueId()));f.server.getScheduler().performOneTick();
         assertEquals(3,f.inventoryCount(Material.CARROT));assertEquals(2,f.droppedCount(Material.BREAD));assertEquals(0,f.inventoryCount(Material.BREAD));
     }
 
@@ -209,6 +213,102 @@ class CropsCoverageTest {
         listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));f.player.getInventory().setItem(1,new ItemStack(Material.CARROT,2));f.player.getInventory().setItem(3,new ItemStack(Material.STONE));f.player.getInventory().setItem(4,new ItemStack(Material.WHEAT_SEEDS));f.server.getScheduler().performOneTick();
         assertEquals(3,f.inventoryCount(Material.CARROT));assertEquals(2,f.inventoryCount(Material.BREAD));assertEquals(1,f.inventoryCount(Material.STONE));assertEquals(1,f.inventoryCount(Material.WHEAT_SEEDS));
     }
+
+    @ParameterizedTest
+    @ValueSource(strings={"current","switch-back","pending","provider-lost","provider-arrived","reconnect"})
+    void delayedInventoryRewriteRequiresCapturedCharacterAndConnection(String change){
+        prepareCarrotConversion();UUID characterId=UUID.randomUUID();
+        try(TestCharacters characters=new TestCharacters(f.plugin)){
+            characters.activate(f.player,characterId);
+            if(change.equals("provider-arrived"))characters.close();
+            f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,3));
+            listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));
+            f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,5));
+            switch(change){
+                case "switch-back"->{characters.activate(f.player,UUID.randomUUID());characters.activate(f.player,characterId);}
+                case "pending"->characters.set(f.player,null);
+                case "provider-lost"->characters.close();
+                case "provider-arrived"->characters.register();
+                case "reconnect"->{
+                    f.server.getPlayerList().disconnectPlayer(f.player);
+                    PlayerMock replacement=new PlayerMock(f.server,f.player.getName(),f.player.getUniqueId());
+                    f.server.addPlayer(replacement);replacement.getInventory().setItem(0,new ItemStack(Material.CARROT,5));
+                    assertTrue(f.player.isOnline());assertSame(replacement,f.server.getPlayer(f.player.getUniqueId()));
+                }
+                default->{ }
+            }
+            f.server.getScheduler().performOneTick();
+            assertEquals(change.equals("current")?3:5,f.inventoryCount(Material.CARROT));
+            assertEquals(change.equals("current")?2:0,f.inventoryCount(Material.BREAD));
+            assertEquals(0,f.droppedCount(Material.BREAD));
+            if(change.equals("reconnect"))assertEquals(new ItemStack(Material.CARROT,5),f.server.getPlayer(f.player.getUniqueId()).getInventory().getItem(0));
+        }
+    }
+
+    @Test void pendingCharacterSkipsInventoryRewriteWhileWorldDropsStillConvert(){
+        prepareCarrotConversion();Location location=new Location(f.world,0,65,0);
+        try(TestCharacters characters=new TestCharacters(f.plugin)){
+            listener.onBreak(breakEvent(config("carrot"),location,f.player));
+            Item drop=f.world.dropItem(location.clone().add(0.5,0.5,0.5),new ItemStack(Material.CARROT,2));
+            listener.onItemSpawn(new ItemSpawnEvent(drop));
+            assertEquals(Material.BREAD,drop.getItemStack().getType());
+            f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,2));
+            characters.activate(f.player,UUID.randomUUID());
+            f.server.getScheduler().performOneTick();
+            assertEquals(2,f.inventoryCount(Material.CARROT));assertEquals(0,f.inventoryCount(Material.BREAD));
+        }
+    }
+
+    @Test void reentrantConversionStagesAllChangesBeforeTouchingInventory(){
+        prepareCarrotConversion();UUID originalId=UUID.randomUUID();
+        try(TestCharacters characters=new TestCharacters(f.plugin);
+            MockedStatic<CropHarvestItems> conversion=mockStatic(CropHarvestItems.class)){
+            characters.activate(f.player,originalId);
+            listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));
+            f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,2));
+            f.player.getInventory().setItem(1,new ItemStack(Material.CARROT,3));
+            int[] converted={0};
+            conversion.when(()->CropHarvestItems.rewriteCustomDrop(any(),any(),anyInt())).thenAnswer(call->{
+                ItemStack source=call.getArgument(0);
+                if(++converted[0]==2){
+                    assertEquals(new ItemStack(Material.CARROT,2),f.player.getInventory().getItem(0));
+                    characters.activate(f.player,UUID.randomUUID());characters.activate(f.player,originalId);
+                    f.player.getInventory().setItem(0,new ItemStack(Material.STONE,7));
+                    f.player.getInventory().setItem(1,new ItemStack(Material.DIAMOND,4));
+                }
+                return new ItemStack(Material.BREAD,source.getAmount());
+            });
+            f.server.getScheduler().performOneTick();
+            assertEquals(2,converted[0]);
+            assertEquals(new ItemStack(Material.STONE,7),f.player.getInventory().getItem(0));
+            assertEquals(new ItemStack(Material.DIAMOND,4),f.player.getInventory().getItem(1));
+            assertEquals(0,f.inventoryCount(Material.BREAD));assertEquals(0,f.droppedCount(Material.BREAD));
+        }
+    }
+
+    @Test void sessionChangeDuringInsertionDropsRemainingHarvestAtCapturedLocation(){
+        prepareCarrotConversion();Location originalLocation=f.player.getLocation().clone();
+        try(TestCharacters characters=new TestCharacters(f.plugin);
+            MockedStatic<InventoryAdder> adder=mockStatic(InventoryAdder.class)){
+            characters.activate(f.player,UUID.randomUUID());
+            listener.onBreak(breakEvent(config("carrot"),new Location(f.world,0,65,0),f.player));
+            f.player.getInventory().setItem(0,new ItemStack(Material.CARROT,2));
+            f.player.getInventory().setItem(1,new ItemStack(Material.CARROT,3));
+            adder.when(()->InventoryAdder.addItem(eq(f.player),any(ItemStack.class))).thenAnswer(call->{
+                characters.activate(f.player,UUID.randomUUID());
+                f.player.teleport(new Location(f.world,40,70,40));
+                f.player.getInventory().setItem(0,new ItemStack(Material.DIAMOND,4));
+                return call.getArgument(1);
+            });
+            f.server.getScheduler().performOneTick();
+            adder.verify(()->InventoryAdder.addItem(eq(f.player),any(ItemStack.class)),times(1));
+            verify(f.world,times(2)).dropItemNaturally(eq(originalLocation),argThat(item->item.getType()==Material.BREAD));
+            assertEquals(5,f.droppedCount(Material.BREAD));assertEquals(0,f.inventoryCount(Material.BREAD));
+            assertEquals(new ItemStack(Material.DIAMOND,4),f.player.getInventory().getItem(0));
+        }
+    }
+
+    private void prepareCarrotConversion(){configureCustom();f.food("carrot",Material.BREAD);ConversionLoader.conversions.put("v.carrot","vegetable(type=carrot;origin=Carrot)");}
 
     private void configureCustom(){CropsConfig.apply(Map.of(),Map.of(),Map.of("carrot",new CropDefinition("carrot","customcrops","seed",0.5,Material.CARROTS),"wheat",new CropDefinition("wheat","vanilla","v.wheat_seeds",0.5,Material.WHEAT)));}
     private CropConfig config(String id){CropConfig config=mock(CropConfig.class);when(config.id()).thenReturn(id);return config;}

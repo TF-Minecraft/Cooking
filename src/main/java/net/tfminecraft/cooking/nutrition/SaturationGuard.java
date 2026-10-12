@@ -9,7 +9,7 @@ import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import net.tfminecraft.cooking.Cooking;
 
 public final class SaturationGuard implements Listener {
@@ -22,7 +22,8 @@ public final class SaturationGuard implements Listener {
         }
         taskId = Bukkit.getScheduler().runTaskTimer(Cooking.plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.getSaturation() != 0f) {
+                PlayerActionContext context = PlayerActionContext.capture(player);
+                if (context != null && player.getSaturation() != 0f) {
                     float before = player.getSaturation();
                     player.setSaturation(0f);
                     NutritionLog.append("SATURATION", player, activeCharacter(player),
@@ -43,6 +44,7 @@ public final class SaturationGuard implements Listener {
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        if (PlayerActionContext.capture(player) == null) return;
         float before = player.getSaturation();
         player.setSaturation(0f);
         NutritionLog.append("SATURATION", player, null,
@@ -54,8 +56,11 @@ public final class SaturationGuard implements Listener {
         if (!(event.getEntity() instanceof Player player)) {
             return;
         }
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) return;
         float eventSaturation = player.getSaturation();
         Bukkit.getScheduler().runTask(Cooking.plugin, () -> {
+            if (!context.isCurrent()) return;
             float before = player.getSaturation();
             player.setSaturation(0f);
             NutritionLog.append("SATURATION", player, activeCharacter(player),
@@ -65,9 +70,7 @@ public final class SaturationGuard implements Listener {
     }
 
     private static RPCharacter activeCharacter(Player player) {
-        if (!Bukkit.getPluginManager().isPluginEnabled("RPCharacters")) {
-            return null;
-        }
-        return RPCharacters.getActiveCharacter(player);
+        NutritionContext context = NutritionContext.capture(player);
+        return context == null ? null : context.character();
     }
 }

@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.logging.Logger;
 import net.tfminecraft.cooking.Cooking;
@@ -18,12 +19,14 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.loader.*;
 import net.tfminecraft.cooking.quality.QualityConfig;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.*;
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.tlibs.objects.api.ItemAPI;
 import org.bukkit.*;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -36,6 +39,8 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.block.BlockMock;
@@ -124,6 +129,272 @@ public class FarmingCoverageTest {
             assertTrue(FarmHarvestService.harvestBlock(f.player,f.tool(),new FarmingToolDefinition("hoe",0,100),crop,wheat()));
         }
         ItemStack bread=Arrays.stream(f.player.getInventory().getStorageContents()).filter(Objects::nonNull).filter(i -> i.getType()==Material.BREAD).findFirst().orElseThrow(); assertEquals(3,bread.getAmount()); assertEquals(3,FoodItem.fromItem(bread).getQualityMin()); assertEquals(1,f.inventoryCount(Material.WHEAT_SEEDS));
+    }
+
+    @Test void pendingCharacterCannotHarvestButReadyCharacterCanCompleteTheSameCrop() {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            BlockMock crop = harvestable();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT, 2), new ItemStack(Material.WHEAT_SEEDS)));
+            f.holdHoe();
+            AtomicInteger breaks = new AtomicInteger();
+            f.on(BlockBreakEvent.class, event -> breaks.incrementAndGet());
+            FarmHarvestService.harvestArea(f.player, f.tool(), hoe(), crop);
+            assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(0, breaks.get());
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+
+            characters.activate(f.player, UUID.randomUUID());
+            FarmHarvestService.harvestArea(f.player, f.tool(), hoe(), crop);
+            f.server.getScheduler().performTicks(2);
+            assertEquals(1, breaks.get());
+            assertEquals(2, f.inventoryCount(Material.WHEAT));
+            assertEquals(1, ((Damageable) f.tool().getItemMeta()).getDamage());
+            assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(0, ((Ageable) crop.getBlockData()).getAge());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending", "aba", "reconnect", "provider-arrival", "provider-loss"})
+    void staleReplantRefundsOnlyTheReservedSeedAtTheOriginalBlock(String change) {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            UUID character = UUID.randomUUID();
+            var origin = characters.activate(f.player, character);
+            if (change.equals("provider-arrival")) characters.close();
+            BlockMock crop = harvestable();
+            Location originalLocation = crop.getLocation().clone();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT_SEEDS)));
+            f.holdHoe();
+            AtomicInteger placements = new AtomicInteger();
+            f.on(BlockPlaceEvent.class, event -> placements.incrementAndGet());
+            assertTrue(FarmHarvestService.harvestBlock(f.player, f.tool(), hoe(), crop, wheat()));
+            WorldMock otherWorld = f.server.addSimpleWorld("successor");
+            f.player.teleport(new Location(otherWorld, 50, 70, 50));
+            PlayerMock current = f.player;
+            switch (change) {
+                case "pending" -> characters.set(f.player, null);
+                case "aba" -> {
+                    characters.activate(f.player, UUID.randomUUID());
+                    characters.activate(f.player, character);
+                }
+                case "reconnect" -> {
+                    f.player.disconnect();
+                    current = new PlayerMock(f.server, "Farmer", f.player.getUniqueId());
+                    f.server.addPlayer(current);
+                    characters.set(current, origin);
+                    assertSame(current, Bukkit.getPlayer(f.player.getUniqueId()));
+                }
+                case "provider-arrival" -> characters.register();
+                case "provider-loss" -> characters.close();
+                default -> fail("Unknown identity change");
+            }
+            current.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+            f.server.getScheduler().performTicks(2);
+            assertEquals(Material.AIR, crop.getType());
+            assertEquals(0, placements.get());
+            assertEquals(1, f.droppedCount(Material.WHEAT_SEEDS));
+            assertTrue(otherWorld.getEntitiesByClass(Item.class).isEmpty());
+            verify(f.world).dropItemNaturally(eq(originalLocation), argThat(item -> item.getType() == Material.WHEAT_SEEDS && item.getAmount() == 1));
+            assertEquals(Material.DIAMOND_HOE, current.getInventory().getItemInMainHand().getType());
+            assertEquals(0, ((Damageable) current.getInventory().getItemInMainHand().getItemMeta()).getDamage());
+            assertFalse(current.getInventory().contains(Material.WHEAT_SEEDS));
+        }
+    }
+
+    @Test void breakCallbackReturningToTheSameCharacterCannotHarvestOrDamageEitherTool() {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            UUID character = UUID.randomUUID();
+            characters.activate(f.player, character);
+            BlockMock crop = harvestable(), neighbour = f.crop(1, 65, 0, Material.WHEAT, true);
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT, 3)));
+            f.holdHoe();
+            ItemStack originalTool = f.tool();
+            AtomicInteger breaks = new AtomicInteger();
+            f.on(BlockBreakEvent.class, event -> {
+                breaks.incrementAndGet();
+                characters.activate(f.player, UUID.randomUUID());
+                characters.activate(f.player, character);
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+            });
+            FarmHarvestService.harvestArea(f.player, originalTool, new FarmingToolDefinition("hoe", 1, 0), crop);
+            assertEquals(1, breaks.get());
+            assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(Material.WHEAT, neighbour.getType());
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+            assertEquals(0, ((Damageable) originalTool.getItemMeta()).getDamage());
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @Test void conversionCallbackCannotAwardAnEarlierDropFromAnUnconsumedCrop() {
+        try (TestCharacters characters = new TestCharacters(f.plugin);
+             MockedStatic<IngredientConverter> conversion = mockStatic(IngredientConverter.class)) {
+            characters.activate(f.player, UUID.randomUUID());
+            BlockMock crop = harvestable();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT, 3), new ItemStack(Material.WHEAT_SEEDS, 2)));
+            f.holdHoe();
+            AtomicInteger conversions = new AtomicInteger();
+            conversion.when(() -> IngredientConverter.convertHarvestDrop(eq(f.player), any(), anyDouble())).thenAnswer(call -> {
+                if (conversions.incrementAndGet() == 2) {
+                    characters.activate(f.player, UUID.randomUUID());
+                    f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+                }
+                return call.getArgument(1);
+            });
+            FarmHarvestService.harvestArea(f.player, f.tool(), hoe(), crop);
+            f.server.getScheduler().performTicks(2);
+            assertEquals(2, conversions.get());
+            assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+            assertEquals(0, f.inventoryCount(Material.WHEAT_SEEDS));
+            assertEquals(0, f.droppedCount(Material.WHEAT_SEEDS));
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @Test void qualityCallbackSwitchPreservesTheCropAndDoesNotChargeEitherTool() {
+        try (TestCharacters characters = new TestCharacters(f.plugin);
+             MockedStatic<CropHarvestQuality> quality = mockStatic(CropHarvestQuality.class)) {
+            characters.activate(f.player, UUID.randomUUID());
+            CropsConfig.apply(Map.of(), Map.of(), Map.of("wheat",
+                    new CropDefinition("wheat", "vanilla", "v.wheat_seeds", 0.5, Material.WHEAT)));
+            BlockMock crop = harvestable();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT, 3), new ItemStack(Material.WHEAT_SEEDS, 2)));
+            f.holdHoe();
+            ItemStack originalTool = f.tool();
+            quality.when(() -> CropHarvestQuality.roll("wheat", crop.getLocation(), f.player)).thenAnswer(call -> {
+                characters.activate(f.player, UUID.randomUUID());
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+                return 2;
+            });
+            FarmHarvestService.harvestArea(f.player, originalTool, hoe(), crop);
+            f.server.getScheduler().performTicks(2);
+            quality.verify(() -> CropHarvestQuality.roll("wheat", crop.getLocation(), f.player));
+            assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+            assertEquals(0, f.inventoryCount(Material.WHEAT_SEEDS));
+            assertEquals(0, f.droppedCount(Material.WHEAT_SEEDS));
+            assertEquals(0, ((Damageable) originalTool.getItemMeta()).getDamage());
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @Test void dropLookupSwitchCannotReserveASeedOrAwardTheSuccessor() {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            characters.activate(f.player, UUID.randomUUID());
+            BlockMock originalBlock = harvestable();
+            Block crop = mock(Block.class, org.mockito.AdditionalAnswers.delegatesTo(originalBlock));
+            ItemStack seeds = new ItemStack(Material.WHEAT_SEEDS, 2);
+            f.holdHoe();
+            doAnswer(call -> {
+                characters.activate(f.player, UUID.randomUUID());
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+                return List.of(new ItemStack(Material.WHEAT, 3), seeds);
+            }).when(crop).getDrops(any(ItemStack.class));
+            assertFalse(FarmHarvestService.harvestBlock(f.player, f.tool(), hoe(), crop, wheat()));
+            f.server.getScheduler().performTicks(2);
+            assertEquals(Material.WHEAT, originalBlock.getType());
+            assertEquals(2, seeds.getAmount(), "A stale drop lookup cannot reserve a replant seed");
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+            assertEquals(0, f.inventoryCount(Material.WHEAT_SEEDS));
+            assertEquals(0, f.droppedCount(Material.WHEAT_SEEDS));
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"type", "data"})
+    void replantPhysicsSwitchRollsBackBeforePlacementAndRefundsTheSeed(String write) {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            characters.activate(f.player, UUID.randomUUID());
+            BlockMock originalBlock = harvestable();
+            originalBlock.setDrops(List.of(new ItemStack(Material.WHEAT_SEEDS)));
+            Block crop = mock(Block.class, org.mockito.AdditionalAnswers.delegatesTo(originalBlock));
+            Location originalLocation = originalBlock.getLocation().clone();
+            AtomicInteger physics = new AtomicInteger(), placements = new AtomicInteger();
+            f.on(BlockPhysicsEvent.class, event -> {
+                physics.incrementAndGet();
+                characters.activate(f.player, UUID.randomUUID());
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+            });
+            f.on(BlockPlaceEvent.class, event -> placements.incrementAndGet());
+            if (write.equals("type")) {
+                doAnswer(call -> {
+                    Material material = call.getArgument(0);
+                    originalBlock.setType(material);
+                    if (material == Material.WHEAT) {
+                        f.server.getPluginManager().callEvent(new BlockPhysicsEvent(originalBlock, originalBlock.getBlockData()));
+                    }
+                    return null;
+                }).when(crop).setType(any(Material.class));
+            } else {
+                doAnswer(call -> {
+                    originalBlock.setBlockData(call.getArgument(0));
+                    f.server.getPluginManager().callEvent(new BlockPhysicsEvent(originalBlock, originalBlock.getBlockData()));
+                    return null;
+                }).when(crop).setBlockData(any(BlockData.class));
+            }
+            f.holdHoe();
+            assertTrue(FarmHarvestService.harvestBlock(f.player, f.tool(), hoe(), crop, wheat()));
+            f.server.getScheduler().performTicks(2);
+            assertEquals(1, physics.get());
+            assertEquals(0, placements.get());
+            assertEquals(Material.AIR, originalBlock.getType());
+            assertEquals(1, f.droppedCount(Material.WHEAT_SEEDS));
+            verify(f.world).dropItemNaturally(eq(originalLocation), argThat(item -> item.getType() == Material.WHEAT_SEEDS && item.getAmount() == 1));
+            assertEquals(0, f.inventoryCount(Material.WHEAT_SEEDS));
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @Test void awardCallbackDropsRemainingCommittedHarvestWithoutChargingTheSuccessorTool() {
+        try (TestCharacters characters = new TestCharacters(f.plugin);
+             MockedStatic<InventoryAdder> delivery = mockStatic(InventoryAdder.class)) {
+            characters.activate(f.player, UUID.randomUUID());
+            BlockMock crop = harvestable();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT, 3), new ItemStack(Material.WHEAT_SEEDS, 2)));
+            f.holdHoe();
+            ItemStack originalTool = f.tool();
+            delivery.when(() -> InventoryAdder.addItem(eq(f.player), any())).thenAnswer(call -> {
+                assertEquals(Material.AIR, crop.getType(), "The crop must be consumed before awarding any produce");
+                characters.activate(f.player, UUID.randomUUID());
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+                return call.getArgument(1);
+            });
+            FarmHarvestService.harvestArea(f.player, originalTool, hoe(), crop);
+            f.server.getScheduler().performTicks(2);
+            delivery.verify(() -> InventoryAdder.addItem(eq(f.player), any()), times(1));
+            assertEquals(Material.AIR, crop.getType());
+            assertEquals(3, f.droppedCount(Material.WHEAT));
+            assertEquals(2, f.droppedCount(Material.WHEAT_SEEDS));
+            assertEquals(0, f.inventoryCount(Material.WHEAT));
+            assertEquals(0, ((Damageable) originalTool.getItemMeta()).getDamage());
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
+    }
+
+    @Test void placementCallbackSwitchRollsBackTheCropAndRefundsTheSeedInItsOriginalWorld() {
+        try (TestCharacters characters = new TestCharacters(f.plugin)) {
+            characters.activate(f.player, UUID.randomUUID());
+            BlockMock crop = harvestable();
+            Location originalLocation = crop.getLocation().clone();
+            crop.setDrops(List.of(new ItemStack(Material.WHEAT_SEEDS)));
+            f.holdHoe();
+            WorldMock otherWorld = f.server.addSimpleWorld("successor");
+            f.on(BlockPlaceEvent.class, event -> {
+                characters.activate(f.player, UUID.randomUUID());
+                f.player.teleport(new Location(otherWorld, 50, 70, 50));
+                f.player.getInventory().setItemInMainHand(new ItemStack(Material.DIAMOND_HOE));
+            });
+            assertTrue(FarmHarvestService.harvestBlock(f.player, f.tool(), hoe(), crop, wheat()));
+            f.server.getScheduler().performTicks(2);
+            assertEquals(Material.AIR, crop.getType());
+            assertEquals(1, f.droppedCount(Material.WHEAT_SEEDS));
+            verify(f.world).dropItemNaturally(eq(originalLocation), argThat(item -> item.getType() == Material.WHEAT_SEEDS && item.getAmount() == 1));
+            assertTrue(otherWorld.getEntitiesByClass(Item.class).isEmpty());
+            assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
+        }
     }
 
     @Test void harvestRejectsInvalidImmatureAndProtectedInputsWithoutDrops() {
@@ -228,7 +499,7 @@ public class FarmingCoverageTest {
         public YamlConfiguration config=new YamlConfiguration(); public final ItemAPI items; private final MockedStatic<TLibs> tlibs; private final StaticConfigSnapshot settings;
         private final List<FoodItem> previousFoods; private final List<FoodModel> previousModels; private final Map<String,String> previousConversions;
         public Plot(Path directory)throws Exception{
-            this.directory=directory; server=MockBukkit.mock(); world=spy(new FieldWorld()); world.setName("field"); server.addWorld(world); player=server.addPlayer("Farmer"); player.teleport(new Location(world,0,65,0)); previous=Cooking.plugin; plugin=mock(Cooking.class); when(plugin.getName()).thenReturn("Cooking"); when(plugin.namespace()).thenReturn("cooking"); when(plugin.isEnabled()).thenReturn(true); when(plugin.getServer()).thenReturn(server); when(plugin.getLogger()).thenReturn(Logger.getLogger("Cooking-test")); when(plugin.getPluginLoader()).thenReturn(MockBukkit.createMockPlugin("CookingFixture").getPluginLoader()); Cooking.plugin=plugin;
+            this.directory=directory; server=MockBukkit.mock(); world=spy(new FieldWorld()); world.setName("field"); server.addWorld(world); player=spy(new PlayerMock(server,"Farmer")); server.addPlayer(player); player.teleport(new Location(world,0,65,0)); previous=Cooking.plugin; plugin=mock(Cooking.class); when(plugin.getName()).thenReturn("Cooking"); when(plugin.namespace()).thenReturn("cooking"); when(plugin.isEnabled()).thenReturn(true); when(plugin.getServer()).thenReturn(server); when(plugin.getLogger()).thenReturn(Logger.getLogger("Cooking-test")); when(plugin.getPluginLoader()).thenReturn(MockBukkit.createMockPlugin("CookingFixture").getPluginLoader()); Cooking.plugin=plugin;
             settings=new StaticConfigSnapshot(FarmingConfig.class,CropsConfig.class,CropPlantingRule.class,CropCustomCropsBridge.class,QualityConfig.class); QualityConfig.apply(1,5,null,null); CropPlantingRule.configure(null); CropsConfig.apply(Map.of(),Map.of(),Map.of());
             previousFoods=FoodLoader.oList; FoodLoader.oList=new ArrayList<>(); previousModels=ModelLoader.models; ModelLoader.models=new ArrayList<>(); previousConversions=ConversionLoader.conversions; ConversionLoader.conversions=new LinkedHashMap<>();
             config.loadFromString("""
@@ -253,8 +524,8 @@ public class FarmingCoverageTest {
         /** MockBukkit's addItem includes two phantom slots; model Paper's full storage boundary. */
         public Player fullStoragePlayer(){
             assertTrue(Arrays.stream(player.getInventory().getStorageContents()).allMatch(Objects::nonNull));
-            Player wrapped=spy(player);PlayerInventory inventory=spy(player.getInventory());doReturn(inventory).when(wrapped).getInventory();
-            doAnswer(call->{ItemStack[] input=(ItemStack[])call.getRawArguments()[0];HashMap<Integer,ItemStack> remainder=new HashMap<>();for(int i=0;i<input.length;i++)remainder.put(i,input[i].clone());return remainder;}).when(inventory).addItem(any(ItemStack[].class));return wrapped;
+            PlayerInventory inventory=spy(player.getInventory());doReturn(inventory).when(player).getInventory();
+            doAnswer(call->{ItemStack[] input=(ItemStack[])call.getRawArguments()[0];HashMap<Integer,ItemStack> remainder=new HashMap<>();for(int i=0;i<input.length;i++)remainder.put(i,input[i].clone());return remainder;}).when(inventory).addItem(any(ItemStack[].class));return player;
         }
         public FoodItem food(String id,Material model){MemoryConfiguration yaml=new MemoryConfiguration();yaml.set("name",id);FoodItem food=new FoodItem(id,yaml);food.setCategory("vegetable");food.setModel(new FoodModel(new ItemStack(model)));food.setQualityRange(1,1);FoodLoader.oList.add(food);return food;}
         public <T extends Event> void on(Class<T> type,Consumer<T> consumer){server.getPluginManager().registerEvent(type,new Listener(){},EventPriority.NORMAL,(listener,event)->consumer.accept(type.cast(event)),plugin);}

@@ -1,5 +1,6 @@
 package net.tfminecraft.cooking.nutrition;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -7,8 +8,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.inventory.ItemStack;
 
+import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 
 public final class FoodConsumeListener implements Listener {
 
@@ -35,7 +38,17 @@ public final class FoodConsumeListener implements Listener {
             return;
         }
 
+        PlayerActionContext context = PlayerActionContext.capture(event.getPlayer());
+        if (context == null) {
+            event.setCancelled(true);
+            return;
+        }
         food.updateAge();
-        NutritionService.tryApplyEat(event.getPlayer(), food);
+        // Vanilla spends the food after this event; never grant nutrition before that commit.
+        Bukkit.getScheduler().runTask(Cooking.plugin, () -> {
+            if (!event.isCancelled() && context.isCurrent()) {
+                NutritionService.tryApplyEat(context.player(), food);
+            }
+        });
     }
 }

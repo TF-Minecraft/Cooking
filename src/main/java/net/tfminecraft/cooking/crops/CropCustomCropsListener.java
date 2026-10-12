@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.bukkit.Bukkit;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import org.bukkit.Location;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -103,17 +103,17 @@ public final class CropCustomCropsListener implements Listener {
     }
 
     private void scheduleInventoryRewrite(Player player, CropDefinition crop, int quality) {
-        UUID uuid = player.getUniqueId();
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) return;
+        Location dropLocation = player.getLocation().clone();
         ItemStack[] before = cloneStorage(player.getInventory());
         Cooking.plugin.getServer().getScheduler().runTaskLater(Cooking.plugin, () -> {
-            Player online = Bukkit.getPlayer(uuid);
-            if (online == null || !online.isOnline()) {
-                return;
-            }
-            PlayerInventory inventory = online.getInventory();
+            if (!context.isCurrent()) return;
+            PlayerInventory inventory = player.getInventory();
             ItemStack[] now = inventory.getStorageContents();
             int length = Math.min(before.length, now.length);
             java.util.List<ItemStack> additions = new java.util.ArrayList<>();
+            Map<Integer, ItemStack> replacements = new java.util.LinkedHashMap<>();
             for (int i = 0; i < length; i++) {
                 if (sameStack(before[i], now[i])) {
                     continue;
@@ -129,13 +129,15 @@ public final class CropCustomCropsListener implements Listener {
                 ItemStack rewritten = CropHarvestItems.rewriteCustomDrop(candidate, crop, quality);
                 if (rewritten == null || rewritten == candidate || rewritten.getType().isAir()) continue;
                 // Take the harvest back out and add it as food, so it joins produce that only aged differently.
-                inventory.setItem(i, grewExisting ? before[i].clone() : null);
+                replacements.put(i, grewExisting ? before[i].clone() : null);
                 additions.add(rewritten);
             }
+            if (!context.isCurrent()) return;
+            replacements.forEach(inventory::setItem);
             for (ItemStack addition : additions) {
-                ItemStack leftover = InventoryAdder.addItem(online, addition);
+                ItemStack leftover = context.isCurrent() ? InventoryAdder.addItem(player, addition) : addition;
                 if (leftover != null) {
-                    online.getWorld().dropItemNaturally(online.getLocation(), leftover);
+                    dropLocation.getWorld().dropItemNaturally(dropLocation, leftover);
                 }
             }
         }, 1L);

@@ -1,10 +1,8 @@
 package net.tfminecraft.cooking.nutrition;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
 
@@ -17,18 +15,13 @@ public final class NutritionService {
             NutritionLog.append("EAT_SKIP", player, null, "cause=null-input");
             return;
         }
-        if (!Bukkit.getPluginManager().isPluginEnabled("RPCharacters")) {
+        NutritionContext context = NutritionContext.capture(player);
+        if (context == null) {
             NutritionLog.append("EAT_SKIP", player, null,
-                    "food=" + food.getId() + " cause=rpcharacters-unavailable");
+                    "food=" + food.getId() + " cause=no-ready-character");
             return;
         }
-
-        RPCharacter character = RPCharacters.getActiveCharacter(player);
-        if (character == null) {
-            NutritionLog.append("EAT_SKIP", player, null,
-                    "food=" + food.getId() + " cause=no-active-character");
-            return;
-        }
+        RPCharacter character = context.character();
 
         int gained = (int) Math.ceil(food.getFinalFood());
         int foodBefore = character.getFoodValue();
@@ -57,7 +50,7 @@ public final class NutritionService {
         VarietyScore variety = VarietyService.current(player);
         boolean dietChanged = character.getDietScore() != dietBefore;
         if (dietChanged) {
-            DietTierService.checkAndNotify(player, character, variety);
+            DietTierService.checkAndNotify(context, variety);
         }
 
         NutritionLog.append("EAT", player, character,
@@ -78,10 +71,10 @@ public final class NutritionService {
                 + " varietyProgress=" + variety.progressPercent()
                 + " varietyDivisor=" + variety.divisor()
                 + " varietyPenalty=" + variety.penaltyPercent());
-        RPCharacters.getPlayerManager().savePlayer(player);
+        if (!context.save()) return;
         NutritionLog.append("SAVE", player, character, "reason=eat");
-        NutritionDisplayService.sync(player, character, "eat");
-        NutritionAttributeBridge.apply(player, character);
+        NutritionDisplayService.sync(context, "eat");
+        NutritionAttributeBridge.apply(context);
     }
 
     private static int applyFoodGain(RPCharacter character, int gained) {

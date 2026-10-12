@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -24,6 +25,7 @@ import net.tfminecraft.cooking.crops.CropsConfig;
 import net.tfminecraft.cooking.crops.CropDefinition;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.InventoryAdder;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 
 public final class FarmHarvestService {
 
@@ -37,6 +39,10 @@ public final class FarmHarvestService {
         if (player == null || tool == null || hoe == null || centre == null) {
             return;
         }
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
+            return;
+        }
 
         List<Block> blocks = FarmAreaScanner.findCropBlocks(
                 centre,
@@ -44,6 +50,9 @@ public final class FarmHarvestService {
                 FarmingConfig.cropMaterials());
 
         for (Block block : blocks) {
+            if (!context.isCurrent()) {
+                break;
+            }
             ItemStack currentTool = player.getInventory().getItemInMainHand();
             if (currentTool.getType().isAir() || currentTool.getAmount() <= 0) {
                 break;
@@ -54,7 +63,10 @@ public final class FarmHarvestService {
                 continue;
             }
 
-            if (harvestBlock(player, currentTool, hoe, block, cropDef)) {
+            if (harvestBlock(context, currentTool, hoe, block, cropDef)) {
+                if (!context.isCurrent()) {
+                    break;
+                }
                 if (applyToolDamage(player, currentTool)) {
                     break;
                 }
@@ -71,15 +83,27 @@ public final class FarmHarvestService {
         if (player == null || tool == null || hoe == null || block == null || cropDef == null) {
             return false;
         }
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        return context != null && harvestBlock(context, tool, hoe, block, cropDef);
+    }
+
+    private static boolean harvestBlock(
+            PlayerActionContext context,
+            ItemStack tool,
+            FarmingToolDefinition hoe,
+            Block block,
+            FarmingCropDefinition cropDef) {
         if (FarmingConfig.onlyHarvestMature() && !isMature(block)) {
             return false;
         }
 
+        Player player = context.player();
+        Location dropLocation = block.getLocation().clone();
         BlockBreakEvent notify = new BlockBreakEvent(block, player);
         notify.setDropItems(false);
         notify.setExpToDrop(0);
         Cooking.plugin.getServer().getPluginManager().callEvent(notify);
-        if (notify.isCancelled()) {
+        if (!context.isCurrent() || notify.isCancelled()) {
             return false;
         }
 
@@ -88,10 +112,17 @@ public final class FarmHarvestService {
         if (cropQuality != null && CropsConfig.SOURCE_VANILLA.equals(cropQuality.source())) {
             harvestQuality = rollHarvestQuality(player, block, cropQuality, hoe);
         }
+        if (!context.isCurrent()) {
+            return false;
+        }
 
         BlockState state = block.getState();
         List<ItemStack> drops = new ArrayList<>(block.getDrops(tool));
+        if (!context.isCurrent()) {
+            return false;
+        }
         ItemStack replantSeed = takeOneSeed(drops, cropDef.seed());
+        List<ItemStack> convertedDrops = new ArrayList<>();
 
         for (ItemStack drop : drops) {
             if (drop == null || drop.getType().isAir() || drop.getAmount() <= 0) {
@@ -100,17 +131,23 @@ public final class FarmHarvestService {
             ItemStack converted = harvestQuality != null
                     ? CropHarvestItems.convertDrop(drop, cropQuality, harvestQuality)
                     : IngredientConverter.convertHarvestDrop(player, drop, hoe.qualityBonusPercent());
-            ItemStack leftover = InventoryAdder.addItem(player, converted);
+            if (!context.isCurrent()) {
+                return false;
+            }
+            convertedDrops.add(converted);
+        }
+
+        block.setType(Material.AIR);
+        FarmingEffects.breakCrop(block, state, hoe.radius(), FarmingConfig.harvestParticleMultiplier());
+        for (ItemStack converted : convertedDrops) {
+            ItemStack leftover = context.isCurrent() ? InventoryAdder.addItem(player, converted) : converted;
             if (leftover != null) {
-                block.getWorld().dropItemNaturally(block.getLocation(), leftover);
+                dropAt(dropLocation, leftover);
             }
         }
 
-        FarmingEffects.breakCrop(block, state, hoe.radius(), FarmingConfig.harvestParticleMultiplier());
-        block.setType(Material.AIR);
-
         if (replantSeed != null) {
-            scheduleReplant(player, block, cropDef, replantSeed);
+            scheduleReplant(context, block, cropDef, replantSeed, dropLocation);
         }
 
         return true;
@@ -147,10 +184,11 @@ public final class FarmHarvestService {
     }
 
     private static void scheduleReplant(
-            Player player,
+            PlayerActionContext context,
             Block block,
             FarmingCropDefinition cropDef,
-            ItemStack seed) {
+            ItemStack seed,
+            Location dropLocation) {
         int min = FarmingConfig.replantDelayMin();
         int max = FarmingConfig.replantDelayMax();
         int delay = min;
@@ -162,12 +200,12 @@ public final class FarmHarvestService {
         ItemStack seedCopy = seed.clone();
 
         Cooking.plugin.getServer().getScheduler().runTaskLater(Cooking.plugin, () -> {
-            if (!player.isOnline()) {
-                dropSeed(block, seedCopy);
+            if (!context.isCurrent()) {
+                dropAt(dropLocation, seedCopy);
                 return;
             }
             if (!block.isEmpty()) {
-                dropSeed(block, seedCopy);
+                dropAt(dropLocation, seedCopy);
                 return;
             }
 
@@ -178,6 +216,11 @@ public final class FarmHarvestService {
                 ageable.setAge(0);
                 block.setBlockData(ageable);
             }
+            if (!context.isCurrent()) {
+                replacedState.update(true);
+                dropAt(dropLocation, seedCopy);
+                return;
+            }
 
             Block soil = block.getRelative(0, -1, 0);
             BlockPlaceEvent plantEvent = new BlockPlaceEvent(
@@ -185,13 +228,13 @@ public final class FarmHarvestService {
                     replacedState,
                     soil,
                     seedCopy,
-                    player,
+                    context.player(),
                     true,
                     EquipmentSlot.HAND);
             Cooking.plugin.getServer().getPluginManager().callEvent(plantEvent);
-            if (plantEvent.isCancelled() || !plantEvent.canBuild()) {
+            if (!context.isCurrent() || plantEvent.isCancelled() || !plantEvent.canBuild()) {
                 replacedState.update(true);
-                dropSeed(block, seedCopy);
+                dropAt(dropLocation, seedCopy);
                 return;
             }
 
@@ -199,9 +242,9 @@ public final class FarmHarvestService {
         }, delay);
     }
 
-    private static void dropSeed(Block block, ItemStack seed) {
-        if (block.getWorld() != null) {
-            block.getWorld().dropItemNaturally(block.getLocation(), seed);
+    private static void dropAt(Location location, ItemStack item) {
+        if (location.getWorld() != null) {
+            location.getWorld().dropItemNaturally(location, item);
         }
     }
 

@@ -3,14 +3,17 @@ package net.tfminecraft.cooking.manager;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import org.bukkit.Material;
 import org.bukkit.configuration.MemoryConfiguration;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -21,6 +24,8 @@ import org.bukkit.inventory.meta.BundleMeta;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -31,6 +36,7 @@ import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 
 /** Equal foods put into a bundle stack there as they do in an inventory, keeping the older data. */
@@ -241,5 +247,85 @@ class BundleFoodStackerTest {
         assertEquals(1, contents(player.getItemOnCursor()).size());
 
         new BundleFoodStacker();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"current", "switch-back", "pending", "provider-lost", "provider-arrived", "reconnect", "offline"})
+    void delayedMergesRequireCapturedSessionAndConnection(String change) {
+        List<Runnable> tasks = new ArrayList<>();
+        BundleFoodStacker stacker = new BundleFoodStacker(tasks::add);
+        Inventory chest = server.createInventory(null, 27);
+        var view = player.openInventory(chest);
+        ItemStack cursor = bundle(beef(1, 0, 0), beef(1, 0, 20));
+        ItemStack slot = bundle(beef(2, 0, 0), beef(2, 0, 20));
+        player.setItemOnCursor(cursor);
+        chest.setItem(0, slot);
+        UUID characterId = UUID.randomUUID();
+        try (TestCharacters characters = new TestCharacters(MockBukkit.createMockPlugin())) {
+            characters.activate(player, characterId);
+            if (change.equals("provider-arrived")) characters.close();
+            stacker.onClick(new InventoryClickEvent(view, SlotType.CONTAINER, 0, ClickType.RIGHT, InventoryAction.PICKUP_HALF));
+            assertEquals(1, tasks.size());
+            switch (change) {
+                case "switch-back" -> {
+                    characters.activate(player, UUID.randomUUID());
+                    characters.activate(player, characterId);
+                }
+                case "pending" -> characters.set(player, null);
+                case "provider-lost" -> characters.close();
+                case "provider-arrived" -> characters.register();
+                case "reconnect" -> {
+                    server.getPlayerList().disconnectPlayer(player);
+                    PlayerMock replacement = new PlayerMock(server, player.getName(), player.getUniqueId());
+                    server.addPlayer(replacement);
+                    replacement.openInventory(chest);
+                    replacement.setItemOnCursor(cursor);
+                    assertTrue(player.isOnline());
+                    assertSame(replacement, server.getPlayer(player.getUniqueId()));
+                }
+                case "offline" -> player.disconnect();
+                default -> { }
+            }
+            tasks.forEach(Runnable::run);
+            if (change.equals("current")) {
+                assertEquals(1, contents(player.getItemOnCursor()).size());
+                assertEquals(2, contents(player.getItemOnCursor()).getFirst().getAmount());
+                assertEquals(1, contents(chest.getItem(0)).size());
+                assertEquals(4, contents(chest.getItem(0)).getFirst().getAmount());
+            } else {
+                assertEquals(cursor, player.getItemOnCursor());
+                assertEquals(slot, chest.getItem(0));
+            }
+            if (change.equals("reconnect")) assertEquals(cursor, server.getPlayer(player.getUniqueId()).getItemOnCursor());
+        }
+    }
+
+    @Test
+    void pendingPlayerDoesNotScheduleAMergeEvenIfReadyBeforeNextTick() {
+        List<Runnable> tasks = new ArrayList<>();
+        BundleFoodStacker stacker = new BundleFoodStacker(tasks::add);
+        Inventory chest = server.createInventory(null, 27);
+        var view = player.openInventory(chest);
+        ItemStack original = bundle(beef(1, 0, 0), beef(1, 0, 20));
+        chest.setItem(0, original);
+        try (TestCharacters characters = new TestCharacters(MockBukkit.createMockPlugin())) {
+            stacker.onClick(new InventoryClickEvent(view, SlotType.CONTAINER, 0, ClickType.RIGHT, InventoryAction.PICKUP_HALF));
+            characters.activate(player, UUID.randomUUID());
+            tasks.forEach(Runnable::run);
+            assertTrue(tasks.isEmpty());
+            assertEquals(original, chest.getItem(0));
+        }
+    }
+
+    @Test
+    void nonPlayerClickDoesNotScheduleAMerge() {
+        List<Runnable> tasks = new ArrayList<>();
+        InventoryClickEvent event = mock(InventoryClickEvent.class);
+        HumanEntity actor = mock(HumanEntity.class);
+        ItemStack cursor = bundle(beef(1, 0, 0), beef(1, 0, 20));
+        when(event.getWhoClicked()).thenReturn(actor);
+        when(event.getCursor()).thenReturn(cursor);
+        new BundleFoodStacker(tasks::add).onClick(event);
+        assertTrue(tasks.isEmpty());
     }
 }

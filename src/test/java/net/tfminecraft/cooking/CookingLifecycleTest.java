@@ -198,6 +198,28 @@ class CookingLifecycleTest {
         verify(repository, times(1)).close();
     }
 
+    @Test void startupInitializesPlayersAlreadyOnlineThroughTheReadySessionPath() {
+        var player = server.addPlayer();
+        var lifecycle = staticMock(net.tfminecraft.cooking.nutrition.NutritionLifecycleListener.class);
+        loadPlugin();
+        lifecycle.verifyNoInteractions();
+        server.getScheduler().performOneTick();
+        lifecycle.verify(() -> net.tfminecraft.cooking.nutrition.NutritionLifecycleListener.initializeCurrent(player));
+    }
+
+    @Test void missingCharacterApiDisablesBeforeRegisteringResources() {
+        var characters = staticMock(net.tfminecraft.tlibs.character.Characters.class);
+        characters.when(net.tfminecraft.tlibs.character.Characters::available)
+            .thenThrow(new NoClassDefFoundError("old TLibs"));
+        Cooking rejected = loadPlugin();
+        assertFalse(rejected.isEnabled());
+        assertNull(rejected.getHusbandryRepository());
+        verify(items, never()).registerPathHandler(anyString(), any());
+        repositories.verifyNoInteractions();
+        rejected.onDisable();
+        saturation.verifyNoInteractions();
+    }
+
     @Test void reloadRefreshesConfigStationsAndPeriodicNutritionAndHusbandryTasks() {
         Cooking plugin = loadPlugin();
         server.getScheduler().performOneTick();

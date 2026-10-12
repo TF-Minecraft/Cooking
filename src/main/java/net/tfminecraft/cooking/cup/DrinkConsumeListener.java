@@ -1,5 +1,6 @@
 package net.tfminecraft.cooking.cup;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import org.bukkit.Bukkit;
@@ -19,6 +20,7 @@ import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.nutrition.NutritionService;
 import net.tfminecraft.cooking.utils.InventoryAdder;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 
 public final class DrinkConsumeListener implements Listener {
 
@@ -32,16 +34,18 @@ public final class DrinkConsumeListener implements Listener {
         event.setCancelled(true);
 
         Player player = event.getPlayer();
-        FoodItem food = FoodItem.fromItem(consumed);
-        if (food != null && "milk_bucket".equalsIgnoreCase(food.getId())) {
-            food.updateAge();
-            NutritionService.tryApplyEat(player, food);
-        }
-
-        if (player.getGameMode() == GameMode.CREATIVE) {
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
             return;
         }
-        emptyDrunkBucket(player, event.getHand());
+        FoodItem food = FoodItem.fromItem(consumed);
+        if (food != null) food.updateAge();
+        if (!context.isCurrent()) return;
+        // This event is cancelled, so spend the bucket before nutrition callbacks.
+        if (player.getGameMode() != GameMode.CREATIVE && !emptyDrunkBucket(player, event.getHand())) return;
+        if (context.isCurrent() && food != null && "milk_bucket".equalsIgnoreCase(food.getId())) {
+            NutritionService.tryApplyEat(player, food);
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -58,19 +62,23 @@ public final class DrinkConsumeListener implements Listener {
         }
 
         Player player = event.getPlayer();
-
-        if (milk) {
-            FoodItem food = FoodItem.fromItem(consumed);
-            if (food != null) {
-                food.updateAge();
-                NutritionService.tryApplyEat(player, food);
-            }
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
+            return;
         }
+
+        FoodItem food = milk ? FoodItem.fromItem(consumed) : null;
+        if (food != null) food.updateAge();
 
         int amountBefore = consumed.getAmount();
         EquipmentSlot hand = event.getHand() == EquipmentSlot.OFF_HAND ? EquipmentSlot.OFF_HAND : EquipmentSlot.HAND;
         int slot = hand == EquipmentSlot.OFF_HAND ? -1 : player.getInventory().getHeldItemSlot();
-        Bukkit.getScheduler().runTask(Cooking.plugin, () -> replaceWithEmptyCup(player, amountBefore, slot));
+        Bukkit.getScheduler().runTask(Cooking.plugin, () -> {
+            if (!event.isCancelled() && context.isCurrent()) {
+                replaceWithEmptyCup(player, amountBefore, slot, CupItems::emptyCup, context::isCurrent);
+                if (context.isCurrent() && food != null) NutritionService.tryApplyEat(player, food);
+            }
+        });
     }
 
     /**
@@ -79,11 +87,12 @@ public final class DrinkConsumeListener implements Listener {
      * must neither leave the bottle and add a cup, nor overwrite whatever is held instead. Cups
      * are potions, so an empty slot means the bottle was moved away, or nothing was used up.
      */
-    static void replaceWithEmptyCup(Player player, int amountBefore, int slot) {
-        replaceWithEmptyCup(player, amountBefore, slot, CupItems::emptyCup);
+    static void replaceWithEmptyCup(Player player, int amountBefore, int slot, Supplier<ItemStack> emptyCup) {
+        replaceWithEmptyCup(player, amountBefore, slot, emptyCup, () -> true);
     }
 
-    static void replaceWithEmptyCup(Player player, int amountBefore, int slot, Supplier<ItemStack> emptyCup) {
+    private static void replaceWithEmptyCup(Player player, int amountBefore, int slot,
+            Supplier<ItemStack> emptyCup, BooleanSupplier current) {
         if (amountBefore > 1) {
             return;
         }
@@ -93,6 +102,7 @@ public final class DrinkConsumeListener implements Listener {
             return;
         }
         ItemStack empty = emptyCup.get();
+        if (!current.getAsBoolean()) return;
         if (slot < 0) {
             inv.setItemInOffHand(empty);
         } else {
@@ -100,7 +110,7 @@ public final class DrinkConsumeListener implements Listener {
         }
     }
 
-    private static void emptyDrunkBucket(Player player, EquipmentSlot hand) {
+    private static boolean emptyDrunkBucket(Player player, EquipmentSlot hand) {
         PlayerInventory inv = player.getInventory();
         EquipmentSlot slot = hand != null ? hand : EquipmentSlot.HAND;
         ItemStack used = inv.getItem(slot);
@@ -114,7 +124,7 @@ public final class DrinkConsumeListener implements Listener {
                 slot = EquipmentSlot.OFF_HAND;
                 used = off;
             } else {
-                return;
+                return false;
             }
         }
         int amount = used.getAmount();
@@ -124,8 +134,9 @@ public final class DrinkConsumeListener implements Listener {
             if (leftover != null && leftover.getAmount() > 0 && player.getWorld() != null) {
                 player.getWorld().dropItemNaturally(player.getLocation(), leftover);
             }
-            return;
+            return true;
         }
         inv.setItem(slot, BucketItems.empty());
+        return true;
     }
 }

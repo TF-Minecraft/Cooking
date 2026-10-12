@@ -1,18 +1,17 @@
 package net.tfminecraft.cooking.nutrition;
 
-import java.util.HashSet;
-import java.util.Set;
-import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
+import net.tfminecraft.tlibs.character.CharacterSession;
+import net.tfminecraft.tlibs.character.Characters;
 
 public final class NutritionDisplayService {
 
-    private static final Set<UUID> syncingPlayers = new HashSet<>();
+    private static final Map<CharacterSession, Integer> syncingSessions = new HashMap<>();
 
     private NutritionDisplayService() {}
 
@@ -24,7 +23,8 @@ public final class NutritionDisplayService {
     }
 
     public static boolean isSyncing(Player player) {
-        return player != null && syncingPlayers.contains(player.getUniqueId());
+        return player != null && Characters.currentSession(player)
+                .map(syncingSessions::containsKey).orElse(false);
     }
 
     public static void sync(Player player, RPCharacter character, String reason) {
@@ -32,17 +32,33 @@ public final class NutritionDisplayService {
             NutritionLog.append("SYNC_SKIP", player, character, "reason=" + reason + " cause=null-input");
             return;
         }
-        UUID id = player.getUniqueId();
-        syncingPlayers.add(id);
+        NutritionContext context = NutritionContext.capture(player, character);
+        if (context == null) {
+            NutritionLog.append("SYNC_SKIP", player, character,
+                    "reason=" + reason + " cause=not-ready-or-character-mismatch");
+            return;
+        }
+        sync(context, reason);
+    }
+
+    public static void sync(NutritionContext context, String reason) {
+        if (context == null || !context.isCurrent()) return;
+        Player player = context.player();
+        RPCharacter character = context.character();
+        CharacterSession session = context.session();
+        syncingSessions.merge(session, 1, Integer::sum);
         try {
             int mapped = toFoodLevel(character.getFoodValue());
             int foodBefore = player.getFoodLevel();
             float saturationBefore = player.getSaturation();
             boolean wroteFood = foodBefore != mapped;
+            if (!context.isCurrent()) return;
             if (wroteFood) {
                 player.setFoodLevel(mapped);
             }
+            if (!context.isCurrent()) return;
             player.setSaturation(0f);
+            if (!context.isCurrent()) return;
             NutritionLog.append("SYNC", player, character,
                     "reason=" + reason
                     + " mapped=" + mapped
@@ -52,7 +68,7 @@ public final class NutritionDisplayService {
                     + " saturationAfter=" + player.getSaturation()
                     + " wroteFood=" + wroteFood);
         } finally {
-            syncingPlayers.remove(id);
+            syncingSessions.computeIfPresent(session, (key, count) -> count > 1 ? count - 1 : null);
         }
     }
 
@@ -61,20 +77,13 @@ public final class NutritionDisplayService {
     }
 
     public static void syncFromPlayer(Player player, String reason) {
-        if (player == null || !Bukkit.getPluginManager().isPluginEnabled("RPCharacters")) {
+        NutritionContext context = NutritionContext.capture(player);
+        if (context == null) {
             NutritionLog.append("SYNC_SKIP", player, null,
-                    "reason=" + reason + " cause=rpcharacters-unavailable");
+                    "reason=" + reason + " cause=no-ready-character");
             return;
         }
-        RPCharacter character = RPCharacters.getActiveCharacter(player);
-        if (character == null) {
-            NutritionLog.append("SYNC_SKIP", player, null,
-                    "reason=" + reason + " cause=no-active-character"
-                    + " hud=" + player.getFoodLevel()
-                    + " saturation=" + player.getSaturation());
-            return;
-        }
-        sync(player, character, reason);
+        sync(context, reason);
     }
 
     public static void syncFromPlayer(Player player) {

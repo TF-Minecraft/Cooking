@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.asm.MemberRemoval;
@@ -23,19 +24,21 @@ import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.manager.PlateManager;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 import net.tfminecraft.rpcharacters.RPCharacters;
-import net.tfminecraft.rpcharacters.lifecycle.CharacterActivatedEvent;
 import net.tfminecraft.rpcharacters.managers.PlayerManager;
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
 import net.tfminecraft.simplefactions.war.battle.engine.core.Battle;
 import net.tfminecraft.simplefactions.war.battle.engine.core.BattleManager;
 import net.tfminecraft.simplefactions.war.battle.engine.core.BattleSide;
 import net.tfminecraft.tlibs.TLibs;
+import net.tfminecraft.tlibs.character.CharacterSession;
+import net.tfminecraft.tlibs.character.CharacterSessionStartEvent;
 import net.tfminecraft.tlibs.objects.api.ItemAPI;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
@@ -56,6 +59,8 @@ import org.bukkit.plugin.Plugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -74,12 +79,16 @@ class NutritionListenersCoverageTest {
     private List<TagTrack> tracks;
     private List<Battle> battles;
     private String previousWater, previousMilk, previousEmpty, previousBowl;
+    private TestCharacters characters;
 
     @BeforeEach void setup() {
         server=MockBukkit.mock(); previousPlugin=Cooking.plugin; Cooking.plugin=mock(Cooking.class);
         when(Cooking.plugin.getName()).thenReturn("Cooking"); when(Cooking.plugin.namespace()).thenReturn("cooking");
         when(Cooking.plugin.getLogger()).thenReturn(mock(Logger.class));
-        player=server.addPlayer(); character=new RPCharacter(player); character.setFoodValue(100);
+        player=spy(new PlayerMock(server,"Eater")); server.addPlayer(player);
+        character=new RPCharacter(player); character.setFoodValue(100);
+        characters=new TestCharacters(MockBukkit.createMockPlugin("CharacterProvider"));
+        characters.activate(player,character.getId());
         players=mock(PlayerManager.class); rp=mockStatic(RPCharacters.class);
         rp.when(()->RPCharacters.getActiveCharacter(player)).thenReturn(character);
         rp.when(RPCharacters::getPlayerManager).thenReturn(players);
@@ -102,21 +111,18 @@ class NutritionListenersCoverageTest {
         ItemCache.cupOfWater=previousWater; ItemCache.cupOfMilk=previousMilk; ItemCache.emptyCup=previousEmpty;
         FurnitureCache.bowl=previousBowl;
         BattleManager.get().clear(); BattleManager.get().addAll(battles);
-        rp.close(); tlibs.close(); MockBukkit.unmock(); Cooking.plugin=previousPlugin;
+        characters.close(); rp.close(); tlibs.close(); MockBukkit.unmock(); Cooking.plugin=previousPlugin;
     }
 
     @Test void lifecycleEventsRestoreHudAndResetDeathFoodOutsideStartedBattles() {
         MockBukkit.createMockPlugin("RPCharacters");
         NutritionLifecycleListener listener=new NutritionLifecycleListener();
-        listener.onJoin(new PlayerJoinEvent(player,"joined"));
-        assertEquals(20,player.getFoodLevel()); server.getScheduler().performTicks(2);
+        NutritionLifecycleListener.initializeCurrent(player);
         assertEquals(10,player.getFoodLevel());
         PlayerRespawnEvent respawn=mock(PlayerRespawnEvent.class); when(respawn.getPlayer()).thenReturn(player);
         character.setFoodValue(50); listener.onPlayerRespawn(respawn); assertEquals(5,player.getFoodLevel());
-        listener.onCharacterActivated(new CharacterActivatedEvent(null,player.getUniqueId(),character,null));
-        listener.onCharacterActivated(new CharacterActivatedEvent(player,player.getUniqueId(),null,null));
         character.setRawDietScore(20);
-        listener.onCharacterActivated(new CharacterActivatedEvent(player,player.getUniqueId(),character,null));
+        listener.onCharacterStart(new CharacterSessionStartEvent(player,characters.activate(player,character.getId())));
         assertEquals(20,character.getDietScore()); assertNotNull(character.getLastDietTierId());
         PlayerDeathEvent death=mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
         rp.when(()->RPCharacters.getActiveCharacter(player)).thenReturn(null); listener.onPlayerDeath(death);
@@ -131,16 +137,17 @@ class NutritionListenersCoverageTest {
     }
 
     @Test void battleLookupRequiresAnEnabledStartedBattleAndToleratesUnavailableIntegrations() {
+        UUID playerId = player.getUniqueId();
         assertFalse(BattleFoodGate.inStartedBattle(null)); assertFalse(BattleFoodGate.inStartedBattle(player));
         Plugin factions=MockBukkit.createMockPlugin("SimpleFactions");
         assertFalse(BattleFoodGate.inStartedBattle(player));
         Battle battle=mock(Battle.class);
-        when(battle.getSideByMemberId(player.getUniqueId())).thenReturn(mock(BattleSide.class));
+        when(battle.getSideByMemberId(playerId)).thenReturn(mock(BattleSide.class));
         BattleManager.addBattle(battle); assertFalse(BattleFoodGate.inStartedBattle(player));
         when(battle.hasStarted()).thenReturn(true); assertTrue(BattleFoodGate.inStartedBattle(player));
-        doThrow(new NoClassDefFoundError("older dependency")).when(battle).getSideByMemberId(player.getUniqueId());
+        doThrow(new NoClassDefFoundError("older dependency")).when(battle).getSideByMemberId(playerId);
         assertFalse(BattleFoodGate.inStartedBattle(player));
-        doThrow(new IllegalStateException("offline")).when(battle).getSideByMemberId(player.getUniqueId());
+        doThrow(new IllegalStateException("offline")).when(battle).getSideByMemberId(playerId);
         assertFalse(BattleFoodGate.inStartedBattle(player));
         server.getPluginManager().disablePlugin(factions); assertFalse(BattleFoodGate.inStartedBattle(player));
     }
@@ -171,7 +178,7 @@ class NutritionListenersCoverageTest {
         FoodLevelChangeEvent event=new FoodLevelChangeEvent(player,1);
         guard.onFoodLevelChange(event); assertTrue(event.isCancelled());
         server.getScheduler().performOneTick(); assertEquals(10,player.getFoodLevel());
-        PlayerMock duringSync=spy(player);
+        PlayerMock duringSync=player;
         doAnswer(call->{
             FoodLevelChangeEvent nested=new FoodLevelChangeEvent(duringSync,call.getArgument(0));
             guard.onFoodLevelChange(nested); assertFalse(nested.isCancelled()); return null;
@@ -225,13 +232,23 @@ class NutritionListenersCoverageTest {
         assertEquals(100,character.getFoodValue());
         PlayerItemConsumeEvent raw=consume(stack("raw",false,"meat",Material.BEEF),EquipmentSlot.HAND);
         listener.onConsume(raw); assertTrue(raw.isCancelled()); assertTrue(player.nextMessage().contains("prepared"));
-        PlayerItemConsumeEvent cooked=consume(stack("cooked",true,"meat",Material.COOKED_BEEF),EquipmentSlot.HAND);
-        listener.onConsume(cooked); assertFalse(cooked.isCancelled()); assertEquals(110,character.getFoodValue());
+        ItemStack cookedStack=stack("cooked",true,"meat",Material.COOKED_BEEF); cookedStack.setAmount(2);
+        player.getInventory().setItemInMainHand(cookedStack);
+        PlayerItemConsumeEvent cooked=consume(cookedStack,EquipmentSlot.HAND);
+        listener.onConsume(cooked); assertFalse(cooked.isCancelled());
+        assertEquals(100,character.getFoodValue()); verifyNoInteractions(players);
+        assertEquals(2,player.getInventory().getItemInMainHand().getAmount());
+        spendOne(EquipmentSlot.HAND); // Vanilla commits consumption after the event returns.
+        server.getScheduler().performOneTick();
+        assertEquals(110,character.getFoodValue());
+        assertEquals(1,player.getInventory().getItemInMainHand().getAmount());
+        verify(players).savePlayer(player);
     }
 
     @Test void bowlEatingRequiresAnEmptyHandAndConsumesOnlyEdibleSoup() {
         MockBukkit.createMockPlugin("RPCharacters");
-        Furniture bowl=mock(Furniture.class); when(bowl.getId()).thenReturn("bowl"); when(bowl.getLoc()).thenReturn(player.getLocation());
+        var bowlLocation=player.getLocation();
+        Furniture bowl=mock(Furniture.class); when(bowl.getId()).thenReturn("bowl"); when(bowl.getLoc()).thenReturn(bowlLocation);
         Map<String,PlacedSlot> slots=new HashMap<>(); when(bowl.getActiveSlots()).thenReturn(slots);
         when(bowl.hasActiveSlot(anyString())).thenAnswer(call->slots.containsKey(call.getArgument(0)));
         PlateManager plates=mock(PlateManager.class); BowlEatHandler listener=new BowlEatHandler(plates);
@@ -295,7 +312,10 @@ class NutritionListenersCoverageTest {
         player.getInventory().setItem(3,new ItemStack(Material.GLASS_BOTTLE)); player.getInventory().setHeldItemSlot(4);
         server.getScheduler().performOneTick(); assertEquals(Material.BOWL,player.getInventory().getItem(3).getType());
         ItemStack milk=stack("cup_of_milk",true,"drink",Material.POTION);
-        listener.onDrink(consume(milk,EquipmentSlot.OFF_HAND)); player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        player.getInventory().setItemInOffHand(milk);
+        listener.onDrink(consume(milk,EquipmentSlot.OFF_HAND));
+        assertEquals(100,character.getFoodValue()); verifyNoInteractions(players);
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
         server.getScheduler().performOneTick(); assertEquals(Material.BOWL,player.getInventory().getItemInOffHand().getType());
         assertEquals(110,character.getFoodValue());
         ItemStack untrackedMilk=new ItemStack(Material.HONEY_BOTTLE);
@@ -304,6 +324,336 @@ class NutritionListenersCoverageTest {
         water.setAmount(2); listener.onDrink(consume(water,EquipmentSlot.HAND));
         player.getInventory().setItemInMainHand(new ItemStack(Material.GLASS_BOTTLE));
         server.getScheduler().performOneTick(); assertEquals(Material.GLASS_BOTTLE,player.getInventory().getItemInMainHand().getType());
+    }
+
+    @Test void staleStartCannotInitializeAReplacementGenerationOfTheSameCharacter() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        NutritionLifecycleListener listener = new NutritionLifecycleListener();
+        CharacterSession original = characters.activate(player, character.getId());
+        characters.activate(player, UUID.randomUUID());
+        CharacterSession replacement = characters.activate(player, character.getId());
+        character.setRawDietScore(40); player.setFoodLevel(17); player.setSaturation(6);
+
+        listener.onCharacterStart(new CharacterSessionStartEvent(player, original));
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+        assertNull(character.getLastDietTierId()); verifyNoInteractions(players);
+        characters.set(player, null);
+        listener.onCharacterStart(new CharacterSessionStartEvent(player, replacement));
+        assertEquals(17, player.getFoodLevel()); verifyNoInteractions(players);
+        characters.set(player, replacement);
+        listener.onCharacterStart(new CharacterSessionStartEvent(player, replacement));
+        assertEquals(10, player.getFoodLevel()); assertEquals(0, player.getSaturation());
+        assertNotNull(character.getLastDietTierId()); verify(players).savePlayer(player);
+    }
+
+    @Test void deathAndRespawnWaitForSharedReadinessDespiteLoadedRpcData() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        characters.set(player, null);
+        character.setFoodValue(15); player.setFoodLevel(17); player.setSaturation(6);
+        NutritionLifecycleListener listener = new NutritionLifecycleListener();
+        PlayerDeathEvent death = mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
+        PlayerRespawnEvent respawn = mock(PlayerRespawnEvent.class); when(respawn.getPlayer()).thenReturn(player);
+
+        listener.onPlayerDeath(death); listener.onPlayerRespawn(respawn);
+
+        assertEquals(15, character.getFoodValue()); assertEquals(17, player.getFoodLevel());
+        assertEquals(6, player.getSaturation()); verifyNoInteractions(players);
+    }
+
+    @Test void deathBattleLookupReentryCannotResetOrSaveTheReplacementSession() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(15);
+        PlayerDeathEvent death = mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
+        try (MockedStatic<BattleFoodGate> gate = mockStatic(BattleFoodGate.class)) {
+            gate.when(() -> BattleFoodGate.inStartedBattle(player)).thenAnswer(call -> {
+                characters.activate(player, UUID.randomUUID());
+                characters.activate(player, character.getId());
+                return false;
+            });
+            new NutritionLifecycleListener().onPlayerDeath(death);
+        }
+        assertEquals(15, character.getFoodValue()); verifyNoInteractions(players);
+    }
+
+    @Test void pendingIdentityDoesNotQueueFoodOrSaturationWrites() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        characters.set(player, null); player.setFoodLevel(17); player.setSaturation(6);
+        FoodLevelChangeEvent food = new FoodLevelChangeEvent(player, 4);
+        new FoodLevelChangeGuard().onFoodLevelChange(food);
+        new SaturationGuard().onFoodLevelChange(new FoodLevelChangeEvent(player, 4));
+        characters.activate(player, character.getId());
+        server.getScheduler().performOneTick();
+        assertTrue(food.isCancelled());
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+    }
+
+    @Test void deferredFoodSaturationAndCupWorkCannotFollowAnActorThroughAtoBtoA() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack water = new ItemStack(Material.POTION);
+        when(api.getChecker().checkItemWithPath(water, "cup.water")).thenReturn(true);
+        player.getInventory().setHeldItemSlot(3);
+        new FoodLevelChangeGuard().onFoodLevelChange(new FoodLevelChangeEvent(player, 4));
+        new SaturationGuard().onFoodLevelChange(new FoodLevelChangeEvent(player, 4));
+        new DrinkConsumeListener().onDrink(consume(water, EquipmentSlot.HAND));
+        characters.activate(player, UUID.randomUUID());
+        characters.activate(player, character.getId());
+        player.setFoodLevel(17); player.setSaturation(6);
+        player.getInventory().setItem(3, new ItemStack(Material.GLASS_BOTTLE));
+
+        server.getScheduler().performOneTick();
+
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+        assertEquals(Material.GLASS_BOTTLE, player.getInventory().getItem(3).getType());
+    }
+
+    @Test void standaloneSaturationWorkStopsIfAProviderArrivesBeforeItsCallback() {
+        characters.close();
+        SaturationGuard guard = new SaturationGuard();
+        player.setSaturation(5);
+        guard.onFoodLevelChange(new FoodLevelChangeEvent(player, 4));
+        server.getScheduler().performOneTick(); assertEquals(0, player.getSaturation());
+        player.setSaturation(5);
+        guard.onFoodLevelChange(new FoodLevelChangeEvent(player, 4));
+        characters.register();
+        server.getScheduler().performOneTick(); assertEquals(5, player.getSaturation());
+    }
+
+    @Test void milkBucketIsSpentBeforeNutritionCanSwitchToAReplacementBody() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("milk_bucket", true, "drink", Material.MILK_BUCKET);
+        player.getInventory().setItemInOffHand(milk);
+        doAnswer(call -> {
+            assertEquals(Material.BUCKET, player.getInventory().getItemInOffHand().getType(),
+                    "The outgoing character must already have spent the milk");
+            characters.activate(player, UUID.randomUUID());
+            player.getInventory().setItemInOffHand(new ItemStack(Material.MILK_BUCKET, 2));
+            return null;
+        }).when(players).savePlayer(player);
+
+        new DrinkConsumeListener().onMilkBucket(consume(milk, EquipmentSlot.OFF_HAND));
+
+        assertEquals(110, character.getFoodValue());
+        assertEquals(Material.MILK_BUCKET, player.getInventory().getItemInOffHand().getType());
+        assertEquals(2, player.getInventory().getItemInOffHand().getAmount());
+        assertTrue(player.getInventory().all(Material.BUCKET).isEmpty());
+        verify(players).savePlayer(player);
+    }
+
+    @Test void aMissingMilkBucketCannotGrantNutritionAndCreativeMilkRemainsUnspent() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        DrinkConsumeListener listener = new DrinkConsumeListener();
+        ItemStack milk = stack("milk_bucket", true, "drink", Material.MILK_BUCKET);
+        PlayerItemConsumeEvent missing = consume(milk, EquipmentSlot.OFF_HAND);
+        listener.onMilkBucket(missing);
+        assertTrue(missing.isCancelled());
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+
+        player.setGameMode(GameMode.CREATIVE);
+        player.getInventory().setItemInOffHand(milk);
+        listener.onMilkBucket(consume(milk, EquipmentSlot.OFF_HAND));
+        assertEquals(110, character.getFoodValue());
+        assertEquals(Material.MILK_BUCKET, player.getInventory().getItemInOffHand().getType());
+        assertTrue(player.getInventory().all(Material.BUCKET).isEmpty());
+        verify(players).savePlayer(player);
+    }
+
+    @Test void emptyCupReplacementPrecedesNutritionAndCannotOverwriteTheSuccessor() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("cup_of_milk", true, "drink", Material.POTION);
+        player.getInventory().setItemInOffHand(milk);
+        doAnswer(call -> {
+            assertEquals(Material.BOWL, player.getInventory().getItemInOffHand().getType(),
+                    "The consumed milk must have become its empty cup before nutrition callbacks");
+            characters.activate(player, UUID.randomUUID());
+            player.getInventory().setItemInOffHand(new ItemStack(Material.POTION, 2));
+            return null;
+        }).when(players).savePlayer(player);
+
+        new DrinkConsumeListener().onDrink(consume(milk, EquipmentSlot.OFF_HAND));
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+        // Simulate vanilla consuming the milk and leaving its bottle after the event.
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        server.getScheduler().performOneTick();
+
+        assertEquals(110, character.getFoodValue());
+        assertEquals(Material.POTION, player.getInventory().getItemInOffHand().getType());
+        assertEquals(2, player.getInventory().getItemInOffHand().getAmount());
+        verify(players).savePlayer(player);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void cancelledOrStaleFoodCallbacksCannotGrantNutrition(boolean cancelled) {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack cooked = stack("cooked_callback", true, "meat", Material.COOKED_BEEF);
+        cooked.setAmount(2); player.getInventory().setItemInMainHand(cooked);
+        PlayerItemConsumeEvent event = consume(cooked, EquipmentSlot.HAND);
+        new FoodConsumeListener().onConsume(event);
+        assertEquals(100, character.getFoodValue());
+        if (cancelled) {
+            event.setCancelled(true); // A later listener vetoes vanilla consumption.
+        } else {
+            spendOne(EquipmentSlot.HAND);
+            characters.activate(player, UUID.randomUUID());
+            characters.activate(player, character.getId());
+        }
+
+        server.getScheduler().performOneTick();
+
+        assertEquals(100, character.getFoodValue());
+        assertEquals(0, VarietyService.current(player).meals());
+        assertEquals(cancelled ? 2 : 1, player.getInventory().getItemInMainHand().getAmount());
+        verifyNoInteractions(players);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void cancelledOrStaleMilkCupCallbacksCannotGrantNutritionOrReplaceItems(boolean cancelled) {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("cup_of_milk", true, "drink", Material.POTION);
+        player.getInventory().setItemInOffHand(milk);
+        PlayerItemConsumeEvent event = consume(milk, EquipmentSlot.OFF_HAND);
+        new DrinkConsumeListener().onDrink(event);
+        assertEquals(100, character.getFoodValue());
+        if (cancelled) {
+            event.setCancelled(true);
+        } else {
+            player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+            characters.activate(player, UUID.randomUUID());
+            characters.activate(player, character.getId());
+        }
+
+        server.getScheduler().performOneTick();
+
+        assertEquals(100, character.getFoodValue());
+        assertEquals(0, VarietyService.current(player).meals());
+        assertEquals(cancelled ? Material.POTION : Material.GLASS_BOTTLE,
+                player.getInventory().getItemInOffHand().getType());
+        verifyNoInteractions(players);
+    }
+
+    @Test void bowlDetachesFoodBeforeNutritionCallbacksAndSkipsStaleActorFeedback() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        Furniture bowl = mock(Furniture.class);
+        var bowlLocation = player.getLocation();
+        when(bowl.getId()).thenReturn("bowl"); when(bowl.getLoc()).thenReturn(bowlLocation);
+        PlacedSlot slot = mock(PlacedSlot.class);
+        when(slot.getCurrentItem()).thenReturn(stack("soup", true, "soup", Material.MUSHROOM_STEW));
+        when(bowl.hasActiveSlot("food_item")).thenReturn(true);
+        when(bowl.getActiveSlots()).thenReturn(new HashMap<>(Map.of("food_item", slot)));
+        PlateManager plates = mock(PlateManager.class);
+        FurnitureInteractEvent event = mock(FurnitureInteractEvent.class);
+        when(event.getFurniture()).thenReturn(bowl); when(event.getPlayer()).thenReturn(player);
+        try (MockedStatic<InteractibleFurniture> furniture = mockStatic(InteractibleFurniture.class)) {
+            InteractibleFurniture plugin = mock(InteractibleFurniture.class, RETURNS_DEEP_STUBS);
+            furniture.when(InteractibleFurniture::getInstance).thenReturn(plugin);
+            doAnswer(call -> {
+                verify(plates).clear(bowl);
+                verify(plugin.getFurnitureManager()).markDirty(bowl);
+                characters.activate(player, UUID.randomUUID());
+                return null;
+            }).when(players).savePlayer(player);
+
+            new BowlEatHandler(plates).onInteract(event);
+
+            verify(plates).clear(bowl); verify(players).savePlayer(player);
+            verify(player, never()).swingMainHand();
+            assertEquals(110, character.getFoodValue());
+        }
+    }
+
+    @Test void emptyCupBuilderReentryCannotOverwriteTheReplacementHandOrApplyNutrition() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("cup_of_milk", true, "drink", Material.POTION);
+        player.getInventory().setItemInOffHand(milk);
+        when(api.getCreator().getItemFromPath("cup.empty")).thenAnswer(call -> {
+            characters.activate(player, UUID.randomUUID());
+            player.getInventory().setItemInOffHand(new ItemStack(Material.DIAMOND, 2));
+            return new ItemStack(Material.BOWL);
+        });
+        try (MockedStatic<NutritionService> nutrition = mockStatic(NutritionService.class)) {
+            new DrinkConsumeListener().onDrink(consume(milk, EquipmentSlot.OFF_HAND));
+            player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+            server.getScheduler().performOneTick();
+
+            assertEquals(Material.DIAMOND, player.getInventory().getItemInOffHand().getType());
+            assertEquals(2, player.getInventory().getItemInOffHand().getAmount());
+            nutrition.verifyNoInteractions();
+            verifyNoInteractions(players);
+        }
+    }
+
+    @Test void pendingFoodIntakeIsCancelledAndCanBeRetriedAfterReadiness() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack cooked = stack("pending_cooked", true, "meat", Material.COOKED_BEEF);
+        cooked.setAmount(2); player.getInventory().setItemInMainHand(cooked);
+        characters.set(player, null);
+        FoodConsumeListener listener = new FoodConsumeListener();
+        PlayerItemConsumeEvent pending = consume(cooked, EquipmentSlot.HAND);
+
+        listener.onConsume(pending);
+
+        assertTrue(pending.isCancelled());
+        assertEquals(2, player.getInventory().getItemInMainHand().getAmount());
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+        characters.activate(player, character.getId());
+        server.getScheduler().performOneTick();
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+
+        PlayerItemConsumeEvent ready = consume(cooked, EquipmentSlot.HAND);
+        listener.onConsume(ready);
+        assertFalse(ready.isCancelled());
+        spendOne(EquipmentSlot.HAND);
+        server.getScheduler().performOneTick();
+        assertEquals(1, player.getInventory().getItemInMainHand().getAmount());
+        assertEquals(110, character.getFoodValue()); verify(players).savePlayer(player);
+    }
+
+    @Test void pendingMilkBucketIntakePreservesItsInputUntilAReadyRetry() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("milk_bucket", true, "drink", Material.MILK_BUCKET);
+        player.getInventory().setItemInOffHand(milk);
+        characters.set(player, null);
+        DrinkConsumeListener listener = new DrinkConsumeListener();
+        PlayerItemConsumeEvent pending = consume(milk, EquipmentSlot.OFF_HAND);
+
+        listener.onMilkBucket(pending);
+
+        assertTrue(pending.isCancelled());
+        assertEquals(Material.MILK_BUCKET, player.getInventory().getItemInOffHand().getType());
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+        characters.activate(player, character.getId());
+        server.getScheduler().performOneTick();
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+
+        listener.onMilkBucket(consume(milk, EquipmentSlot.OFF_HAND));
+        assertEquals(Material.BUCKET, player.getInventory().getItemInOffHand().getType());
+        assertEquals(110, character.getFoodValue()); verify(players).savePlayer(player);
+    }
+
+    @Test void pendingMilkCupIntakeDoesNotQueueWorkForTheNextReadySession() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack milk = stack("cup_of_milk", true, "drink", Material.POTION);
+        player.getInventory().setItemInOffHand(milk);
+        characters.set(player, null);
+        DrinkConsumeListener listener = new DrinkConsumeListener();
+
+        listener.onDrink(consume(milk, EquipmentSlot.OFF_HAND));
+
+        assertEquals(Material.POTION, player.getInventory().getItemInOffHand().getType());
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        characters.activate(player, character.getId());
+        server.getScheduler().performOneTick();
+        assertEquals(Material.GLASS_BOTTLE, player.getInventory().getItemInOffHand().getType());
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+
+        player.getInventory().setItemInOffHand(milk);
+        listener.onDrink(consume(milk, EquipmentSlot.OFF_HAND));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        server.getScheduler().performOneTick();
+        assertEquals(Material.BOWL, player.getInventory().getItemInOffHand().getType());
+        assertEquals(110, character.getFoodValue()); verify(players).savePlayer(player);
     }
 
     private ItemStack stack(String id,boolean edible,String category,Material material) {
@@ -315,5 +665,11 @@ class NutritionListenersCoverageTest {
     }
     private PlayerItemConsumeEvent consume(ItemStack stack,EquipmentSlot hand) {
         return new PlayerItemConsumeEvent(player,stack,hand);
+    }
+
+    private void spendOne(EquipmentSlot hand) {
+        ItemStack remaining = player.getInventory().getItem(hand).clone();
+        remaining.setAmount(remaining.getAmount() - 1);
+        player.getInventory().setItem(hand, remaining.getAmount() == 0 ? null : remaining);
     }
 }

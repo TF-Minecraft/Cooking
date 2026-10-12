@@ -55,6 +55,7 @@ import org.mockito.MockedStatic;
 
 @SuppressWarnings("deprecation")
 class CommandManagerCoverageTest {
+    private net.tfminecraft.cooking.testsupport.TestCharacters identities;
     private final CommandManager commands = new CommandManager();
     private final Command command = mock(Command.class);
     private final List<MockedStatic<?>> statics = new ArrayList<>();
@@ -71,6 +72,7 @@ class CommandManagerCoverageTest {
         previousPlugin = Cooking.plugin;
         plugin = mock(Cooking.class);
         Cooking.plugin = plugin;
+        identities = new net.tfminecraft.cooking.testsupport.TestCharacters(plugin);
         InteractibleFurniture integration = mock(InteractibleFurniture.class);
         FurnitureManager manager = mock(FurnitureManager.class);
         when(integration.getFurnitureManager()).thenReturn(manager);
@@ -79,6 +81,7 @@ class CommandManagerCoverageTest {
     }
 
     @AfterEach void tearDown() {
+        identities.close();
         MockBukkit.unmock();
         for (int i = statics.size() - 1; i >= 0; i--) statics.get(i).close();
         Cooking.plugin = previousPlugin;
@@ -144,6 +147,7 @@ class CommandManagerCoverageTest {
         run("food", "Admin", "2");
         assertEquals(List.of("§cThat player has no active character."), messages());
         RPCharacter character = mock(RPCharacter.class);
+        ready(player, character);
         characters.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(character);
         run("food", "Admin", "NaN");
         assertEquals(List.of("§cFood must be a whole number."), messages());
@@ -158,6 +162,7 @@ class CommandManagerCoverageTest {
         PlayerMock target = server.addPlayer("Target");
         target.setOp(true);
         RPCharacter character = mock(RPCharacter.class);
+        ready(target, character);
         AtomicInteger food = new AtomicInteger(80);
         when(character.getFoodValue()).thenAnswer(call -> food.get());
         doAnswer(call -> { food.set(call.getArgument(0)); return null; }).when(character).setFoodValue(anyInt());
@@ -172,13 +177,49 @@ class CommandManagerCoverageTest {
 
         assertEquals(100, food.get());
         verify(manager).savePlayer(target);
-        display.verify(() -> NutritionDisplayService.sync(target, character, "admin"));
+        display.verify(() -> NutritionDisplayService.sync(argThat(context -> context.character() == character && context.player() == target), eq("admin")));
         assertEquals(List.of("§aSet Target's food from 80 to 100."), messages());
         assertEquals("§eYour food was set to 100 by Admin.", target.nextMessage());
         run(target, "food", "Target", "0");
         assertEquals(0, food.get());
         assertEquals("§aSet Target's food from 100 to 0.", target.nextMessage());
         assertNull(target.nextMessage());
+    }
+
+    @Test void foodCommandStopsAfterSaveOrDisplaySwitchesTheTargetSession() {
+        RPCharacter character = new RPCharacter(player);
+        ready(player, character);
+        PlayerManager manager = mock(PlayerManager.class);
+        MockedStatic<RPCharacters> characters = staticMock(RPCharacters.class);
+        characters.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(character);
+        characters.when(RPCharacters::getPlayerManager).thenReturn(manager);
+        MockedStatic<NutritionDisplayService> display = staticMock(NutritionDisplayService.class);
+        doAnswer(call -> {
+            identities.activate(player, character.getId());
+            return null;
+        }).when(manager).savePlayer(player);
+        run("food", "Admin", "100");
+        assertEquals(100, character.getFoodValue());
+        assertTrue(messages().isEmpty());
+        display.verify(() -> NutritionDisplayService.sync(any(net.tfminecraft.cooking.nutrition.NutritionContext.class), anyString()), never());
+        doNothing().when(manager).savePlayer(player);
+        display.when(() -> NutritionDisplayService.sync(any(net.tfminecraft.cooking.nutrition.NutritionContext.class), eq("admin")))
+            .thenAnswer(call -> { identities.set(player, null); return null; });
+        run("food", "Admin", "120");
+        assertEquals(120, character.getFoodValue());
+        assertTrue(messages().isEmpty());
+        run("food", "Admin", "130");
+        assertEquals(120, character.getFoodValue());
+        assertEquals(List.of("§cThat player has no active character."), messages());
+    }
+
+    private void ready(PlayerMock owner, RPCharacter character) {
+        if (!server.getPluginManager().isPluginEnabled("RPCharacters")) MockBukkit.createMockPlugin("RPCharacters");
+        if (mockingDetails(character).isMock()) {
+            when(character.getOwner()).thenReturn(owner);
+            when(character.getId()).thenReturn(UUID.randomUUID().toString());
+        }
+        identities.activate(owner, character.getId());
     }
 
     @Test void husbandryRejectsUnauthorizedSendersAndMalformedSpawnArguments() {
