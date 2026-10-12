@@ -34,7 +34,7 @@ public final class DrinkConsumeListener implements Listener {
         event.setCancelled(true);
 
         Player player = event.getPlayer();
-        PlayerActionContext context = PlayerActionContext.capture(player);
+        PlayerActionContext context = PlayerActionContext.captureOrRefuse(player);
         if (context == null) {
             return;
         }
@@ -45,6 +45,18 @@ public final class DrinkConsumeListener implements Listener {
         if (player.getGameMode() != GameMode.CREATIVE && !emptyDrunkBucket(player, event.getHand())) return;
         if (context.isCurrent() && food != null && "milk_bucket".equalsIgnoreCase(food.getId())) {
             NutritionService.tryApplyEat(player, food);
+        }
+    }
+
+    /** Keeps the cup when there is no character to drink it, like refused food. */
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    public void onCupWithoutCharacter(PlayerItemConsumeEvent event) {
+        ItemStack consumed = event.getItem();
+        if (consumed == null || !ItemCache.isCupOfWater(consumed) && !ItemCache.isCupOfMilk(consumed)) {
+            return;
+        }
+        if (PlayerActionContext.captureOrRefuse(event.getPlayer()) == null) {
+            event.setCancelled(true);
         }
     }
 

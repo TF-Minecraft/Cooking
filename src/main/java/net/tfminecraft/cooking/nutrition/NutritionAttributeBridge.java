@@ -50,19 +50,17 @@ public final class NutritionAttributeBridge {
         for (int i = 0; i < resources.length; i++) {
             before[i] = resources[i].getCurrent(data);
         }
-        if (!context.isCurrent()) return;
+        // setBase and setCurrent run MMOCore stat updates and resource events, which other plugins see.
         instance.setBase(diet);
         if (!context.isCurrent()) return;
         double healthCap = Math.min(health, player.getAttribute(Attribute.MAX_HEALTH).getValue());
         if (player.getHealth() < healthCap) {
-            if (!context.isCurrent()) return;
             player.setHealth(healthCap);
         }
         for (int i = 0; i < resources.length; i++) {
             if (!context.isCurrent()) return;
             double cap = Math.min(before[i], resources[i].getMax(data));
             if (resources[i].getCurrent(data) < cap) {
-                if (!context.isCurrent()) return;
                 resources[i].setCurrent(data, cap, ResourceUpdateReason.CLAMPING);
             }
         }

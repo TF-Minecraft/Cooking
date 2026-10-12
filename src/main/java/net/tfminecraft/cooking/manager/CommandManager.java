@@ -309,9 +309,17 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                 + " mappedAfter=" + NutritionDisplayService.toFoodLevel(character.getFoodValue())
                 + " hudBefore=" + target.getFoodLevel()
                 + " saturation=" + target.getSaturation());
-        if (!context.save()) return true;
+        if (!context.save()) {
+            sender.sendMessage("§cCould not confirm " + target.getName()
+                    + "'s food was saved: they switched character.");
+            return true;
+        }
         NutritionDisplayService.sync(context, "admin");
-        if (!context.isCurrent()) return true;
+        if (!context.isCurrent()) {
+            sender.sendMessage("§c" + target.getName()
+                    + "'s food was saved, but they switched character before their hunger bar updated.");
+            return true;
+        }
         NutritionLog.append("SAVE", target, character,
                 "reason=admin sender=" + sender.getName());
         sender.sendMessage("§aSet " + target.getName() + "'s food from " + before + " to "

@@ -33,6 +33,7 @@ import net.tfminecraft.cooking.nutrition.SaturationGuard;
 import net.tfminecraft.cooking.oven.*;
 import net.tfminecraft.cooking.sausagemaker.SausageMakerHandler;
 import net.tfminecraft.cooking.trough.*;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.tlibs.itemscan.ItemScanService;
 import net.tfminecraft.tlibs.objects.api.ItemAPI;
@@ -152,6 +153,26 @@ class CookingLifecycleTest {
         assertFalse(HandlerList.getRegisteredListeners(plugin).isEmpty());
         verify(built(CookingManager.class)).start();
         verify(built(PlateManager.class), never()).start();
+    }
+
+    @Test void startupWarnsWhenAnEnabledRPCharactersRegistersNoCharacterIdentity() {
+        java.util.logging.Logger logger = mock(java.util.logging.Logger.class);
+        Cooking.warnIfCharacterIdentityMissing(logger);
+        var characters = MockBukkit.createMockPlugin("RPCharacters");
+        server.getPluginManager().disablePlugin(characters);
+        Cooking.warnIfCharacterIdentityMissing(logger);
+        verifyNoInteractions(logger);
+
+        server.getPluginManager().enablePlugin(characters);
+        Cooking.warnIfCharacterIdentityMissing(logger);
+        verify(logger).warning(argThat((String message) -> message.startsWith("RPCharacters "
+                + characters.getPluginMeta().getVersion() + " provides no character identity")
+                && message.contains("RPCharacters 2.16.0 or newer") && message.contains("hunger bar stays frozen")));
+
+        try (TestCharacters identities = new TestCharacters(characters)) {
+            Cooking.warnIfCharacterIdentityMissing(logger);
+        }
+        verifyNoMoreInteractions(logger);
     }
 
     @Test void nextTickResumesLoadedStateAndShutdownReleasesScansTasksDatabaseAndPathHandler() {

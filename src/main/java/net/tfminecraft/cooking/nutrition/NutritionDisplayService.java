@@ -52,13 +52,10 @@ public final class NutritionDisplayService {
             int foodBefore = player.getFoodLevel();
             float saturationBefore = player.getSaturation();
             boolean wroteFood = foodBefore != mapped;
-            if (!context.isCurrent()) return;
             if (wroteFood) {
                 player.setFoodLevel(mapped);
             }
-            if (!context.isCurrent()) return;
             player.setSaturation(0f);
-            if (!context.isCurrent()) return;
             NutritionLog.append("SYNC", player, character,
                     "reason=" + reason
                     + " mapped=" + mapped

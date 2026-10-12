@@ -25,6 +25,7 @@ import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.manager.PlateManager;
 import net.tfminecraft.cooking.testsupport.TestCharacters;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -50,7 +51,6 @@ import org.bukkit.event.entity.EntityRegainHealthEvent.RegainReason;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -125,15 +125,15 @@ class NutritionListenersCoverageTest {
         listener.onCharacterStart(new CharacterSessionStartEvent(player,characters.activate(player,character.getId())));
         assertEquals(20,character.getDietScore()); assertNotNull(character.getLastDietTierId());
         PlayerDeathEvent death=mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
-        rp.when(()->RPCharacters.getActiveCharacter(player)).thenReturn(null); listener.onPlayerDeath(death);
+        rp.when(()->RPCharacters.getActiveCharacter(player)).thenReturn(null); die(listener,death);
         assertEquals(50,character.getFoodValue());
         rp.when(()->RPCharacters.getActiveCharacter(player)).thenReturn(character);
-        listener.onPlayerDeath(death); assertEquals(80,character.getFoodValue());
+        die(listener,death); assertEquals(80,character.getFoodValue());
         MockBukkit.createMockPlugin("SimpleFactions");
         Battle battle=mock(Battle.class); when(battle.hasStarted()).thenReturn(true);
         when(battle.getSideByMemberId(player.getUniqueId())).thenReturn(mock(BattleSide.class));
         BattleManager.addBattle(battle);
-        character.setFoodValue(15); listener.onPlayerDeath(death); assertEquals(15,character.getFoodValue());
+        character.setFoodValue(15); die(listener,death); assertEquals(15,character.getFoodValue());
     }
 
     @Test void battleLookupRequiresAnEnabledStartedBattleAndToleratesUnavailableIntegrations() {
@@ -152,10 +152,8 @@ class NutritionListenersCoverageTest {
         server.getPluginManager().disablePlugin(factions); assertFalse(BattleFoodGate.inStartedBattle(player));
     }
 
-    @Test void saturationGuardsHandleJoinEventsAndOnePeriodicTask() {
+    @Test void saturationGuardsHandleFoodEventsAndOnePeriodicTask() {
         SaturationGuard guard=new SaturationGuard();
-        player.setSaturation(5); guard.onJoin(new PlayerJoinEvent(player,"joined"));
-        assertEquals(0,player.getSaturation());
         guard.onFoodLevelChange(new FoodLevelChangeEvent(mock(HumanEntity.class),4));
         player.setSaturation(4); guard.onFoodLevelChange(new FoodLevelChangeEvent(player,4));
         assertEquals(4,player.getSaturation()); server.getScheduler().performOneTick(); assertEquals(0,player.getSaturation());
@@ -354,7 +352,7 @@ class NutritionListenersCoverageTest {
         PlayerDeathEvent death = mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
         PlayerRespawnEvent respawn = mock(PlayerRespawnEvent.class); when(respawn.getPlayer()).thenReturn(player);
 
-        listener.onPlayerDeath(death); listener.onPlayerRespawn(respawn);
+        die(listener, death); listener.onPlayerRespawn(respawn);
 
         assertEquals(15, character.getFoodValue()); assertEquals(17, player.getFoodLevel());
         assertEquals(6, player.getSaturation()); verifyNoInteractions(players);
@@ -370,9 +368,45 @@ class NutritionListenersCoverageTest {
                 characters.activate(player, character.getId());
                 return false;
             });
-            new NutritionLifecycleListener().onPlayerDeath(death);
+            die(new NutritionLifecycleListener(), death);
         }
         assertEquals(15, character.getFoodValue()); verifyNoInteractions(players);
+    }
+
+    @Test void permakillResetsNeitherTheDeadCharacterNorItsReplacement() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(15);
+        RPCharacter replacement = new RPCharacter(player); replacement.setFoodValue(90);
+        NutritionLifecycleListener listener = new NutritionLifecycleListener();
+        PlayerDeathEvent death = mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
+
+        listener.captureDeath(death);
+        // RPCharacters' permakill switches to the replacement at MONITOR, before Cooking's handler.
+        rp.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(replacement);
+        characters.activate(player, replacement.getId());
+        listener.onPlayerDeath(death);
+
+        assertEquals(15, character.getFoodValue()); assertEquals(90, replacement.getFoodValue());
+        verifyNoInteractions(players);
+        // The next ordinary death resets the replacement as usual.
+        die(listener, death);
+        assertEquals(80, replacement.getFoodValue()); verify(players).savePlayer(player);
+    }
+
+    @Test void cancelledDeathsAndUncapturedDeathsLeaveFoodAlone() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(15);
+        NutritionLifecycleListener listener = new NutritionLifecycleListener();
+        PlayerDeathEvent death = mock(PlayerDeathEvent.class); when(death.getEntity()).thenReturn(player);
+
+        listener.captureDeath(death); when(death.isCancelled()).thenReturn(true); listener.onPlayerDeath(death);
+        when(death.isCancelled()).thenReturn(false); listener.onPlayerDeath(death);
+
+        assertEquals(15, character.getFoodValue()); verifyNoInteractions(players);
+    }
+
+    private static void die(NutritionLifecycleListener listener, PlayerDeathEvent death) {
+        listener.captureDeath(death); listener.onPlayerDeath(death);
     }
 
     @Test void pendingIdentityDoesNotQueueFoodOrSaturationWrites() {
@@ -594,6 +628,7 @@ class NutritionListenersCoverageTest {
         listener.onConsume(pending);
 
         assertTrue(pending.isCancelled());
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, player.nextMessage());
         assertEquals(2, player.getInventory().getItemInMainHand().getAmount());
         assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
         characters.activate(player, character.getId());
@@ -620,6 +655,7 @@ class NutritionListenersCoverageTest {
         listener.onMilkBucket(pending);
 
         assertTrue(pending.isCancelled());
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, player.nextMessage());
         assertEquals(Material.MILK_BUCKET, player.getInventory().getItemInOffHand().getType());
         assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
         characters.activate(player, character.getId());
@@ -629,6 +665,39 @@ class NutritionListenersCoverageTest {
         listener.onMilkBucket(consume(milk, EquipmentSlot.OFF_HAND));
         assertEquals(Material.BUCKET, player.getInventory().getItemInOffHand().getType());
         assertEquals(110, character.getFoodValue()); verify(players).savePlayer(player);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"cup.water", "cup_of_milk"})
+    void pendingCupIsKeptWithAMessageLikeRefusedFood(String cup) {
+        MockBukkit.createMockPlugin("RPCharacters");
+        ItemStack drink = cup.equals("cup.water") ? new ItemStack(Material.POTION) : stack(cup, true, "drink", Material.POTION);
+        when(api.getChecker().checkItemWithPath(drink, "cup.water")).thenReturn(cup.equals("cup.water"));
+        when(api.getChecker().checkItemWithPath(drink, "cup.milk")).thenReturn(!cup.equals("cup.water"));
+        player.getInventory().setItemInMainHand(drink);
+        characters.set(player, null);
+        DrinkConsumeListener listener = new DrinkConsumeListener();
+        PlayerItemConsumeEvent pending = consume(drink, EquipmentSlot.HAND);
+
+        listener.onCupWithoutCharacter(pending);
+
+        assertTrue(pending.isCancelled());
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, player.nextMessage());
+        assertEquals(drink, player.getInventory().getItemInMainHand());
+        characters.activate(player, character.getId());
+        PlayerItemConsumeEvent ready = consume(drink, EquipmentSlot.HAND);
+        listener.onCupWithoutCharacter(ready);
+        assertFalse(ready.isCancelled()); assertNull(player.nextMessage());
+    }
+
+    @Test void cupRefusalIgnoresOtherItems() {
+        characters.set(player, null);
+        PlayerItemConsumeEvent bread = consume(new ItemStack(Material.BREAD), EquipmentSlot.HAND);
+        PlayerItemConsumeEvent nothing = mock(PlayerItemConsumeEvent.class);
+        new DrinkConsumeListener().onCupWithoutCharacter(bread);
+        new DrinkConsumeListener().onCupWithoutCharacter(nothing);
+        assertFalse(bread.isCancelled()); verify(nothing, never()).setCancelled(anyBoolean());
+        assertNull(player.nextMessage());
     }
 
     @Test void pendingMilkCupIntakeDoesNotQueueWorkForTheNextReadySession() {

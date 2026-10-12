@@ -200,14 +200,15 @@ class CommandManagerCoverageTest {
         }).when(manager).savePlayer(player);
         run("food", "Admin", "100");
         assertEquals(100, character.getFoodValue());
-        assertTrue(messages().isEmpty());
+        assertEquals(List.of("§cCould not confirm Admin's food was saved: they switched character."), messages());
         display.verify(() -> NutritionDisplayService.sync(any(net.tfminecraft.cooking.nutrition.NutritionContext.class), anyString()), never());
         doNothing().when(manager).savePlayer(player);
         display.when(() -> NutritionDisplayService.sync(any(net.tfminecraft.cooking.nutrition.NutritionContext.class), eq("admin")))
             .thenAnswer(call -> { identities.set(player, null); return null; });
         run("food", "Admin", "120");
         assertEquals(120, character.getFoodValue());
-        assertTrue(messages().isEmpty());
+        assertEquals(List.of("§cAdmin's food was saved, but they switched character before their hunger bar updated."),
+                messages());
         run("food", "Admin", "130");
         assertEquals(120, character.getFoodValue());
         assertEquals(List.of("§cThat player has no active character."), messages());

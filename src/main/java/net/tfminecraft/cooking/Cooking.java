@@ -1,8 +1,10 @@
 package net.tfminecraft.cooking;
 
 import java.io.File;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import net.tfminecraft.tlibs.TLibs;
@@ -167,6 +169,7 @@ public class Cooking extends JavaPlugin {
             butterChurnHandler.resumeLoadedChurns();
             liquidContainerHandler.resumeLoadedContainers();
             meatHookHandler.resumeLoadedHooks();
+            warnIfCharacterIdentityMissing(getLogger());
             SaturationGuard.start();
             NutritionDrainTask.start();
             Bukkit.getOnlinePlayers().forEach(NutritionLifecycleListener::initializeCurrent);
@@ -185,6 +188,16 @@ public class Cooking extends JavaPlugin {
             ItemScanService.get().subscribe(tagManager);
             ItemScanService.get().subscribe(legacyFishScan);
         }
+    }
+
+    /** Runs once every plugin has enabled, when RPCharacters 2.16.0+ has registered its provider. */
+    static void warnIfCharacterIdentityMissing(Logger logger) {
+        Plugin characters = Bukkit.getPluginManager().getPlugin("RPCharacters");
+        if (characters == null || !characters.isEnabled() || Characters.available()) return;
+        logger.warning("RPCharacters " + characters.getPluginMeta().getVersion()
+                + " provides no character identity; Cooking needs RPCharacters 2.16.0 or newer."
+                + " Until then food and drink give no nutrition, hunger does not drain and the"
+                + " hunger bar stays frozen.");
     }
 
     @Override

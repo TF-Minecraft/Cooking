@@ -1,5 +1,8 @@
 package net.tfminecraft.cooking.nutrition;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -11,6 +14,8 @@ import net.tfminecraft.rpcharacters.objects.RPCharacter;
 import net.tfminecraft.tlibs.character.CharacterSessionStartEvent;
 
 public final class NutritionLifecycleListener implements Listener {
+
+    private final Map<Player, NutritionContext> dying = new HashMap<>();
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onCharacterStart(CharacterSessionStartEvent event) {
@@ -45,17 +50,28 @@ public final class NutritionLifecycleListener implements Listener {
         NutritionDisplayService.syncFromPlayer(player, "respawn");
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    /** A permakill switches to the replacement at MONITOR, so remember who actually died. */
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+    public void captureDeath(PlayerDeathEvent event) {
+        NutritionContext context = NutritionContext.capture(event.getEntity());
+        if (context != null) dying.put(event.getEntity(), context);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onPlayerDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        NutritionContext context = NutritionContext.capture(player);
+        NutritionContext context = dying.remove(player);
+        if (event.isCancelled()) return;
         if (context == null) {
             NutritionLog.append("DEATH", player, null, "action=skip cause=no-active-character");
             return;
         }
         RPCharacter character = context.character();
         boolean inBattle = BattleFoodGate.inStartedBattle(player);
-        if (!context.isCurrent()) return;
+        if (!context.isCurrent()) {
+            NutritionLog.append("DEATH", player, character, "action=skip cause=character-ended");
+            return;
+        }
         if (inBattle) {
             NutritionLog.append("DEATH", player, character,
                     "hud=" + player.getFoodLevel() + " saturation=" + player.getSaturation()

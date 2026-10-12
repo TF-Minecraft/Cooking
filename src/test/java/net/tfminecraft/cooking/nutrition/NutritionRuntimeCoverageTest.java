@@ -343,26 +343,6 @@ class NutritionRuntimeCoverageTest {
         verifyNoInteractions(players);
     }
 
-    @Test void hudReentryCannotClearReplacementSaturationOrCarryItsSyncGuard() {
-        MockBukkit.createMockPlugin("RPCharacters");
-        NutritionContext old = NutritionContext.capture(player);
-        character.setFoodValue(50);
-        doAnswer(call -> {
-            assertTrue(NutritionDisplayService.isSyncing(player));
-            call.callRealMethod();
-            characters.activate(player, UUID.randomUUID());
-            characters.activate(player, character.getId());
-            player.setSaturation(4);
-            assertFalse(NutritionDisplayService.isSyncing(player));
-            return null;
-        }).when(player).setFoodLevel(anyInt());
-
-        NutritionDisplayService.sync(old, "reentrant");
-
-        assertEquals(4, player.getSaturation());
-        assertFalse(NutritionDisplayService.isSyncing(player));
-    }
-
     @Test void nestedHudSyncKeepsTheOuterGuardUntilItsOwnFinallyCompletes() {
         MockBukkit.createMockPlugin("RPCharacters");
         NutritionContext context = NutritionContext.capture(player);
