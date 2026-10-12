@@ -34,6 +34,8 @@ public record PlayerActionContext(Player player, CharacterSession session) {
             int now = Bukkit.getCurrentTick();
             Refusal last = lastRefusal.get(player.getUniqueId());
             if (last == null || last.player().get() != player || now - last.tick() >= REFUSAL_COOLDOWN_TICKS) {
+                // Only refusals still inside the cooldown matter, so the map holds at most a few seconds' worth.
+                lastRefusal.values().removeIf(old -> now - old.tick() >= REFUSAL_COOLDOWN_TICKS);
                 lastRefusal.put(player.getUniqueId(), new Refusal(new WeakReference<>(player), now));
                 player.sendMessage(NO_CHARACTER_MESSAGE);
             }

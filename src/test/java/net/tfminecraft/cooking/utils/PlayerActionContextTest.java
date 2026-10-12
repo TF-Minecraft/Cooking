@@ -67,6 +67,18 @@ class PlayerActionContextTest {
         assertNull(player.nextMessage());
     }
 
+    @Test void expiredRefusalsAreForgottenWhenAnotherPlayerIsRefused() throws Exception {
+        java.lang.reflect.Field field=PlayerActionContext.class.getDeclaredField("lastRefusal");
+        field.setAccessible(true);
+        java.util.Map<?,?> refusals=(java.util.Map<?,?>) field.get(null);
+        refusals.clear();
+        PlayerMock other=server.addPlayer();
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        server.getScheduler().performTicks(60);
+        assertNull(PlayerActionContext.captureOrRefuse(other));
+        assertEquals(java.util.Set.of(other.getUniqueId()), refusals.keySet());
+    }
+
     @Test void readyContextCapturesExactTokenAndRejectsSwitchBackGeneration() {
         UUID characterId=UUID.randomUUID();
         CharacterSession original=characters.activate(player,characterId);
