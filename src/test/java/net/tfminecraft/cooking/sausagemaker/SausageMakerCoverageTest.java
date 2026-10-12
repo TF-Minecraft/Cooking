@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.sausagemaker;
 
+import net.tfminecraft.cooking.utils.PlayerActionContext;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -255,6 +257,7 @@ public class SausageMakerCoverageTest {
             var pending = station.interact();
             handler.onInteract(pending);
             assertTrue(pending.isCancelled());
+            assertEquals(List.of(PlayerActionContext.NO_CHARACTER_MESSAGE), env.messages);
             assertEquals(2, casing.getAmount());
             assertEquals(3, station.active.size());
             assertTrue(env.outputs().isEmpty());

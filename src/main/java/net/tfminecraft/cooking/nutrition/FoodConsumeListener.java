@@ -38,7 +38,7 @@ public final class FoodConsumeListener implements Listener {
             return;
         }
 
-        PlayerActionContext context = PlayerActionContext.capture(event.getPlayer());
+        PlayerActionContext context = PlayerActionContext.captureOrRefuse(event.getPlayer());
         if (context == null) {
             event.setCancelled(true);
             return;

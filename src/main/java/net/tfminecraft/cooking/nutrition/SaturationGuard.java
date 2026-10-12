@@ -6,7 +6,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
 import net.tfminecraft.cooking.utils.PlayerActionContext;
@@ -39,16 +38,6 @@ public final class SaturationGuard implements Listener {
         }
         Bukkit.getScheduler().cancelTask(taskId);
         taskId = -1;
-    }
-
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        if (PlayerActionContext.capture(player) == null) return;
-        float before = player.getSaturation();
-        player.setSaturation(0f);
-        NutritionLog.append("SATURATION", player, null,
-                "reason=join before=" + before + " after=" + player.getSaturation());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

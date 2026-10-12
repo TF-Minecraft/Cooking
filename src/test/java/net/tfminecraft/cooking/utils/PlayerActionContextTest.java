@@ -40,6 +40,45 @@ class PlayerActionContextTest {
         assertNull(PlayerActionContext.capture(player));
     }
 
+    @Test void refusedActionsTellThePlayerAtMostEveryThreeSeconds() {
+        assertNull(PlayerActionContext.captureOrRefuse(null));
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, player.nextMessage());
+        assertNull(player.nextMessage());
+        server.getScheduler().performTicks(59);
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        assertNull(player.nextMessage());
+        server.getScheduler().performOneTick();
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, player.nextMessage());
+        server.getPlayerList().disconnectPlayer(player);
+        PlayerMock rejoined=new PlayerMock(server,player.getName(),player.getUniqueId());
+        server.addPlayer(rejoined);
+        assertNull(PlayerActionContext.captureOrRefuse(rejoined));
+        assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, rejoined.nextMessage());
+        player=rejoined;
+
+        characters.activate(player,UUID.randomUUID());
+        assertNotNull(PlayerActionContext.captureOrRefuse(player));
+        assertNull(player.nextMessage());
+        characters.close();
+        assertNotNull(PlayerActionContext.captureOrRefuse(player));
+        assertNull(player.nextMessage());
+    }
+
+    @Test void expiredRefusalsAreForgottenWhenAnotherPlayerIsRefused() throws Exception {
+        java.lang.reflect.Field field=PlayerActionContext.class.getDeclaredField("lastRefusal");
+        field.setAccessible(true);
+        java.util.Map<?,?> refusals=(java.util.Map<?,?>) field.get(null);
+        refusals.clear();
+        PlayerMock other=server.addPlayer();
+        assertNull(PlayerActionContext.captureOrRefuse(player));
+        server.getScheduler().performTicks(60);
+        assertNull(PlayerActionContext.captureOrRefuse(other));
+        assertEquals(java.util.Set.of(other.getUniqueId()), refusals.keySet());
+    }
+
     @Test void readyContextCapturesExactTokenAndRejectsSwitchBackGeneration() {
         UUID characterId=UUID.randomUUID();
         CharacterSession original=characters.activate(player,characterId);

@@ -65,7 +65,7 @@ public final class BowlEatHandler implements Listener {
             player.sendMessage("§cThis needs to be prepared before you can eat it.");
             return;
         }
-        PlayerActionContext context = PlayerActionContext.capture(player);
+        PlayerActionContext context = PlayerActionContext.captureOrRefuse(player);
         if (context == null) return;
         food.updateAge();
         if (!context.isCurrent()) return;

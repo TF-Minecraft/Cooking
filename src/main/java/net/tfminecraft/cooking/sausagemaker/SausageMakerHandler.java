@@ -67,7 +67,7 @@ public final class SausageMakerHandler implements Listener {
         }
 
         Player player = event.getPlayer();
-        PlayerActionContext context = PlayerActionContext.capture(player);
+        PlayerActionContext context = PlayerActionContext.captureOrRefuse(player);
         if (context == null) {
             event.setCancelled(true);
             return;

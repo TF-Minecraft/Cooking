@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.farming;
 
+import net.tfminecraft.cooking.utils.PlayerActionContext;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -140,6 +142,7 @@ public class FarmingCoverageTest {
             f.on(BlockBreakEvent.class, event -> breaks.incrementAndGet());
             FarmHarvestService.harvestArea(f.player, f.tool(), hoe(), crop);
             assertEquals(Material.WHEAT, crop.getType());
+            assertEquals(PlayerActionContext.NO_CHARACTER_MESSAGE, f.player.nextMessage());
             assertEquals(0, breaks.get());
             assertEquals(0, ((Damageable) f.tool().getItemMeta()).getDamage());
             assertEquals(0, f.inventoryCount(Material.WHEAT));

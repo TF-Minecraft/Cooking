@@ -39,7 +39,7 @@ public final class FarmHarvestService {
         if (player == null || tool == null || hoe == null || centre == null) {
             return;
         }
-        PlayerActionContext context = PlayerActionContext.capture(player);
+        PlayerActionContext context = PlayerActionContext.captureOrRefuse(player);
         if (context == null) {
             return;
         }
