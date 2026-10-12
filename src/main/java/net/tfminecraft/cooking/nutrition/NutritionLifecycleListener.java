@@ -11,6 +11,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import net.tfminecraft.rpcharacters.permadeath.PermadeathService;
 import net.tfminecraft.tlibs.character.CharacterSessionStartEvent;
 
 public final class NutritionLifecycleListener implements Listener {
@@ -67,6 +68,11 @@ public final class NutritionLifecycleListener implements Listener {
             return;
         }
         RPCharacter character = context.character();
+        // Administrative permakill activates the successor before the delayed body death.
+        if (PermadeathService.isAwaitingPermakillRespawn(player)) {
+            NutritionLog.append("DEATH", player, character, "action=skip cause=permakill-respawn");
+            return;
+        }
         boolean inBattle = BattleFoodGate.inStartedBattle(player);
         if (!context.isCurrent()) {
             NutritionLog.append("DEATH", player, character, "action=skip cause=character-ended");
