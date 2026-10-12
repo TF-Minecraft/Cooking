@@ -34,6 +34,7 @@ import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.rpcharacters.managers.PlayerManager;
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
+import net.tfminecraft.rpcharacters.permadeath.PermadeathService;
 import net.tfminecraft.simplefactions.war.battle.engine.core.Battle;
 import net.tfminecraft.simplefactions.war.battle.engine.core.BattleManager;
 import net.tfminecraft.simplefactions.war.battle.engine.core.BattleSide;
@@ -403,6 +404,45 @@ class NutritionListenersCoverageTest {
         when(death.isCancelled()).thenReturn(false); listener.onPlayerDeath(death);
 
         assertEquals(15, character.getFoodValue()); verifyNoInteractions(players);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {199, 200})
+    void commandPermakillDelayedDeathPreservesSuccessorFood(int successorFood) {
+        Plugin plugin = MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(119);
+        RPCharacter successor = new RPCharacter(player);
+        successor.setFoodValue(successorFood);
+        NutritionLifecycleListener listener = new NutritionLifecycleListener();
+        PlayerDeathEvent death = mock(PlayerDeathEvent.class);
+        when(death.getEntity()).thenReturn(player);
+
+        // Administrative permakill activates the successor before scheduling the body's death.
+        rp.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(successor);
+        characters.activate(player, successor.getId());
+        PermadeathService.markPendingPermakillSounds(player);
+        try {
+            server.getScheduler().runTask(plugin, () -> die(listener, death));
+            server.getScheduler().performOneTick();
+
+            assertEquals(119, character.getFoodValue());
+            assertEquals(successorFood, successor.getFoodValue());
+            verifyNoInteractions(players);
+
+            // RPCharacters consumes this flag on respawn; later ordinary deaths still reset food.
+            assertTrue(PermadeathService.consumePendingPermakillSounds(player));
+            PlayerRespawnEvent respawn = mock(PlayerRespawnEvent.class);
+            when(respawn.getPlayer()).thenReturn(player);
+            player.setFoodLevel(8);
+            listener.onPlayerRespawn(respawn);
+            assertEquals(successorFood, successor.getFoodValue());
+            assertEquals(20, player.getFoodLevel());
+            die(listener, death);
+            assertEquals(80, successor.getFoodValue());
+            verify(players).savePlayer(player);
+        } finally {
+            PermadeathService.clearPendingPermadeathRespawn(player);
+        }
     }
 
     private static void die(NutritionLifecycleListener listener, PlayerDeathEvent death) {
