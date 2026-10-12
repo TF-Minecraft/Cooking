@@ -18,10 +18,17 @@ public final class NutritionAttributeBridge {
         if (player == null || character == null) {
             return;
         }
+        apply(NutritionContext.capture(player, character));
+    }
+
+    public static void apply(NutritionContext context) {
+        if (context == null || !context.isCurrent()) return;
         if (!Bukkit.getPluginManager().isPluginEnabled("MMOCore")) {
             return;
         }
 
+        Player player = context.player();
+        RPCharacter character = context.character();
         String attrId = NutritionConfig.attributeName();
         PlayerData data = PlayerData.get(player);
         AttributeInstance instance = data.getAttributes().getInstance(attrId);
@@ -43,14 +50,19 @@ public final class NutritionAttributeBridge {
         for (int i = 0; i < resources.length; i++) {
             before[i] = resources[i].getCurrent(data);
         }
+        if (!context.isCurrent()) return;
         instance.setBase(diet);
+        if (!context.isCurrent()) return;
         double healthCap = Math.min(health, player.getAttribute(Attribute.MAX_HEALTH).getValue());
         if (player.getHealth() < healthCap) {
+            if (!context.isCurrent()) return;
             player.setHealth(healthCap);
         }
         for (int i = 0; i < resources.length; i++) {
+            if (!context.isCurrent()) return;
             double cap = Math.min(before[i], resources[i].getMax(data));
             if (resources[i].getCurrent(data) < cap) {
+                if (!context.isCurrent()) return;
                 resources[i].setCurrent(data, cap, ResourceUpdateReason.CLAMPING);
             }
         }

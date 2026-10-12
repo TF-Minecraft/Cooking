@@ -16,12 +16,12 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.Location;
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.Transformation;
@@ -35,6 +35,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.ItemDisplayMock;
+import org.mockbukkit.mockbukkit.entity.PlayerMock;
+import org.mockbukkit.mockbukkit.world.WorldMock;
 import org.mockito.MockedStatic;
 
 import net.tfminecraft.cooking.Cooking;
@@ -51,6 +53,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
@@ -245,6 +248,264 @@ public class SausageMakerCoverageTest {
     }
 
     @Test
+    void pendingCharacterCannotCrankButAReadyCharacterCanFinish() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin)) {
+            fill();
+            ItemStack casing = env.hold(new ItemStack(Material.PAPER, 2));
+            var pending = station.interact();
+            handler.onInteract(pending);
+            assertTrue(pending.isCancelled());
+            assertEquals(2, casing.getAmount());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            env.composer.verifyNoInteractions();
+
+            characters.activate(env.player, UUID.randomUUID());
+            handler.onInteract(station.interact());
+            assertEquals(1, casing.getAmount());
+            assertTrue(station.active.isEmpty());
+            assertEquals(1, env.outputs().size());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending", "aba", "reconnect", "provider-arrival", "provider-loss"})
+    void staleAnimationPreservesSharedMeatsAndBothCharactersCasing(String change) {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin)) {
+            UUID character = UUID.randomUUID();
+            var origin = characters.activate(env.player, character);
+            if (change.equals("provider-arrival")) characters.close();
+            fill();
+            env.display(station.id);
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            handler.onInteract(station.interact());
+            assertTrue(SausageMakerAnimation.isAnimating(station.furniture));
+            PlayerMock current = env.player;
+            switch (change) {
+                case "pending" -> characters.set(env.player, null);
+                case "aba" -> {
+                    characters.activate(env.player, UUID.randomUUID());
+                    characters.activate(env.player, character);
+                }
+                case "reconnect" -> {
+                    env.player.disconnect();
+                    current = new PlayerMock(env.server, "Processor", env.player.getUniqueId());
+                    env.server.addPlayer(current);
+                    characters.set(current, origin);
+                    assertSame(current, Bukkit.getPlayer(env.player.getUniqueId()));
+                }
+                case "provider-arrival" -> characters.register();
+                case "provider-loss" -> characters.close();
+                default -> fail("Unknown identity change");
+            }
+            current.getInventory().setItemInMainHand(new ItemStack(Material.PAPER, 5));
+            env.server.getScheduler().performTicks(10);
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(5, current.getInventory().getItemInMainHand().getAmount());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+            assertFalse(SausageMakerAnimation.isAnimating(station.furniture));
+            env.composer.verifyNoInteractions();
+        }
+    }
+
+    @Test
+    void itemBuilderSwitchCannotConsumeInputsOrAwardTheSuccessor() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            env.display(station.id);
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            env.builder.when(() -> ItemBuilder.buildComposedWithQuality(any(), anyInt())).thenAnswer(call -> {
+                ItemStack result = env.build(call.getArgument(0), call.getArgument(1));
+                characters.activate(env.player, UUID.randomUUID());
+                env.hold(new ItemStack(Material.PAPER, 5));
+                return result;
+            });
+            handler.onInteract(station.interact());
+            env.server.getScheduler().performTicks(10);
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInMainHand().getAmount());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+            verify(env.manager, never()).markDirty(station.furniture);
+        }
+    }
+
+    @Test
+    void casingCheckerSwitchBeforeConsumptionPreservesEveryInput() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin);
+             MockedStatic<CasingPaper> paper = mockStatic(CasingPaper.class)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            AtomicInteger checks = new AtomicInteger();
+            paper.when(() -> CasingPaper.isCasing(any())).thenAnswer(call -> {
+                if (checks.incrementAndGet() == 3) {
+                    characters.activate(env.player, UUID.randomUUID());
+                    env.hold(new ItemStack(Material.PAPER, 5));
+                }
+                return true;
+            });
+            handler.onInteract(station.interact());
+            assertEquals(3, checks.get());
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInMainHand().getAmount());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"start", "completion"})
+    void casingAvailabilityCallbackSwitchCannotStartOrCompleteARecipe(String phase) {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin);
+             MockedStatic<CasingPaper> paper = mockStatic(CasingPaper.class)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            env.display(station.id);
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            AtomicInteger checks = new AtomicInteger();
+            int switchOnCheck = phase.equals("start") ? 1 : 2;
+            paper.when(() -> CasingPaper.isCasing(any())).thenAnswer(call -> {
+                if (checks.incrementAndGet() == switchOnCheck) {
+                    characters.activate(env.player, UUID.randomUUID());
+                    env.hold(new ItemStack(Material.PAPER, 5));
+                }
+                return true;
+            });
+            var event = station.interact();
+            handler.onInteract(event);
+            assertTrue(event.isCancelled());
+            assertEquals(phase.equals("completion"), SausageMakerAnimation.isAnimating(station.furniture));
+            env.server.getScheduler().performTicks(10);
+            assertEquals(switchOnCheck, checks.get());
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInMainHand().getAmount());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+            env.composer.verifyNoInteractions();
+            verify(env.manager, never()).markDirty(station.furniture);
+        }
+    }
+
+    @Test
+    void offhandCasingCheckSwitchPreservesTheOriginalAndSuccessorCasing() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin);
+             MockedStatic<CasingPaper> paper = mockStatic(CasingPaper.class)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            env.hold(new ItemStack(Material.STICK));
+            env.player.getInventory().setItemInOffHand(new ItemStack(Material.PAPER, 2));
+            ItemStack originalCasing = env.player.getInventory().getItemInOffHand();
+            AtomicInteger offhandChecks = new AtomicInteger();
+            paper.when(() -> CasingPaper.isCasing(any())).thenAnswer(call -> {
+                ItemStack stack = call.getArgument(0);
+                if (stack == null || stack.getType() != Material.PAPER) return false;
+                if (offhandChecks.incrementAndGet() == 3) {
+                    characters.activate(env.player, UUID.randomUUID());
+                    env.player.getInventory().setItemInOffHand(new ItemStack(Material.PAPER, 5));
+                }
+                return true;
+            });
+            handler.onInteract(station.interact());
+            assertEquals(3, offhandChecks.get());
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInOffHand().getAmount());
+            assertEquals(Material.STICK, env.player.getInventory().getItemInMainHand().getType());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+            verify(env.manager, never()).markDirty(station.furniture);
+        }
+    }
+
+    @Test
+    void itemBuilderRemovingCasingWhileCurrentCannotConsumeMeatsOrAwardAChain() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin)) {
+            var origin = characters.activate(env.player, UUID.randomUUID());
+            fill();
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            env.builder.when(() -> ItemBuilder.buildComposedWithQuality(any(), anyInt())).thenAnswer(call -> {
+                ItemStack result = env.build(call.getArgument(0), call.getArgument(1));
+                env.hold(new ItemStack(Material.STICK));
+                return result;
+            });
+            handler.onInteract(station.interact());
+            assertTrue(net.tfminecraft.tlibs.character.Characters.isCurrent(origin));
+            assertEquals(2, originalCasing.getAmount());
+            assertEquals(Material.STICK, env.player.getInventory().getItemInMainHand().getType());
+            assertEquals(3, station.active.size());
+            assertTrue(env.outputs().isEmpty());
+            assertTrue(env.dropped.isEmpty());
+            verify(env.manager, never()).markDirty(station.furniture);
+        }
+    }
+
+    @Test
+    void furnitureCallbackAfterConsumptionDropsCommittedOutputAtTheCapturedStation() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin);
+             MockedStatic<InventoryAdder> delivery = mockStatic(InventoryAdder.class)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            Location originalLocation = station.furniture.getLoc().clone();
+            World successorWorld = mock(World.class);
+            doAnswer(call -> {
+                assertEquals(1, originalCasing.getAmount());
+                assertTrue(station.active.isEmpty());
+                characters.activate(env.player, UUID.randomUUID());
+                env.hold(new ItemStack(Material.PAPER, 5));
+                when(station.furniture.getLoc()).thenReturn(new Location(successorWorld, 100, 80, 100));
+                return null;
+            }).when(env.manager).markDirty(station.furniture);
+            handler.onInteract(station.interact());
+            delivery.verifyNoInteractions();
+            assertEquals(1, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInMainHand().getAmount());
+            assertTrue(station.active.isEmpty());
+            assertTrue(env.outputs().isEmpty());
+            assertEquals(1, env.dropped.size());
+            assertEquals("sausage_chain", env.resolve(env.dropped.getFirst()).getId());
+            verify(env.world).dropItemNaturally(eq(originalLocation), any(ItemStack.class));
+            verify(successorWorld, never()).dropItemNaturally(any(Location.class), any(ItemStack.class));
+        }
+    }
+
+    @Test
+    void awardCallbackSeesConsumedInputsAndCannotChargeTheSuccessorCasing() {
+        try (TestCharacters characters = new TestCharacters(Cooking.plugin);
+             MockedStatic<InventoryAdder> delivery = mockStatic(InventoryAdder.class)) {
+            characters.activate(env.player, UUID.randomUUID());
+            fill();
+            ItemStack originalCasing = env.hold(new ItemStack(Material.PAPER, 2));
+            Location originalLocation = station.furniture.getLoc().clone();
+            World successorWorld = mock(World.class);
+            delivery.when(() -> InventoryAdder.addItem(eq(env.player), any())).thenAnswer(call -> {
+                assertEquals(1, originalCasing.getAmount(), "Consume the casing before handing off the chain");
+                assertTrue(station.active.isEmpty(), "Consume the meats before handing off the chain");
+                characters.activate(env.player, UUID.randomUUID());
+                env.hold(new ItemStack(Material.PAPER, 5));
+                when(station.furniture.getLoc()).thenReturn(new Location(successorWorld, 100, 80, 100));
+                return call.getArgument(1);
+            });
+            handler.onInteract(station.interact());
+            delivery.verify(() -> InventoryAdder.addItem(eq(env.player), any()), times(1));
+            assertEquals(1, originalCasing.getAmount());
+            assertEquals(5, env.player.getInventory().getItemInMainHand().getAmount());
+            assertTrue(station.active.isEmpty());
+            assertTrue(env.outputs().isEmpty());
+            assertEquals(1, env.dropped.size());
+            verify(env.world).dropItemNaturally(eq(originalLocation), any(ItemStack.class));
+            verify(successorWorld, never()).dropItemNaturally(any(Location.class), any(ItemStack.class));
+        }
+    }
+
+    @Test
     void batchTotalsIgnoreMissingMeatsAndKeepTemplateNutritionForAnEmptyBatch() {
         FoodItem chain = env.food("sausage_chain", "Mixed", 2); chain.setBaseNutrition(9);
         SausageItems.applyBatchTotals(chain, null);
@@ -295,8 +556,8 @@ public class SausageMakerCoverageTest {
     /** Shared public fixture keeps the two processor suites on real inventories, food values and scheduler ticks. */
     public static final class Workshop implements AutoCloseable {
         public final ServerMock server = MockBukkit.mock();
-        public final Player player = mock(Player.class);
-        public final World world = mock(World.class);
+        public final PlayerMock player = spy(new PlayerMock(server, "Processor"));
+        public final World world = mock(WorldMock.class);
         public final FurnitureManager manager = mock(FurnitureManager.class);
         public final ItemAPI api = mock(ItemAPI.class, RETURNS_DEEP_STUBS);
         public final List<ItemStack> dropped = new ArrayList<>();
@@ -325,10 +586,10 @@ public class SausageMakerCoverageTest {
             when(Cooking.plugin.getName()).thenReturn("Cooking");
             when(Cooking.plugin.namespace()).thenReturn("cooking");
             when(Cooking.plugin.isEnabled()).thenReturn(true);
-            when(player.getInventory()).thenReturn(server.addPlayer().getInventory());
-            when(player.isOnline()).thenReturn(true);
-            when(player.getWorld()).thenReturn(world);
-            when(player.getLocation()).thenReturn(new Location(world, 1, 64, 1));
+            server.addPlayer(player);
+            doNothing().when(player).swingMainHand();
+            doReturn(world).when(player).getWorld();
+            doReturn(new Location(world, 1, 64, 1)).when(player).getLocation();
             when(world.getUID()).thenReturn(UUID.randomUUID()); when(world.getName()).thenReturn("processors");
             when(world.dropItemNaturally(any(Location.class), any(ItemStack.class))).thenAnswer(inv -> {
                 dropped.add(((ItemStack) inv.getArgument(1)).clone()); return mock(Item.class);

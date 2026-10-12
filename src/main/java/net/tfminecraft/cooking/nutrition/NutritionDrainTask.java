@@ -4,7 +4,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.cooking.Cooking;
 
 public final class NutritionDrainTask {
@@ -57,16 +56,9 @@ public final class NutritionDrainTask {
     }
 
     private static void inspectPlayers(boolean due, int elapsedAtPulse, int interval) {
-        if (!Bukkit.getPluginManager().isPluginEnabled("RPCharacters")) {
-            NutritionLog.append("DRAIN_SKIP", null, null,
-                    "elapsed=" + elapsedAtPulse + " interval=" + interval
-                    + " cause=rpcharacters-unavailable");
-            return;
-        }
-
         for (Player player : Bukkit.getOnlinePlayers()) {
-            RPCharacter character = RPCharacters.getActiveCharacter(player);
-            if (character == null) {
+            NutritionContext context = NutritionContext.capture(player);
+            if (context == null) {
                 NutritionLog.append("DRAIN_SKIP", player, null,
                         "elapsed=" + elapsedAtPulse + " interval=" + interval
                         + " cause=no-active-character"
@@ -74,6 +66,7 @@ public final class NutritionDrainTask {
                         + " saturation=" + player.getSaturation());
                 continue;
             }
+            RPCharacter character = context.character();
             int currentFood = character.getFoodValue();
             int mappedBefore = NutritionDisplayService.toFoodLevel(currentFood);
             if (!due) {
@@ -113,8 +106,8 @@ public final class NutritionDrainTask {
                     + " mappedAfter=" + NutritionDisplayService.toFoodLevel(character.getFoodValue())
                     + " hudBefore=" + player.getFoodLevel()
                     + " saturation=" + player.getSaturation());
-            NutritionDisplayService.sync(player, character, "drain");
-            RPCharacters.getPlayerManager().savePlayer(player);
+            if (!context.save()) continue;
+            NutritionDisplayService.sync(context, "drain");
             NutritionLog.append("SAVE", player, character, "reason=drain");
         }
     }

@@ -15,6 +15,7 @@ import net.tfminecraft.cooking.loader.ConversionLoader;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 
 public final class MilkBucketConverter implements Listener {
 
@@ -70,13 +71,20 @@ public final class MilkBucketConverter implements Listener {
         }
 
         Player player = event.getPlayer();
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
+            return;
+        }
         ItemStack filled = event.getItemStack();
         ItemStack converted = convert(player, filled);
-        if (converted == null || converted.equals(filled)) {
+        if (converted == null || converted.equals(filled) || !context.isCurrent()) {
             return;
         }
 
         Bukkit.getScheduler().runTask(Cooking.plugin, () -> {
+            if (!context.isCurrent()) {
+                return;
+            }
             ItemStack main = player.getInventory().getItemInMainHand();
             if (main != null && main.getType() == Material.MILK_BUCKET && FoodItem.fromItem(main) == null) {
                 converted.setAmount(main.getAmount());

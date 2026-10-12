@@ -382,13 +382,13 @@ public class MealManagersCoverageTest {
         conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 1));
         assertEquals(3, env.player.getInventory().getItem(4).getAmount(), "Paper fires its own pickup when some of it fits");
         Item other = mock(Item.class); when(other.getItemStack()).thenReturn(ground.clone()); when(other.getOwner()).thenReturn(UUID.randomUUID());
-        when(env.player.getCanPickupItems()).thenReturn(true); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, other, 2));
+        doReturn(true).when(env.player).getCanPickupItems(); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, other, 2));
         Item stone = mock(Item.class); when(stone.getItemStack()).thenReturn(new ItemStack(Material.STONE));
         conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, stone, 1));
-        when(env.player.getCanPickupItems()).thenReturn(false);
+        doReturn(false).when(env.player).getCanPickupItems();
         conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 2));
         assertEquals(3, env.player.getInventory().getItem(4).getAmount(), "A player who cannot pick items up is left alone");
-        when(env.player.getCanPickupItems()).thenReturn(true); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 2));
+        doReturn(true).when(env.player).getCanPickupItems(); conversions.attemptPickup(new PlayerAttemptPickupItemEvent(env.player, item, 2));
         assertEquals(5, env.player.getInventory().getItem(4).getAmount()); verify(item).remove(); verify(other, never()).remove();
     }
 

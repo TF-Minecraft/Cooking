@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 import org.bukkit.Bukkit;
 import org.bukkit.Tag;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -45,12 +47,16 @@ public class BundleFoodStacker implements Listener {
     public void onClick(InventoryClickEvent e) {
         if (!isBundle(e.getCursor()) && !isBundle(e.getCurrentItem())) return;
 
-        HumanEntity player = e.getWhoClicked();
+        if (!(e.getWhoClicked() instanceof Player player)) return;
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) return;
         Inventory clicked = e.getClickedInventory();
         int slot = e.getSlot();
         // The bundle changes after this event, so merge on the next tick. Read the cursor and the
         // slot again then: the player may have moved things in between.
-        nextTick.accept(() -> stackBundles(player, clicked, slot));
+        nextTick.accept(() -> {
+            if (context.isCurrent()) stackBundles(player, clicked, slot);
+        });
     }
 
     static void stackBundles(HumanEntity player, Inventory clicked, int slot) {

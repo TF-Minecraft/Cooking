@@ -7,6 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import io.lumine.mythic.lib.player.resource.ResourceUpdateReason;
 import net.Indyuce.mmocore.api.player.PlayerData;
@@ -17,6 +20,7 @@ import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.QualityConfig;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.rpcharacters.RPCharacters;
 import net.tfminecraft.rpcharacters.managers.PlayerManager;
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
@@ -41,6 +45,7 @@ class NutritionRuntimeCoverageTest {
     private MockedStatic<RPCharacters> rp;
     private Cooking previousPlugin;
     private List<TagTrack> tracks;
+    private TestCharacters characters;
 
     @BeforeEach void setup() {
         server = MockBukkit.mock();
@@ -49,7 +54,10 @@ class NutritionRuntimeCoverageTest {
         when(Cooking.plugin.getName()).thenReturn("Cooking");
         when(Cooking.plugin.namespace()).thenReturn("cooking");
         when(Cooking.plugin.getLogger()).thenReturn(mock(Logger.class));
-        player = server.addPlayer(); character = new RPCharacter(player);
+        player = spy(new PlayerMock(server, "Eater")); server.addPlayer(player);
+        character = new RPCharacter(player);
+        characters = new TestCharacters(MockBukkit.createMockPlugin("CharacterProvider"));
+        characters.activate(player, character.getId());
         players = mock(PlayerManager.class);
         rp = mockStatic(RPCharacters.class);
         rp.when(RPCharacters::getPlayerManager).thenReturn(players);
@@ -63,7 +71,7 @@ class NutritionRuntimeCoverageTest {
         NutritionDrainTask.stop(); SaturationGuard.stop();
         NutritionLog.configure(false,false,null); NutritionConfig.load(new YamlConfiguration());
         TrackLoader.oList.clear(); TrackLoader.oList.addAll(tracks);
-        rp.close(); MockBukkit.unmock(); Cooking.plugin = previousPlugin;
+        characters.close(); rp.close(); MockBukkit.unmock(); Cooking.plugin = previousPlugin;
     }
 
     @Test void eatingUpdatesTheCharacterHistoryHudAndPersistenceOnlyWhenFoodIsGained() {
@@ -116,16 +124,17 @@ class NutritionRuntimeCoverageTest {
         NutritionDisplayService.sync(null,character); NutritionDisplayService.sync(player,null);
         NutritionDisplayService.syncFromPlayer(null);
         NutritionDisplayService.syncFromPlayer(player);
+        MockBukkit.createMockPlugin("RPCharacters");
         character.setFoodValue(100); player.setSaturation(4);
         NutritionDisplayService.sync(player,character);
         assertEquals(10,player.getFoodLevel()); assertEquals(0,player.getSaturation());
         NutritionDisplayService.sync(player,character); assertFalse(NutritionDisplayService.isSyncing(player));
-        MockBukkit.createMockPlugin("RPCharacters");
         character.setFoodValue(80); NutritionDisplayService.syncFromPlayer(player);
         assertEquals(8,player.getFoodLevel());
         rp.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(null);
         NutritionDisplayService.syncFromPlayer(player); assertEquals(8,player.getFoodLevel());
-        PlayerMock failing = spy(player);
+        rp.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(character);
+        PlayerMock failing = player;
         doAnswer(call -> {
             assertTrue(NutritionDisplayService.isSyncing(failing));
             throw new IllegalStateException("Disconnected during HUD update");
@@ -177,10 +186,11 @@ class NutritionRuntimeCoverageTest {
         assertEquals(1,VarietyService.current(player).meals());
         VarietyService.applyEffective(player,character); assertEquals(20,character.getDietScore());
         assertFalse(DietTierService.seedIfAbsent(null,character)); assertFalse(DietTierService.seedIfAbsent(player,null));
-        assertTrue(DietTierService.seedIfAbsent(player,character)); assertFalse(DietTierService.seedIfAbsent(player,character));
+        assertFalse(DietTierService.seedIfAbsent(player,character));
         verifyNoInteractions(players);
         MockBukkit.createMockPlugin("RPCharacters"); character.setLastDietTierId(" ");
         assertTrue(DietTierService.seedIfAbsent(player,character)); verify(players).savePlayer(player);
+        assertFalse(DietTierService.seedIfAbsent(player,character));
         DietTierService.checkAndNotify(null,character,null); DietTierService.checkAndNotify(player,null,null);
         DietTierService.checkAndNotify(player,character,null); assertNull(player.nextMessage());
         character.setDietScore(0); DietTierService.checkAndNotify(player,character,null);
@@ -192,6 +202,7 @@ class NutritionRuntimeCoverageTest {
     }
 
     @Test void attributeBridgeOnlyUpdatesAvailableConfiguredAttributes() {
+        MockBukkit.createMockPlugin("RPCharacters");
         NutritionAttributeBridge.apply(null,character); NutritionAttributeBridge.apply(player,null);
         NutritionAttributeBridge.apply(player,character);
         MockBukkit.createMockPlugin("MMOCore");
@@ -212,6 +223,7 @@ class NutritionRuntimeCoverageTest {
     }
 
     @Test void attributeBridgeGivesBackHealthAndManaClampedWhileTheBuffsAreReplaced() {
+        MockBukkit.createMockPlugin("RPCharacters");
         MockBukkit.createMockPlugin("MMOCore");
         try (MockedStatic<PlayerData> data = mockStatic(PlayerData.class)) {
             PlayerData pd = mock(PlayerData.class,RETURNS_DEEP_STUBS);
@@ -273,6 +285,215 @@ class NutritionRuntimeCoverageTest {
         VarietyHistory history=VarietyHistory.of(List.of(IngredientLineage.ofMain("Wheat")),5);
         var noWeights=VarietyMath.evaluate(history,0,0,8,60);
         assertEquals(0,noWeights.penaltyPercent()); assertEquals(100,noWeights.progressPercent());
+    }
+
+    @Test void loadedRpcDataCannotAuthorizeNutritionWhileSharedIdentityIsUnavailableOrPending() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(100);
+        player.setFoodLevel(17); player.setSaturation(6);
+        characters.close();
+        NutritionService.tryApplyEat(player, food(10, 40));
+        NutritionDisplayService.sync(player, character);
+        assertNull(NutritionContext.capture(player));
+        characters.register(); characters.set(player, null);
+        NutritionService.tryApplyEat(player, food(10, 40));
+        NutritionDisplayService.syncFromPlayer(player);
+        assertFalse(DietTierService.seedIfAbsent(player, character));
+        assertEquals(100, character.getFoodValue());
+        assertEquals(0, character.getRawDietScore());
+        assertEquals(0, VarietyService.current(player).meals());
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+        verifyNoInteractions(players);
+        characters.activate(player, character.getId());
+        NutritionService.tryApplyEat(player, food(10, 40));
+        assertEquals(110, character.getFoodValue());
+        verify(players).savePlayer(player);
+    }
+
+    @Test void bridgeChecksRpcOwnerCharacterAndCanonicalIdBeforeExposingMutableData() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        String originalId = character.getId();
+        character.setOwner(server.addPlayer("Other"));
+        assertNull(NutritionContext.capture(player));
+        character.setOwner(player);
+        character.setId(UUID.randomUUID().toString());
+        assertNull(NutritionContext.capture(player));
+        character.setId("malformed");
+        assertNull(NutritionContext.capture(player));
+        character.setId(originalId.toUpperCase(Locale.ROOT));
+        assertSame(character, NutritionContext.capture(player).character());
+        assertNull(NutritionContext.capture(player, new RPCharacter(player)));
+        verifyNoInteractions(players);
+    }
+
+    @Test void returningToTheSameCharacterDoesNotReviveCapturedNutritionWork() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        NutritionContext old = NutritionContext.capture(player);
+        assertNotNull(old);
+        characters.activate(player, UUID.randomUUID());
+        characters.activate(player, character.getId());
+        character.setFoodValue(20); player.setFoodLevel(17); player.setSaturation(6);
+        NutritionDisplayService.sync(old, "stale");
+        NutritionAttributeBridge.apply(old);
+        assertFalse(old.save());
+        assertFalse(DietTierService.seedIfAbsent(old));
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+        assertNull(character.getLastDietTierId());
+        assertFalse(NutritionDisplayService.isSyncing(player));
+        verifyNoInteractions(players);
+    }
+
+    @Test void hudReentryCannotClearReplacementSaturationOrCarryItsSyncGuard() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        NutritionContext old = NutritionContext.capture(player);
+        character.setFoodValue(50);
+        doAnswer(call -> {
+            assertTrue(NutritionDisplayService.isSyncing(player));
+            call.callRealMethod();
+            characters.activate(player, UUID.randomUUID());
+            characters.activate(player, character.getId());
+            player.setSaturation(4);
+            assertFalse(NutritionDisplayService.isSyncing(player));
+            return null;
+        }).when(player).setFoodLevel(anyInt());
+
+        NutritionDisplayService.sync(old, "reentrant");
+
+        assertEquals(4, player.getSaturation());
+        assertFalse(NutritionDisplayService.isSyncing(player));
+    }
+
+    @Test void nestedHudSyncKeepsTheOuterGuardUntilItsOwnFinallyCompletes() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        NutritionContext context = NutritionContext.capture(player);
+        character.setFoodValue(50);
+        AtomicInteger writes = new AtomicInteger();
+        doAnswer(call -> {
+            assertTrue(NutritionDisplayService.isSyncing(player));
+            if (writes.getAndIncrement() == 0) {
+                NutritionDisplayService.sync(context, "inner");
+                assertTrue(NutritionDisplayService.isSyncing(player));
+            }
+            return call.callRealMethod();
+        }).when(player).setFoodLevel(anyInt());
+
+        NutritionDisplayService.sync(context, "outer");
+
+        assertEquals(2, writes.get());
+        assertEquals(5, player.getFoodLevel());
+        assertFalse(NutritionDisplayService.isSyncing(player));
+    }
+
+    @Test void attributeReentryAfterSetBaseStopsAllOutgoingResourceRestoration() {
+        MockBukkit.createMockPlugin("RPCharacters"); MockBukkit.createMockPlugin("MMOCore");
+        try (MockedStatic<PlayerData> data = mockStatic(PlayerData.class)) {
+            AttributeInstance attribute = mock(AttributeInstance.class);
+            PlayerData pd = attributeData(data, attribute);
+            when(pd.getMana()).thenReturn(30.0);
+            character.setDietScore(36);
+            doAnswer(call -> {
+                player.setHealth(16);
+                characters.activate(player, UUID.randomUUID());
+                characters.activate(player, character.getId());
+                return null;
+            }).when(attribute).setBase(36);
+
+            NutritionAttributeBridge.apply(player, character);
+
+            assertEquals(16, player.getHealth());
+            verify(pd, never()).setMana(anyDouble(), any(ResourceUpdateReason.class));
+            verify(pd, never()).setStamina(anyDouble(), any(ResourceUpdateReason.class));
+            verify(pd, never()).setStellium(anyDouble(), any(ResourceUpdateReason.class));
+        }
+    }
+
+    @Test void healthRestorationCallbackStopsSubsequentManaRestoration() {
+        MockBukkit.createMockPlugin("RPCharacters"); MockBukkit.createMockPlugin("MMOCore");
+        try (MockedStatic<PlayerData> data = mockStatic(PlayerData.class)) {
+            AttributeInstance attribute = mock(AttributeInstance.class);
+            PlayerData pd = attributeData(data, attribute);
+            double[] mana = {30}; when(pd.getMana()).thenAnswer(call -> mana[0]);
+            doAnswer(call -> {
+                player.setHealth(16); mana[0] = 20; return null;
+            }).when(attribute).setBase(36);
+            doAnswer(call -> {
+                call.callRealMethod();
+                if ((double) call.getArgument(0) == 20) characters.set(player, null);
+                return null;
+            }).when(player).setHealth(anyDouble());
+            character.setDietScore(36);
+
+            NutritionAttributeBridge.apply(player, character);
+
+            assertEquals(20, player.getHealth());
+            verify(pd, never()).setMana(anyDouble(), any(ResourceUpdateReason.class));
+        }
+    }
+
+    @Test void manaRestorationCallbackStopsLaterStaminaAndStelliumWrites() {
+        MockBukkit.createMockPlugin("RPCharacters"); MockBukkit.createMockPlugin("MMOCore");
+        try (MockedStatic<PlayerData> data = mockStatic(PlayerData.class)) {
+            AttributeInstance attribute = mock(AttributeInstance.class);
+            PlayerData pd = attributeData(data, attribute);
+            double[] values = {30, 8, 30};
+            when(pd.getMana()).thenAnswer(call -> values[0]);
+            when(pd.getStamina()).thenAnswer(call -> values[1]);
+            when(pd.getStellium()).thenAnswer(call -> values[2]);
+            doAnswer(call -> {
+                values[0] = 20; values[1] = 3; values[2] = 10; return null;
+            }).when(attribute).setBase(36);
+            doAnswer(call -> {
+                characters.close(); return null;
+            }).when(pd).setMana(30.0, ResourceUpdateReason.CLAMPING);
+            character.setDietScore(36);
+
+            NutritionAttributeBridge.apply(player, character);
+
+            verify(pd).setMana(30.0, ResourceUpdateReason.CLAMPING);
+            verify(pd, never()).setStamina(anyDouble(), any(ResourceUpdateReason.class));
+            verify(pd, never()).setStellium(anyDouble(), any(ResourceUpdateReason.class));
+        }
+    }
+
+    @Test void saveReentryCannotApplyOutgoingHudToTheReplacementCharacter() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        character.setFoodValue(100);
+        RPCharacter replacement = new RPCharacter(player);
+        doAnswer(call -> {
+            rp.when(() -> RPCharacters.getActiveCharacter(player)).thenReturn(replacement);
+            characters.activate(player, replacement.getId());
+            player.setFoodLevel(17); player.setSaturation(6);
+            return null;
+        }).when(players).savePlayer(player);
+
+        NutritionService.tryApplyEat(player, food(10, 0));
+
+        assertEquals(110, character.getFoodValue());
+        assertEquals(200, replacement.getFoodValue());
+        assertEquals(0, replacement.getRawDietScore());
+        assertEquals(17, player.getFoodLevel()); assertEquals(6, player.getSaturation());
+        verify(players).savePlayer(player);
+    }
+
+    @Test void drainWaitsForReadinessEvenWhenRpcStillHasAnActiveCharacter() {
+        MockBukkit.createMockPlugin("RPCharacters");
+        configure("nutrition.drain-interval", 1, "nutrition.drain-amount", 3);
+        character.setFoodValue(100); characters.set(player, null);
+        NutritionDrainTask.start(); server.getScheduler().performTicks(20);
+        assertEquals(100, character.getFoodValue()); verifyNoInteractions(players);
+        characters.activate(player, character.getId());
+        server.getScheduler().performTicks(20);
+        assertEquals(97, character.getFoodValue()); verify(players).savePlayer(player);
+    }
+
+    private PlayerData attributeData(MockedStatic<PlayerData> data, AttributeInstance attribute) {
+        PlayerData pd = mock(PlayerData.class, RETURNS_DEEP_STUBS);
+        data.when(() -> PlayerData.get(player)).thenReturn(pd);
+        when(pd.getAttributes().getInstance(NutritionConfig.attributeName())).thenReturn(attribute);
+        when(pd.getStats().getStat("MAX_MANA")).thenReturn(30.0);
+        when(pd.getStats().getStat("MAX_STAMINA")).thenReturn(10.0);
+        when(pd.getStats().getStat("MAX_STELLIUM")).thenReturn(40.0);
+        return pd;
     }
 
     private FoodItem food(double food, double nutrition) {

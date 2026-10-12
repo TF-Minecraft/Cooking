@@ -21,7 +21,7 @@ import org.bukkit.entity.Player;
 
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
-import net.tfminecraft.rpcharacters.RPCharacters;
+import net.tfminecraft.cooking.nutrition.NutritionContext;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.baking.BakingTrayRecipe;
 import net.tfminecraft.cooking.baking.BakingTrayRegistry;
@@ -281,11 +281,12 @@ public class CommandManager implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cThat player is not online.");
             return true;
         }
-        RPCharacter character = RPCharacters.getActiveCharacter(target);
-        if (character == null) {
+        NutritionContext context = NutritionContext.capture(target);
+        if (context == null) {
             sender.sendMessage("§cThat player has no active character.");
             return true;
         }
+        RPCharacter character = context.character();
         int value;
         try {
             value = Integer.parseInt(args[2]);
@@ -308,8 +309,9 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                 + " mappedAfter=" + NutritionDisplayService.toFoodLevel(character.getFoodValue())
                 + " hudBefore=" + target.getFoodLevel()
                 + " saturation=" + target.getSaturation());
-        NutritionDisplayService.sync(target, character, "admin");
-        RPCharacters.getPlayerManager().savePlayer(target);
+        if (!context.save()) return true;
+        NutritionDisplayService.sync(context, "admin");
+        if (!context.isCurrent()) return true;
         NutritionLog.append("SAVE", target, character,
                 "reason=admin sender=" + sender.getName());
         sender.sendMessage("§aSet " + target.getName() + "'s food from " + before + " to "

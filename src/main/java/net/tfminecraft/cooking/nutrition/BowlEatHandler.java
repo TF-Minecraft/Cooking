@@ -12,6 +12,7 @@ import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.manager.PlateManager;
+import net.tfminecraft.cooking.utils.PlayerActionContext;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
@@ -64,13 +65,17 @@ public final class BowlEatHandler implements Listener {
             player.sendMessage("§cThis needs to be prepared before you can eat it.");
             return;
         }
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) return;
         food.updateAge();
-        NutritionService.tryApplyEat(player, food);
-
-        player.swingMainHand();
-        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ENTITY_GENERIC_DRINK, 1f, 1f);
-
+        if (!context.isCurrent()) return;
+        // Consume the shared soup before nutrition callbacks can trigger another interaction.
         plateManager.clear(furniture);
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(furniture);
+        if (!context.isCurrent()) return;
+        NutritionService.tryApplyEat(player, food);
+        if (!context.isCurrent()) return;
+        player.swingMainHand();
+        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ENTITY_GENERIC_DRINK, 1f, 1f);
     }
 }

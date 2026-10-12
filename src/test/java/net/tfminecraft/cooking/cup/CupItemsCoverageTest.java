@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
@@ -17,6 +18,8 @@ import net.tfminecraft.cooking.loader.ConversionLoader;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.QualityConfig;
+import net.tfminecraft.cooking.quality.OriginQualityResolver;
+import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.tlibs.objects.api.ItemAPI;
@@ -27,6 +30,8 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
@@ -148,6 +153,90 @@ class CupItemsCoverageTest {
         server.getScheduler().performOneTick(); assertEquals(Material.STONE,player.getInventory().getItemInMainHand().getType());
         listener.onBucketFill(event); player.getInventory().setItemInMainHand(null); server.getScheduler().performOneTick();
         assertTrue(player.getInventory().getItemInMainHand().getType().isAir());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings={"current", "switch-back", "pending", "provider-lost", "provider-arrived", "reconnect", "offline"})
+    void deferredMilkConversionBelongsToCapturedSessionAndConnection(String change) {
+        UUID originalCharacter=UUID.randomUUID();
+        try (TestCharacters characters=new TestCharacters(MockBukkit.createMockPlugin())) {
+            characters.activate(player,originalCharacter);
+            if (change.equals("provider-arrived")) characters.close();
+            PlayerBucketFillEvent event=milkFill();
+            new MilkBucketConverter().onBucketFill(event);
+            assertNull(FoodItem.fromItem(player.getInventory().getItemInMainHand()));
+
+            switch (change) {
+                case "switch-back" -> {
+                    characters.activate(player,UUID.randomUUID());
+                    characters.activate(player,originalCharacter);
+                }
+                case "pending" -> characters.set(player,null);
+                case "provider-lost" -> characters.close();
+                case "provider-arrived" -> characters.register();
+                case "reconnect" -> {
+                    // Keep the old object's online flag true to exercise connection identity.
+                    server.getPlayerList().disconnectPlayer(player);
+                    PlayerMock replacement=new PlayerMock(server,player.getName(),player.getUniqueId());
+                    server.addPlayer(replacement);
+                    replacement.getInventory().setItemInMainHand(new ItemStack(Material.MILK_BUCKET,2));
+                    assertTrue(player.isOnline());
+                    assertNotSame(player,server.getPlayer(player.getUniqueId()));
+                }
+                case "offline" -> player.disconnect();
+                default -> { }
+            }
+
+            server.getScheduler().performOneTick();
+            ItemStack held=player.getInventory().getItemInMainHand();
+            assertEquals(2,held.getAmount());
+            if (change.equals("current")) {
+                assertNotNull(FoodItem.fromItem(held));
+                assertEquals(3,MilkBucketSnapshot.readQuality(held));
+            } else {
+                assertEquals(new ItemStack(Material.MILK_BUCKET,2),held);
+            }
+            if (change.equals("reconnect")) {
+                assertEquals(new ItemStack(Material.MILK_BUCKET,2),server.getPlayer(player.getUniqueId()).getInventory().getItemInMainHand());
+            }
+        }
+    }
+
+    @Test void pendingCharacterCannotBeginConversionEvenIfReadyBeforeCallback() {
+        try (TestCharacters characters=new TestCharacters(MockBukkit.createMockPlugin())) {
+            PlayerBucketFillEvent event=milkFill();
+            new MilkBucketConverter().onBucketFill(event);
+            verify(event,never()).getItemStack();
+            characters.activate(player,UUID.randomUUID());
+            server.getScheduler().performOneTick();
+            assertEquals(new ItemStack(Material.MILK_BUCKET,2),player.getInventory().getItemInMainHand());
+        }
+    }
+
+    @Test void sessionChangeDuringQualityResolutionPreventsQueuedWrite() {
+        try (TestCharacters characters=new TestCharacters(MockBukkit.createMockPlugin());
+             MockedStatic<OriginQualityResolver> quality=mockStatic(OriginQualityResolver.class)) {
+            characters.activate(player,UUID.randomUUID());
+            PlayerBucketFillEvent event=milkFill();
+            quality.when(() -> OriginQualityResolver.resolve(eq(player),any(FoodItem.class))).thenAnswer(call -> {
+                characters.activate(player,UUID.randomUUID());
+                return 3;
+            });
+            new MilkBucketConverter().onBucketFill(event);
+            quality.verify(() -> OriginQualityResolver.resolve(eq(player),any(FoodItem.class)));
+            server.getScheduler().performOneTick();
+            assertEquals(new ItemStack(Material.MILK_BUCKET,2),player.getInventory().getItemInMainHand());
+        }
+    }
+
+    private PlayerBucketFillEvent milkFill() {
+        ConversionLoader.conversions.put("v.milk_bucket","ingredient(type=milk_bucket;origin=Cow)");
+        player.getInventory().setItemInMainHand(new ItemStack(Material.MILK_BUCKET,2));
+        PlayerBucketFillEvent event=mock(PlayerBucketFillEvent.class);
+        when(event.getPlayer()).thenReturn(player);
+        when(event.getBucket()).thenReturn(Material.MILK_BUCKET);
+        when(event.getItemStack()).thenReturn(new ItemStack(Material.MILK_BUCKET));
+        return event;
     }
 
     private FoodItem food(String id,Material material) {
