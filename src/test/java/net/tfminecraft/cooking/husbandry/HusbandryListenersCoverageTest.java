@@ -35,6 +35,7 @@ import org.mockito.MockedStatic;
 class HusbandryListenersCoverageTest {
     @TempDir Path directory;
     private ServerMock server;
+    private net.tfminecraft.cooking.testsupport.TestCharacters characters;
     private WorldMock world;
     private PlayerMock player, target;
     private Cooking oldPlugin;
@@ -52,6 +53,8 @@ class HusbandryListenersCoverageTest {
         server = MockBukkit.mock(); world = server.addSimpleWorld("farm"); player = server.addPlayer("Farmer"); target = server.addPlayer("Neighbour");
         player.teleport(new Location(world, 0, 65, 0)); target.teleport(new Location(world, 2, 65, 0));
         Cooking.plugin = mock(Cooking.class); when(Cooking.plugin.getName()).thenReturn("Cooking"); when(Cooking.plugin.namespace()).thenReturn("cooking"); when(Cooking.plugin.isEnabled()).thenReturn(true);
+        characters = new net.tfminecraft.cooking.testsupport.TestCharacters(Cooking.plugin);
+        characters.activate(player, player.getUniqueId()); characters.activate(target, target.getUniqueId());
         repository = HusbandryRepository.open(directory.resolve("husbandry.db").toFile()); when(Cooking.plugin.getHusbandryRepository()).thenReturn(repository);
         HusbandryEntities.clearLoaded(); HusbandryFeedQuality.clear();
         config = new YamlConfiguration(); config.loadFromString("""
@@ -94,7 +97,7 @@ class HusbandryListenersCoverageTest {
 
     @AfterEach void tearDown() throws Exception {
         HusbandryEntities.clearLoaded(); HusbandryFeedQuality.clear(); repository.close();
-        MockBukkit.unmock(); for (int i = mocks.size() - 1; i >= 0; i--) mocks.get(i).close();
+        characters.close(); MockBukkit.unmock(); for (int i = mocks.size() - 1; i >= 0; i--) mocks.get(i).close();
         Cooking.plugin = oldPlugin; configSnapshot.close();
     }
 
@@ -295,7 +298,7 @@ class HusbandryListenersCoverageTest {
     @Test void sharingRequiresAnOwnerAndRejectsExistingOwnersAndFullRecipients() {
         HusbandryAnimal animal = record(spawn(Cow.class)); hold(token(animal.uuid().toString())); taming.onInteractEntity(interact(target)); assertTrue(player.nextMessage().contains("not your animal"));
         own(animal, player); own(animal, target); taming.onInteractEntity(interact(target)); assertTrue(player.nextMessage().contains("Already an owner"));
-        repository.deleteOwner(animal.uuid(), target.getUniqueId()); own(record(spawn(Cow.class)), target); own(record(spawn(Cow.class)), target); taming.onInteractEntity(interact(target)); assertTrue(player.nextMessage().contains("too many")); assertEquals(2, player.getInventory().getItemInMainHand().getAmount());
+        repository.deleteCharacterOwner(animal.uuid(), target.getUniqueId()); own(record(spawn(Cow.class)), target); own(record(spawn(Cow.class)), target); taming.onInteractEntity(interact(target)); assertTrue(player.nextMessage().contains("too many")); assertEquals(2, player.getInventory().getItemInMainHand().getAmount());
     }
 
     @Test void sharingToAnotherPlayerPersistsCoOwnershipAndConsumesOneToken() {
@@ -331,7 +334,7 @@ class HusbandryListenersCoverageTest {
     }
     private <T> MockedStatic<T> scoped(Class<T> type) { MockedStatic<T> result = mockStatic(type); mocks.add(result); return result; }
     private HusbandryAnimal record(LivingEntity entity) { HusbandryAnimal animal = new HusbandryAnimal(entity.getUniqueId(), entity.getType().name(), HusbandryEntities.displayName(entity.getType())); repository.upsertAnimal(animal); HusbandryEntities.putLoaded(animal); return animal; }
-    private void own(HusbandryAnimal animal, Player owner) { repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner.getUniqueId(), "owner")); }
+    private void own(HusbandryAnimal animal, Player owner) { repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner.getUniqueId(), owner.getUniqueId(), "owner")); }
     private void hold(ItemStack item) { player.getInventory().setItemInMainHand(item); }
     private ItemStack namedTag(String name) { ItemStack item = new ItemStack(Material.NAME_TAG, 2); HusbandryItems.setTameName(item, name); return item; }
     private ItemStack token(String linked) { ItemStack item = new ItemStack(Material.PAPER, 2); if (linked != null) HusbandryItems.setLinkedAnimal(item, linked, null); return item; }

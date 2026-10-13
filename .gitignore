@@ -62,3 +62,5 @@ Desktop.ini
 
 # Technical documentation is maintained in TF-Minecraft/Docs
 /docs/
+
+/tools/__pycache__/

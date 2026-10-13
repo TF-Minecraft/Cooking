@@ -246,6 +246,6 @@ class HusbandrySnapshotsTest {
     }
 
     private static List<HusbandryOwner> owners() {
-        return List.of(new HusbandryOwner(HORSE, OWNER, "owner"));
+        return List.of(new HusbandryOwner(HORSE, OWNER, OWNER, "owner"));
     }
 }

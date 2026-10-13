@@ -186,7 +186,7 @@ public final class HusbandryLocator {
         List<HusbandryOwner> owners = repository.listOwners(animal.uuid());
         repository.deleteAnimal(animal.uuid());
         for (HusbandryOwner owner : owners) {
-            repository.deleteOwner(animal.uuid(), owner.playerUuid());
+            repository.deleteCharacterOwner(animal.uuid(), owner.characterUuid());
         }
         HusbandryEntities.evict(animal.uuid());
         MISSING.remove(animal.uuid());

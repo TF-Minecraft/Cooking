@@ -78,7 +78,7 @@ class HusbandryRemainingCoverageTest {
         hold(Material.LEATHER, 1); listener.onInteract(interaction(cow)); assertEquals(1, held());
         animal.setDirtySince(1L); var clean = interaction(cow); listener.onInteract(clean); assertNull(animal.dirtySince()); assertEquals(1, held()); assertTrue(clean.isCancelled());
         assertNull(f.repository.getAnimal(animal.uuid()).orElseThrow().dirtySince());
-        animal.setHungrySince(1L); f.repository.deleteOwner(animal.uuid(), f.player.getUniqueId()); hold(Material.WHEAT, 2); listener.onInteract(interaction(cow)); assertEquals(2, held()); assertNotNull(animal.hungrySince());
+        animal.setHungrySince(1L); f.repository.deleteCharacterOwner(animal.uuid(), f.player.getUniqueId()); hold(Material.WHEAT, 2); listener.onInteract(interaction(cow)); assertEquals(2, held()); assertNotNull(animal.hungrySince());
         f.player.setOp(true); listener.onInteract(interaction(cow)); assertEquals(1, held()); assertNull(animal.hungrySince());
     }
 
@@ -141,7 +141,7 @@ class HusbandryRemainingCoverageTest {
         command.onCommand(console, null, "animals", new String[0]); verify(console).sendMessage(any(net.kyori.adventure.text.Component.class));
         f.player.setOp(true); command.onCommand(f.player, null, "animals", new String[]{"NeverJoined"}); assertTrue(f.player.nextMessage().contains("No player"));
         Cow cow = f.spawn(Cow.class); HusbandryAnimal animal = f.record(cow); f.own(animal, f.player); cow.teleport(new Location(f.world, 9, 66, 8)); animal.setDirtySince(1L);
-        command.onCommand(f.player, null, "animals", new String[0]); assertEquals(9, animal.x()); assertNotNull(f.player.nextMessage()); clearMessages();
+        command.onCommand(f.player, null, "animals", new String[0]); assertEquals(9, animal.x()); assertEquals("Your character's animals (1)", ChatColor.stripColor(f.player.nextMessage())); assertEquals("Account animal places: 1/2", ChatColor.stripColor(f.player.nextMessage())); clearMessages();
         HusbandryAnimal offline = f.ownedOffline("Offline"); command.onCommand(f.player, null, "animals", new String[]{f.player.getName()}); assertNotNull(f.player.nextMessage()); clearMessages();
         assertEquals(List.of("Farmer"), command.onTabComplete(f.player, null, "animals", new String[]{"f"})); assertEquals(List.of("Farmer", "Neighbour"), command.onTabComplete(f.player, null, "animals", new String[]{""}));
         assertTrue(command.onTabComplete(f.neighbour, null, "animals", new String[]{""}).isEmpty()); assertTrue(command.onTabComplete(f.player, null, "animals", new String[0]).isEmpty());
@@ -300,7 +300,7 @@ class HusbandryRemainingCoverageTest {
         HusbandryRepository repository = f.repository; HusbandryAnimal good = f.offline("COW", "???"), invalid = new HusbandryAnimal(null, "COW", "No ID");
         repository.upsertAnimal(null); repository.upsertAnimal(invalid); repository.upsertAnimals(null); repository.upsertAnimals(List.of()); repository.upsertAnimals(Arrays.asList(null, invalid)); repository.upsertAnimals(Arrays.asList(null, good));
         assertEquals("", repository.getAnimal(good.uuid()).orElseThrow().name()); assertTrue(repository.getAnimal(null).isEmpty()); assertFalse(repository.exists(null)); repository.deleteAnimal(null);
-        repository.upsertOwner(null); repository.upsertOwner(new HusbandryOwner(null, null, null)); repository.deleteOwner(null, null); assertEquals(0, repository.countForPlayer(null)); assertTrue(repository.listOwners(null).isEmpty()); assertTrue(repository.listForPlayer(null).isEmpty());
+        repository.upsertOwner(null); repository.upsertOwner(new HusbandryOwner(null, null, null, null)); repository.deleteCharacterOwner(null, null); assertEquals(0, repository.countForPlayer(null)); assertTrue(repository.listOwners(null).isEmpty()); assertTrue(repository.listForPlayer(null).isEmpty());
         repository.upsertSnapshots(null, 0); repository.upsertSnapshots(Map.of(), 0); Map<UUID, byte[]> snapshots = new LinkedHashMap<>(); snapshots.put(null, new byte[]{1}); snapshots.put(good.uuid(), null); repository.upsertSnapshots(snapshots, 1);
         assertTrue(repository.getSnapshot(good.uuid()).isEmpty()); assertTrue(repository.getSnapshot(null).isEmpty()); repository.deleteSnapshot(null); assertEquals(0, repository.resetStaleStats(" ", null));
     }

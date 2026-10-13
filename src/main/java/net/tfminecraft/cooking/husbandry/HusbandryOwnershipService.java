@@ -15,7 +15,9 @@ public final class HusbandryOwnershipService {
         ALREADY_OWNER,
         NOT_OWNER,
         TARGET_AT_CAP,
-        ALREADY_TARGET_OWNER
+        ALREADY_TARGET_OWNER,
+        CHARACTER_REQUIRED,
+        HELD_OWNER
     }
 
     private HusbandryOwnershipService() {}
@@ -25,7 +27,7 @@ public final class HusbandryOwnershipService {
     }
 
     public static boolean canAccept(Player player) {
-        if (player == null) {
+        if (player == null || HusbandryIdentity.session(player).isEmpty()) {
             return false;
         }
         if (isStaff(player)) {
@@ -38,21 +40,23 @@ public final class HusbandryOwnershipService {
         return repository.countForPlayer(player.getUniqueId()) < HusbandryConfig.maxAnimals();
     }
 
-    public static boolean isOwner(Player player, UUID animalUuid) {
-        return player != null && isOwner(player.getUniqueId(), animalUuid);
+    private static boolean canAccept(Player player, UUID animal) {
+        HusbandryRepository repository = HusbandryEntities.repository();
+        return repository != null && (repository.accountHasAnimal(player.getUniqueId(), animal) || canAccept(player));
     }
 
-    public static boolean isOwner(UUID playerUuid, UUID animalUuid) {
+    public static boolean isOwner(Player player, UUID animalUuid) {
+        return HusbandryIdentity.session(player).map(session -> isOwner(session.ref(), animalUuid)).orElse(false);
+    }
+
+    /** Account-only callers cannot acquire a character's permission. */
+    @Deprecated
+    public static boolean isOwner(UUID account, UUID animal) { return false; }
+
+    public static boolean isOwner(net.tfminecraft.tlibs.character.CharacterRef ref, UUID animalUuid) {
         HusbandryRepository repository = HusbandryEntities.repository();
-        if (repository == null || playerUuid == null || animalUuid == null) {
-            return false;
-        }
-        for (HusbandryOwner owner : repository.listOwners(animalUuid)) {
-            if (playerUuid.equals(owner.playerUuid())) {
-                return true;
-            }
-        }
-        return false;
+        if (repository == null || ref == null || animalUuid == null) return false;
+        return repository.listOwners(animalUuid).stream().anyMatch(owner -> ref.equals(owner.ref()));
     }
 
     public static boolean hasAnyOwner(UUID animalUuid) {
@@ -60,7 +64,7 @@ public final class HusbandryOwnershipService {
         if (repository == null || animalUuid == null) {
             return false;
         }
-        return !repository.listOwners(animalUuid).isEmpty();
+        return repository.hasAnyOwner(animalUuid);
     }
 
     public static List<HusbandryOwner> listOwners(UUID animalUuid) {
@@ -76,6 +80,9 @@ public final class HusbandryOwnershipService {
         if (repository == null || player == null || animal == null) {
             return Result.NO_REPOSITORY;
         }
+        var session = HusbandryIdentity.session(player).orElse(null);
+        if (session == null) return Result.CHARACTER_REQUIRED;
+        if (repository.isEstateHeld(animal.uuid())) return Result.HELD_OWNER;
         if (isOwner(player, animal.uuid())) {
             applyName(animal, entity, name);
             repository.upsertAnimal(animal);
@@ -89,8 +96,8 @@ public final class HusbandryOwnershipService {
         }
         applyName(animal, entity, name);
         animal.setState(HusbandryAnimalState.OWNED);
-        repository.upsertAnimal(animal);
-        repository.upsertOwner(new HusbandryOwner(animal.uuid(), player.getUniqueId(), "owner"));
+        repository.saveAnimalAndOwner(animal,
+                new HusbandryOwner(animal.uuid(), player.getUniqueId(), session.ref().characterId(), "owner"));
         return Result.OK;
     }
 
@@ -99,22 +106,27 @@ public final class HusbandryOwnershipService {
         if (repository == null || actor == null || target == null || animal == null) {
             return Result.NO_REPOSITORY;
         }
+        var actorSession = HusbandryIdentity.session(actor).orElse(null);
+        var targetSession = HusbandryIdentity.session(target).orElse(null);
+        if (actorSession == null || targetSession == null) return Result.CHARACTER_REQUIRED;
+        if (repository.isEstateHeld(animal.uuid())) return Result.HELD_OWNER;
         if (!hasAnyOwner(animal.uuid())) {
             return Result.NOT_OWNER;
         }
-        boolean selfClaim = actor.getUniqueId().equals(target.getUniqueId());
+        boolean selfClaim = actorSession.ref().equals(targetSession.ref());
+        if (selfClaim && repository.hasHeldOwner(animal.uuid())) return Result.HELD_OWNER;
         if (!selfClaim && !isOwner(actor, animal.uuid())) {
             return Result.NOT_OWNER;
         }
         if (isOwner(target, animal.uuid())) {
             return Result.ALREADY_TARGET_OWNER;
         }
-        if (!canAccept(target)) {
+        if (!canAccept(target, animal.uuid())) {
             return Result.TARGET_AT_CAP;
         }
         animal.setState(HusbandryAnimalState.OWNED);
-        repository.upsertAnimal(animal);
-        repository.upsertOwner(new HusbandryOwner(animal.uuid(), target.getUniqueId(), "coowner"));
+        repository.saveAnimalAndOwner(animal,
+                new HusbandryOwner(animal.uuid(), target.getUniqueId(), targetSession.ref().characterId(), "coowner"));
         return Result.OK;
     }
 
@@ -123,10 +135,11 @@ public final class HusbandryOwnershipService {
         if (repository == null || player == null || animal == null) {
             return Result.NO_REPOSITORY;
         }
+        if (repository.isEstateHeld(animal.uuid())) return Result.HELD_OWNER;
         if (!isOwner(player, animal.uuid())) {
             return Result.NOT_OWNER;
         }
-        repository.deleteOwner(animal.uuid(), player.getUniqueId());
+        repository.deleteCharacterOwner(animal.uuid(), HusbandryIdentity.session(player).orElseThrow().ref().characterId());
         if (!hasAnyOwner(animal.uuid())) {
             animal.setState(HusbandryAnimalState.UNTAMED);
             repository.upsertAnimal(animal);

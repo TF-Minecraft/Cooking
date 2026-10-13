@@ -1,0 +1,185 @@
+package net.tfminecraft.cooking.husbandry;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
+import java.util.logging.Logger;
+
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.ServicePriority;
+import net.tfminecraft.tlibs.character.CharacterRef;
+import net.tfminecraft.tlibs.character.estate.EstateDecision;
+import net.tfminecraft.tlibs.character.estate.EstateParticipant;
+import net.tfminecraft.tlibs.character.estate.Estates;
+import net.tfminecraft.tlibs.character.estate.Holdings;
+import net.tfminecraft.tlibs.character.estate.Outcome;
+import net.tfminecraft.tlibs.database.SqliteDatabaseException;
+
+import static net.tfminecraft.cooking.husbandry.HusbandryOwnershipStore.*;
+
+/** A whole estate's slots, collision merges and receipts commit together; no capacity rejection. */
+final class HusbandryEstate implements EstateParticipant {
+    static final String ID = "cooking-animals";
+    private final HusbandryRepository repository;
+    private final Logger logger;
+    Predicate<EstateDecision> guard = Estates::guardHolds;
+    Supplier<List<EstateDecision>> decided = Estates::decided;
+    interface Reporter { boolean report(UUID death, String id, long revision, Outcome outcome); }
+    Reporter reporter = Estates::report;
+    private final Map<UUID, Map.Entry<Long, Outcome>> reported = new HashMap<>();
+
+    HusbandryEstate(HusbandryRepository repository, Logger logger) {
+        this.repository = repository;
+        this.logger = logger;
+
+    }
+
+    static void start(Plugin plugin, HusbandryRepository repository) {
+        HusbandryEstate estate = new HusbandryEstate(repository, plugin.getLogger());
+        plugin.getServer().getServicesManager().register(EstateParticipant.class, estate, plugin, ServicePriority.Normal);
+        plugin.getServer().getScheduler().runTaskTimer(plugin, estate::reconcile, 2, 20L * 60 * 60);
+    }
+
+    @Override public String id() { return ID; }
+
+    @Override public Outcome settle(EstateDecision decision) {
+        if (!guard.test(decision)) return Outcome.retry("Animal estate guard does not hold");
+        var db = repository.ownershipDatabase();
+        try {
+            if (decision.property().character().isEmpty()) return receipts(decision);
+            CharacterRef to = decision.property().character().orElseThrow();
+            db.runTransaction(connection -> {
+                try {
+                    if (scalar(connection, "SELECT COUNT(*) FROM husbandry_estate_intents WHERE status != 'done' AND (death_id = ? OR from_character = ?)",
+                            decision.deathId().toString(), decision.testator().characterId().toString()) != 0) {
+                        throw new Held("Incomplete animal estate intent requires staff review");
+                    }
+                    List<String[]> receipts = rows(connection,
+                            "SELECT decision FROM husbandry_estate_intents WHERE death_id = ? AND revision = ?",
+                            decision.deathId().toString(), decision.revision());
+                    if (!receipts.isEmpty()) {
+                        if (!decision.toString().equals(receipts.get(0)[0])) throw new Held("Decision conflicts with stored animal receipt");
+                        return;
+                    }
+                    List<String[]> source = rows(connection,
+                            "SELECT animal_uuid, account_uuid, role FROM character_owners WHERE character_uuid = ?",
+                            decision.testator().characterId().toString());
+                    update(connection, "INSERT INTO husbandry_estate_intents VALUES (?, ?, ?, ?, ?, ?, ?, 'prepared')",
+                            decision.deathId().toString(), decision.revision(), decision.toString(),
+                            decision.testator().ownerId().toString(), decision.testator().characterId().toString(),
+                            to.ownerId().toString(), to.characterId().toString());
+                    for (String[] row : source) {
+                        if (!row[1].equals(decision.testator().ownerId().toString()) || !recognized(row[2])) {
+                            throw new Held("Conflicting testator slot for animal " + row[0]);
+                        }
+                        String[] recipient = slot(connection, row[0], to.characterId().toString());
+                        if (recipient != null && (!recipient[0].equals(to.ownerId().toString()) || !recognized(recipient[1]))) {
+                            throw new Held("Conflicting recipient slot for animal " + row[0]);
+                        }
+                        String role = recipient == null ? row[2] : stronger(row[2], recipient[1]);
+                        if (!guard.test(decision)) throw new GuardChanged();
+                        archiveSlot(connection, decision, row[0], decision.testator().characterId(), "source");
+                        if (recipient != null) archiveSlot(connection, decision, row[0], to.characterId(), "recipient");
+                        put(connection, row[0], to, role);
+                        if (!to.equals(decision.testator())) update(connection,
+                                "DELETE FROM character_owners WHERE animal_uuid = ? AND character_uuid = ? AND account_uuid = ?",
+                                row[0], decision.testator().characterId().toString(), decision.testator().ownerId().toString());
+                        update(connection, "INSERT INTO husbandry_estate_slots VALUES (?, ?, ?, ?, ?, ?)",
+                                decision.deathId().toString(), decision.revision(), row[0], row[2],
+                                recipient == null ? null : recipient[1], role);
+                    }
+                    if (!guard.test(decision)) throw new GuardChanged();
+                    update(connection, "UPDATE husbandry_estate_intents SET status = 'done' WHERE death_id = ? AND revision = ?",
+                            decision.deathId().toString(), decision.revision());
+                } catch (SQLException ex) {
+                    throw new SqliteDatabaseException("Could not commit animal estate", ex);
+                }
+            });
+            return receipts(decision);
+        } catch (Held ex) {
+            return Outcome.blocked(ex.getMessage());
+        } catch (GuardChanged ex) {
+            return Outcome.retry("Animal estate changed; transaction rolled back");
+        } catch (RuntimeException | SQLException ex) {
+            logger.warning("Animal estate rolled back: " + ex.getMessage());
+            return Outcome.retry("Could not save animal estate: " + ex.getMessage());
+        }
+    }
+
+    /** Completed transfers remain visible even when a later property revision is frozen or waiting. */
+    private Outcome receipts(EstateDecision decision) throws SQLException {
+        var db = repository.ownershipDatabase();
+        synchronized (db) {
+            Connection connection = db.getConnection();
+            if (scalar(connection, "SELECT COUNT(*) FROM husbandry_estate_intents WHERE status != 'done' AND (death_id = ? OR from_character = ?)",
+                    decision.deathId().toString(), decision.testator().characterId().toString()) != 0) {
+                throw new Held("Incomplete animal estate intent requires staff review");
+            }
+            List<String[]> saved = rows(connection, "SELECT decision FROM husbandry_estate_intents WHERE death_id = ? AND revision = ?",
+                    decision.deathId().toString(), decision.revision());
+            if (!saved.isEmpty() && !decision.toString().equals(saved.getFirst()[0])) throw new Held("Decision conflicts with stored animal receipt");
+            List<String> moved = rows(connection,
+                    "SELECT DISTINCT animal_uuid FROM husbandry_estate_slots WHERE death_id = ? ORDER BY animal_uuid",
+                    decision.deathId().toString()).stream().map(row -> row[0]).toList();
+            return moved.isEmpty() ? Outcome.done() : Outcome.done(Map.of("animals", moved.size()), moved);
+        }
+    }
+
+    /** Independent raw rows retain unknown nullable/BLOB metadata even after the source slot is deleted. */
+    private static void archiveSlot(Connection connection, EstateDecision decision, String animal, UUID character,
+            String position) throws SQLException {
+        update(connection, "CREATE TABLE IF NOT EXISTS husbandry_estate_owner_archive AS SELECT * FROM character_owners WHERE 0");
+        List<String> columns = rows(connection, "PRAGMA table_info(character_owners)").stream().map(row -> row[1]).toList();
+        List<String> saved = rows(connection, "PRAGMA table_info(husbandry_estate_owner_archive)").stream().map(row -> row[1]).toList();
+        for (String metadata : List.of("estate_death_id", "estate_revision", "estate_position")) {
+            if (columns.contains(metadata)) throw new Held("Owner schema uses reserved estate archive column " + metadata);
+            if (!saved.contains(metadata)) update(connection, "ALTER TABLE husbandry_estate_owner_archive ADD COLUMN " + quoted(metadata));
+        }
+        for (String column : columns) {
+            if (!saved.contains(column)) update(connection, "ALTER TABLE husbandry_estate_owner_archive ADD COLUMN " + quoted(column));
+        }
+        String fields = columns.stream().map(HusbandryEstate::quoted).collect(java.util.stream.Collectors.joining(","));
+        update(connection, "INSERT INTO husbandry_estate_owner_archive (" + fields
+                + ",estate_death_id,estate_revision,estate_position) SELECT " + fields
+                + ",?,?,? FROM character_owners WHERE animal_uuid = ? AND character_uuid = ?",
+                decision.deathId().toString(), decision.revision(), position, animal, character.toString());
+    }
+
+    private static String quoted(String column) { return "\"" + column.replace("\"", "\"\"") + "\""; }
+
+    @Override public Holdings describe(UUID characterId) {
+        var db = repository.ownershipDatabase();
+        try {
+            synchronized (db) {
+                List<String> labels = rows(db.getConnection(),
+                        "SELECT animal_uuid FROM character_owners WHERE character_uuid = ? ORDER BY animal_uuid", characterId.toString())
+                        .stream().map(row -> "Animal " + row[0]).toList();
+                return labels.isEmpty() ? Holdings.NONE : new Holdings(Map.of("animals", labels.size()), labels);
+            }
+        } catch (SQLException ex) {
+            throw new SqliteDatabaseException("Could not describe animal holdings", ex);
+        }
+    }
+
+    void reconcile() {
+        for (EstateDecision decision : decided.get()) {
+            try {
+                if (!guard.test(decision)) continue;
+                Outcome outcome = settle(decision);
+                var report = Map.entry(decision.revision(), outcome);
+                if (!report.equals(reported.get(decision.deathId()))
+                        && reporter.report(decision.deathId(), ID, decision.revision(), outcome)) reported.put(decision.deathId(), report);
+            } catch (RuntimeException ex) {
+                logger.warning("Could not reconcile animal estate " + decision.deathId() + ": " + ex.getMessage());
+            }
+        }
+    }
+
+    private static final class Held extends RuntimeException { Held(String reason) { super(reason); } }
+    private static final class GuardChanged extends RuntimeException { }
+}

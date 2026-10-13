@@ -36,8 +36,8 @@ class HusbandryLocatorTest {
             animal.setLastLocation("TFMC_Map", 4369, 167, 1950);
             animal.setUnloadedAt(50L);
             repository.upsertAnimal(animal);
-            repository.upsertOwner(new HusbandryOwner(animalId, ownerId, "owner"));
-            repository.upsertOwner(new HusbandryOwner(animalId, coOwnerId, "coowner"));
+            repository.upsertOwner(new HusbandryOwner(animalId, ownerId, ownerId, "owner"));
+            repository.upsertOwner(new HusbandryOwner(animalId, coOwnerId, coOwnerId, "coowner"));
             HusbandryEntities.putLoaded(animal);
 
             String line = HusbandryLocator.deleteGhost(repository, animal);
@@ -49,8 +49,8 @@ class HusbandryLocatorTest {
             assertTrue(HusbandryEntities.getLoaded(animalId).isEmpty());
             assertFalse(HusbandryLocator.isMissing(animalId));
             String owners = List.of(
-                            new HusbandryOwner(animalId, ownerId, "owner"),
-                            new HusbandryOwner(animalId, coOwnerId, "coowner"))
+                            new HusbandryOwner(animalId, ownerId, ownerId, "owner"),
+                            new HusbandryOwner(animalId, coOwnerId, coOwnerId, "coowner"))
                     .stream()
                     .sorted((left, right) -> left.playerUuid().compareTo(right.playerUuid()))
                     .map(owner -> owner.playerUuid() + " (" + owner.role() + ")")

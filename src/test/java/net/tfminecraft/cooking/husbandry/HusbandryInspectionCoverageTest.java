@@ -68,7 +68,7 @@ class HusbandryInspectionCoverageTest {
     }
 
     @Test void ownerNamesFallBackToUuidWhenOfflineProfileHasNoName() {
-        Cow cow = f.spawn(Cow.class); HusbandryAnimal animal = f.record(cow); UUID owner = UUID.randomUUID(); f.repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner, "coowner"));
+        Cow cow = f.spawn(Cow.class); HusbandryAnimal animal = f.record(cow); UUID owner = UUID.randomUUID(); f.repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner, owner, "coowner"));
         OfflinePlayer unnamed = mock(OfflinePlayer.class);
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) { bukkit.when(() -> Bukkit.getOfflinePlayer(owner)).thenReturn(unnamed); HusbandryInspectGui.open(f.player, cow, animal); }
         assertEquals(List.of("§7coowner: " + owner), lore(f.player.getOpenInventory().getTopInventory(), 2));
@@ -101,7 +101,7 @@ class HusbandryInspectionCoverageTest {
         InventoryClickEvent unrelated = click(4); listener.onClick(unrelated); assertTrue(unrelated.isCancelled()); assertTrue(HusbandryOwnershipService.isOwner(f.player, animal.uuid())); listener.onClick(click(5));
         when(f.plugin.getHusbandryRepository()).thenReturn(null); listener.onClick(click(8)); when(f.plugin.getHusbandryRepository()).thenReturn(f.repository); assertTrue(HusbandryOwnershipService.isOwner(f.player, animal.uuid()));
         listener.onClick(click(8)); assertFalse(HusbandryOwnershipService.isOwner(f.player, animal.uuid())); assertEquals(HusbandryAnimalState.UNTAMED, f.repository.getAnimal(animal.uuid()).orElseThrow().state()); assertTrue(f.player.nextMessage().contains("no longer own"));
-        f.own(animal, f.player); HusbandryInspectGui.open(f.player, cow, animal); f.repository.deleteOwner(animal.uuid(), f.player.getUniqueId()); listener.onClick(click(8)); assertTrue(f.player.nextMessage().contains("Could not remove"));
+        f.own(animal, f.player); HusbandryInspectGui.open(f.player, cow, animal); f.repository.deleteCharacterOwner(animal.uuid(), f.player.getUniqueId()); listener.onClick(click(8)); assertTrue(f.player.nextMessage().contains("Could not remove"));
         f.own(animal, f.player); HusbandryInspectGui.open(f.player, cow, animal); HusbandryEntities.evict(animal.uuid()); f.repository.deleteAnimal(animal.uuid()); listener.onClick(click(8)); assertNull(f.player.getOpenInventory().getTopInventory());
         f.player.openInventory(Bukkit.createInventory(null, 9));
         var ordinary = click(0); listener.onClick(ordinary); assertFalse(ordinary.isCancelled());
@@ -115,13 +115,13 @@ class HusbandryInspectionCoverageTest {
         assertEquals(HusbandryOwnershipService.Result.OK, HusbandryOwnershipService.claimOwner(f.player, b, second, "???")); assertEquals("Cow", b.name());
         assertFalse(HusbandryOwnershipService.canAccept(f.player)); assertEquals(HusbandryOwnershipService.Result.AT_CAP, HusbandryOwnershipService.claimOwner(f.player, c, third, "Third")); assertFalse(HusbandryOwnershipService.hasAnyOwner(c.uuid()));
         f.player.setOp(true); assertTrue(HusbandryOwnershipService.canAccept(f.player)); assertEquals(HusbandryOwnershipService.Result.OK, HusbandryOwnershipService.claimOwner(f.player, c, third, "Third")); assertEquals(3, f.repository.countForPlayer(f.player.getUniqueId()));
-        assertFalse(HusbandryOwnershipService.isOwner((Player) null, a.uuid())); assertFalse(HusbandryOwnershipService.isOwner((UUID) null, a.uuid())); assertFalse(HusbandryOwnershipService.isOwner(f.player.getUniqueId(), null)); assertFalse(HusbandryOwnershipService.hasAnyOwner(null)); assertFalse(HusbandryOwnershipService.isStaff(null));
+        assertFalse(HusbandryOwnershipService.isOwner((Player) null, a.uuid())); assertFalse(HusbandryOwnershipService.isOwner((net.tfminecraft.tlibs.character.CharacterRef) null, a.uuid())); assertFalse(HusbandryOwnershipService.isOwner(new net.tfminecraft.tlibs.character.CharacterRef(f.player.getUniqueId(), f.player.getUniqueId()), null)); assertFalse(HusbandryOwnershipService.hasAnyOwner(null)); assertFalse(HusbandryOwnershipService.isStaff(null));
     }
 
     @Test void coOwnershipKeepsStateUntilLastOwnerLeavesAndChecksActorAndTargetCaps() {
         HusbandryAnimal animal = f.record(f.spawn(Cow.class));
         assertEquals(HusbandryOwnershipService.Result.NOT_OWNER, HusbandryOwnershipService.addCoOwner(f.player, f.neighbour, animal)); f.own(animal, f.player);
-        var stranger = f.server.addPlayer("Stranger"); assertEquals(HusbandryOwnershipService.Result.NOT_OWNER, HusbandryOwnershipService.addCoOwner(stranger, f.neighbour, animal));
+        var stranger = f.server.addPlayer("Stranger"); f.characters.activate(stranger, stranger.getUniqueId()); assertEquals(HusbandryOwnershipService.Result.NOT_OWNER, HusbandryOwnershipService.addCoOwner(stranger, f.neighbour, animal));
         f.own(f.offline("COW", "One"), f.neighbour); f.own(f.offline("COW", "Two"), f.neighbour);
         assertEquals(HusbandryOwnershipService.Result.TARGET_AT_CAP, HusbandryOwnershipService.addCoOwner(f.player, f.neighbour, animal));
         f.neighbour.setOp(true); assertEquals(HusbandryOwnershipService.Result.OK, HusbandryOwnershipService.addCoOwner(f.player, f.neighbour, animal)); assertEquals(HusbandryOwnershipService.Result.ALREADY_TARGET_OWNER, HusbandryOwnershipService.addCoOwner(f.player, f.neighbour, animal));
@@ -161,7 +161,7 @@ class HusbandryInspectionCoverageTest {
         var own = new EntityMountEvent(f.player, horse); mounts.onMount(own); assertFalse(own.isCancelled()); var other = new EntityMountEvent(f.neighbour, horse); mounts.onMount(other); assertTrue(other.isCancelled()); assertTrue(f.neighbour.nextMessage().contains("not your animal"));
         f.neighbour.setOp(true); var staff = new EntityMountEvent(f.neighbour, horse); mounts.onMount(staff); assertFalse(staff.isCancelled());
         mounts.onTame(new EntityTameEvent(horse, f.player)); mounts.onTame(new EntityTameEvent(horse, Bukkit.getOfflinePlayer(UUID.randomUUID()))); mounts.onQuit(new PlayerQuitEvent(f.player, "bye"));
-        when(f.plugin.getHusbandryRepository()).thenReturn(null); var unavailable = new EntityMountEvent(f.player, f.spawn(Horse.class)); mounts.onMount(unavailable); assertFalse(unavailable.isCancelled());
+        when(f.plugin.getHusbandryRepository()).thenReturn(null); var unavailable = new EntityMountEvent(f.player, f.spawn(Horse.class)); mounts.onMount(unavailable); assertTrue(unavailable.isCancelled());
     }
 
     @Test void removalIgnoresOtherHumanViewersAndAReplacedButton() {
