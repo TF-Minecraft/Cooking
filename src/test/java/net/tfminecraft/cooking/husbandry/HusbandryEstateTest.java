@@ -157,6 +157,38 @@ class HusbandryEstateTest {
             }
         }
     }
+    @Test void missingCompletedIdsCannotHideRestoredSourcesFromNewRevisions() throws Exception {
+        try(var fixture=new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var repo=fixture.value;var animal=own(repo,testator,"owner");var estate=estate(repo);
+            assertEquals(Outcome.Kind.DONE,estate.settle(decision(1,Recipient.character(heir))).kind());
+            var connection=repo.ownershipDatabase().getConnection();update(connection,"DELETE FROM husbandry_estate_slots");
+            repo.upsertOwner(new HusbandryOwner(animal.uuid(),testator.ownerId(),testator.characterId(),"owner"));
+            var before=rows(connection,"SELECT * FROM character_owners ORDER BY character_uuid").stream().map(Arrays::asList).toList();
+            assertEquals(Outcome.Kind.BLOCKED,estate.settle(decision(2,Recipient.character(coowner))).kind());
+            assertEquals(before,rows(connection,"SELECT * FROM character_owners ORDER BY character_uuid").stream().map(Arrays::asList).toList());
+            assertEquals(1,scalar(connection,"SELECT COUNT(*) FROM husbandry_estate_intents"));
+            assertEquals(0,scalar(connection,"SELECT COUNT(*) FROM husbandry_estate_slots"));
+            assertEquals(1,scalar(connection,"SELECT COUNT(*) FROM husbandry_estate_owner_archive"));
+        }
+    }
+    @Test void completedReceiptIdsAndArchivedRefsStayCoherentAcrossEveryRevision() throws Exception {
+        try(var fixture=new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var repo=fixture.value;var animal=own(repo,testator,"owner");var estate=estate(repo);
+            assertEquals(Outcome.Kind.DONE,estate.settle(decision(1,Recipient.character(heir))).kind());
+            var connection=repo.ownershipDatabase().getConnection();
+            for(String field:List.of("account_uuid","character_uuid")) {
+                update(connection,"UPDATE husbandry_estate_owner_archive SET "+field+" = ?",UUID.randomUUID().toString());
+                assertEquals(Outcome.Kind.BLOCKED,estate.settle(decision(2,Recipient.FROZEN)).kind());
+                update(connection,"UPDATE husbandry_estate_owner_archive SET "+field+" = ?",field.equals("account_uuid")?testator.ownerId().toString():testator.characterId().toString());
+            }
+            update(connection,"INSERT INTO husbandry_estate_owner_archive SELECT * FROM husbandry_estate_owner_archive");
+            assertEquals(Outcome.Kind.BLOCKED,estate.settle(decision(2,Recipient.FROZEN)).kind());
+            update(connection,"DELETE FROM husbandry_estate_owner_archive WHERE rowid=(SELECT MAX(rowid) FROM husbandry_estate_owner_archive)");
+            update(connection,"UPDATE husbandry_estate_slots SET animal_uuid = ?",UUID.randomUUID().toString());
+            assertEquals(Outcome.Kind.BLOCKED,estate.settle(decision(2,Recipient.FROZEN)).kind());
+            assertEquals(heir,repo.listOwners(animal.uuid()).getFirst().ref());
+        }
+    }
     @Test void faultAfterFirstSlotRollsBackWholeEstateThenRetryMovesExactlyOnce() throws Exception {
         try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
             var repo = fixture.value; var first = own(repo, testator, "owner"); var second = own(repo, testator, "owner");

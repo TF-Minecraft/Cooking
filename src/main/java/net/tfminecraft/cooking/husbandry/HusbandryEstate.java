@@ -145,6 +145,23 @@ final class HusbandryEstate implements EstateParticipant {
                     || !row[1].contains(", property=" + net.tfminecraft.tlibs.character.estate.Recipient.character(recipient) + ", guildLocks=")
                     || !row[1].endsWith(", revision=" + revision + "]"))
                 throw new Held("Historical animal receipt conflicts with its captured decision");
+            List<String[]> original = scalar(connection,
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'husbandry_estate_owner_archive'") == 0
+                    ? List.of() : rows(connection, """
+                    SELECT animal_uuid, account_uuid, character_uuid FROM husbandry_estate_owner_archive
+                    WHERE estate_death_id = ? AND estate_revision = ? AND estate_position = 'source'
+                    """, decision.deathId().toString(), revision);
+            for (String[] slot : original) {
+                if (!row[2].equals(slot[1]) || !row[3].equals(slot[2]))
+                    throw new Held("Animal receipt source archive conflicts with its full reference");
+            }
+            List<String> plannedIds = original.stream().map(slot -> slot[0]).toList();
+            List<String> movedIds = rows(connection,
+                    "SELECT animal_uuid FROM husbandry_estate_slots WHERE death_id = ? AND revision = ?",
+                    decision.deathId().toString(), revision).stream().map(slot -> slot[0]).toList();
+            if (plannedIds.size() != new java.util.HashSet<>(plannedIds).size()
+                    || !new java.util.HashSet<>(plannedIds).equals(new java.util.HashSet<>(movedIds)))
+                throw new Held("Animal receipt IDs conflict with the immutable source archive");
             if (revision == decision.revision()) {
                 if (!decision.toString().equals(row[1])
                         || !decision.property().character().equals(java.util.Optional.of(recipient)))
