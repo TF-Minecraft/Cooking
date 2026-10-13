@@ -53,19 +53,16 @@ final class HusbandryEstate implements EstateParticipant {
         try {
             if (decision.property().character().isEmpty()) return receipts(decision);
             CharacterRef to = decision.property().character().orElseThrow();
+            if (to.equals(decision.testator())) return receipts(decision);
             db.runTransaction(connection -> {
                 try {
                     if (scalar(connection, "SELECT COUNT(*) FROM husbandry_estate_intents WHERE status != 'done' AND (death_id = ? OR from_character = ?)",
                             decision.deathId().toString(), decision.testator().characterId().toString()) != 0) {
                         throw new Held("Incomplete animal estate intent requires staff review");
                     }
-                    List<String[]> receipts = rows(connection,
-                            "SELECT decision FROM husbandry_estate_intents WHERE death_id = ? AND revision = ?",
-                            decision.deathId().toString(), decision.revision());
-                    if (!receipts.isEmpty()) {
-                        if (!decision.toString().equals(receipts.get(0)[0])) throw new Held("Decision conflicts with stored animal receipt");
-                        return;
-                    }
+                    validateReceipts(connection, decision);
+                    if (scalar(connection, "SELECT COUNT(*) FROM husbandry_estate_intents WHERE death_id = ? AND revision = ?",
+                            decision.deathId().toString(), decision.revision()) != 0) return;
                     List<String[]> source = rows(connection,
                             "SELECT animal_uuid, account_uuid, role FROM character_owners WHERE character_uuid = ?",
                             decision.testator().characterId().toString());
@@ -120,14 +117,48 @@ final class HusbandryEstate implements EstateParticipant {
                     decision.deathId().toString(), decision.testator().characterId().toString()) != 0) {
                 throw new Held("Incomplete animal estate intent requires staff review");
             }
-            List<String[]> saved = rows(connection, "SELECT decision FROM husbandry_estate_intents WHERE death_id = ? AND revision = ?",
-                    decision.deathId().toString(), decision.revision());
-            if (!saved.isEmpty() && !decision.toString().equals(saved.getFirst()[0])) throw new Held("Decision conflicts with stored animal receipt");
+            validateReceipts(connection, decision);
             List<String> moved = rows(connection,
                     "SELECT DISTINCT animal_uuid FROM husbandry_estate_slots WHERE death_id = ? ORDER BY animal_uuid",
                     decision.deathId().toString()).stream().map(row -> row[0]).toList();
             return moved.isEmpty() ? Outcome.done() : Outcome.done(Map.of("animals", moved.size()), moved);
         }
+    }
+
+    /** A restored source cannot become an untouched holding merely by changing the revision. */
+    private static void validateReceipts(Connection connection, EstateDecision decision) throws SQLException {
+        List<String[]> saved = rows(connection,
+                "SELECT revision, decision, from_account, from_character, to_account, to_character FROM husbandry_estate_intents WHERE death_id = ?",
+                decision.deathId().toString());
+        for (String[] row : saved) {
+            long revision;
+            try { revision = Long.parseLong(row[0]); }
+            catch (RuntimeException invalid) { throw new Held("Animal receipt revision is invalid"); }
+            if (revision < 0 || row[1].isBlank()) throw new Held("Animal receipt decision envelope is invalid");
+            if (!decision.testator().ownerId().toString().equals(row[2])
+                    || !decision.testator().characterId().toString().equals(row[3]))
+                throw new Held("Animal receipt testator conflicts with this death");
+            CharacterRef recipient;
+            try { recipient = new CharacterRef(UUID.fromString(row[4]), UUID.fromString(row[5])); }
+            catch (RuntimeException invalid) { throw new Held("Animal receipt recipient is invalid"); }
+            if (!row[1].startsWith("EstateDecision[deathId=" + decision.deathId() + ", testator=" + decision.testator() + ", diedAt=")
+                    || !row[1].contains(", property=" + net.tfminecraft.tlibs.character.estate.Recipient.character(recipient) + ", guildLocks=")
+                    || !row[1].endsWith(", revision=" + revision + "]"))
+                throw new Held("Historical animal receipt conflicts with its captured decision");
+            if (revision == decision.revision()) {
+                if (!decision.toString().equals(row[1])
+                        || !decision.property().character().equals(java.util.Optional.of(recipient)))
+                    throw new Held("Decision conflicts with stored animal receipt");
+                if (scalar(connection, "SELECT COUNT(*) FROM character_owners WHERE character_uuid = ?",
+                        decision.testator().characterId().toString()) != 0)
+                    throw new Held("Completed animal receipt conflicts with remaining property; review a new revision");
+            }
+        }
+        if (scalar(connection, """
+                SELECT COUNT(*) FROM character_owners o JOIN husbandry_estate_slots s ON s.animal_uuid = o.animal_uuid
+                WHERE s.death_id = ? AND o.character_uuid = ?
+                """, decision.deathId().toString(), decision.testator().characterId().toString()) != 0)
+            throw new Held("Previously transferred animal reappeared at the testator; preserve receipts for review");
     }
 
     /** Independent raw rows retain unknown nullable/BLOB metadata even after the source slot is deleted. */

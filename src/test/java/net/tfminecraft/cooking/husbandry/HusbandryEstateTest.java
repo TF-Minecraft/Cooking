@@ -78,6 +78,85 @@ class HusbandryEstateTest {
             assertEquals(testator, repo.listOwners(animal.uuid()).getFirst().ref());
         }
     }
+    @Test void restoredTransferredSlotBlocksEveryRevisionAndRestartWithoutChangingRowsOrReceipts() throws Exception {
+        UUID animalId;
+        try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var repo = fixture.value; var animal = own(repo, testator, "owner"); animalId = animal.uuid();
+            repo.upsertOwner(new HusbandryOwner(animalId, coowner.ownerId(), coowner.characterId(), "coowner"));
+            var estate = estate(repo); assertEquals(Outcome.Kind.DONE, estate.settle(decision(1, Recipient.character(heir))).kind());
+            repo.upsertOwner(new HusbandryOwner(animalId, testator.ownerId(), testator.characterId(), "owner"));
+            var connection = repo.ownershipDatabase().getConnection();
+            var owners = rows(connection, "SELECT * FROM character_owners ORDER BY animal_uuid, character_uuid").stream().map(Arrays::asList).toList();
+            var intents = rows(connection, "SELECT * FROM husbandry_estate_intents").stream().map(Arrays::asList).toList();
+            var slots = rows(connection, "SELECT * FROM husbandry_estate_slots").stream().map(Arrays::asList).toList();
+            for (var request : List.of(decision(1, Recipient.character(heir)), decision(2, Recipient.character(coowner)),
+                    decision(3, Recipient.WAITING), decision(4, Recipient.FROZEN))) {
+                assertEquals(Outcome.Kind.BLOCKED, estate.settle(request).kind());
+                assertEquals(owners, rows(connection, "SELECT * FROM character_owners ORDER BY animal_uuid, character_uuid").stream().map(Arrays::asList).toList());
+                assertEquals(intents, rows(connection, "SELECT * FROM husbandry_estate_intents").stream().map(Arrays::asList).toList());
+                assertEquals(slots, rows(connection, "SELECT * FROM husbandry_estate_slots").stream().map(Arrays::asList).toList());
+                assertEquals(61, repo.getAnimal(animalId).orElseThrow().care());
+            }
+        }
+        try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            assertEquals(Outcome.Kind.BLOCKED, estate(fixture.value).settle(decision(5, Recipient.character(heir))).kind());
+            assertEquals(3, fixture.value.listOwners(animalId).size());
+        }
+    }
+    @Test void completedEmptyReceiptRequiresNewRevisionForLateUntouchedHoldings() {
+        try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var estate = estate(fixture.value); var request = decision(1, Recipient.character(heir));
+            assertEquals(Outcome.done(), estate.settle(request));
+            var late = own(fixture.value, testator, "owner");
+            assertEquals(Outcome.Kind.BLOCKED, estate.settle(request).kind());
+            assertEquals(testator, fixture.value.listOwners(late.uuid()).getFirst().ref());
+            assertEquals(List.of(late.uuid().toString()), ((Outcome.Done)estate.settle(decision(2, Recipient.character(heir)))).movedIds());
+        }
+    }
+    @Test void completedReceiptsValidateFullRefsAndSupportedDecisionEnvelope() throws Exception {
+        try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var repo = fixture.value; var animal = own(repo, testator, "owner"); var estate = estate(repo);
+            var request = decision(1, Recipient.character(heir)); assertEquals(Outcome.Kind.DONE, estate.settle(request).kind());
+            var connection = repo.ownershipDatabase().getConnection();
+            Map<String,String> original = Map.of("from_account",testator.ownerId().toString(),"from_character",testator.characterId().toString(),
+                    "to_account",heir.ownerId().toString(),"to_character",heir.characterId().toString(),"revision","1","decision",request.toString());
+            for (String field : List.of("from_account","from_character","to_account","to_character","revision","decision")) {
+                List<String> invalid = field.equals("revision") ? List.of("invalid", "-1") : field.equals("decision") ? List.of("", "wrong") : List.of(UUID.randomUUID().toString());
+                for (String value : invalid) {
+                    update(connection,"UPDATE husbandry_estate_intents SET " + field + " = ?",value);
+                    assertEquals(Outcome.Kind.BLOCKED,estate.settle(request).kind(),field+"="+value);
+                    assertEquals(heir,repo.listOwners(animal.uuid()).getFirst().ref());
+                    update(connection,"UPDATE husbandry_estate_intents SET " + field + " = ?",original.get(field));
+                }
+            }
+            update(connection,"UPDATE husbandry_estate_intents SET to_account = 'invalid'");
+            assertEquals(Outcome.Kind.BLOCKED,estate.settle(decision(2,Recipient.FROZEN)).kind());
+        }
+    }
+    @Test void historicalEnvelopeCorruptionBlocksNewWaitingAndCharacterRevisionsWithoutChangingState() throws Exception {
+        try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
+            var repo = fixture.value; var animal = own(repo,testator,"owner");var estate=estate(repo);
+            var request=decision(1,Recipient.character(heir));assertEquals(Outcome.Kind.DONE,estate.settle(request).kind());
+            var connection=repo.ownershipDatabase().getConnection();
+            Map<String,String> original=Map.of("to_account",heir.ownerId().toString(),"to_character",heir.characterId().toString(),
+                    "decision",request.toString(),"revision","1");
+            for(String field:List.of("to_account","to_character","decision","revision")) {
+                String value=field.equals("decision")?"wrong":field.equals("revision")?"2":UUID.randomUUID().toString();
+                update(connection,"UPDATE husbandry_estate_intents SET "+field+" = ?",value);
+                var intents=rows(connection,"SELECT * FROM husbandry_estate_intents").stream().map(Arrays::asList).toList();
+                var slots=rows(connection,"SELECT * FROM husbandry_estate_slots").stream().map(Arrays::asList).toList();
+                var archive=rows(connection,"SELECT * FROM husbandry_estate_owner_archive").stream().map(Arrays::asList).toList();
+                for(var next:List.of(decision(3,Recipient.WAITING),decision(4,Recipient.character(coowner)))) {
+                    assertEquals(Outcome.Kind.BLOCKED,estate.settle(next).kind(),field);
+                    assertEquals(heir,repo.listOwners(animal.uuid()).getFirst().ref());
+                    assertEquals(intents,rows(connection,"SELECT * FROM husbandry_estate_intents").stream().map(Arrays::asList).toList());
+                    assertEquals(slots,rows(connection,"SELECT * FROM husbandry_estate_slots").stream().map(Arrays::asList).toList());
+                    assertEquals(archive,rows(connection,"SELECT * FROM husbandry_estate_owner_archive").stream().map(Arrays::asList).toList());
+                }
+                update(connection,"UPDATE husbandry_estate_intents SET "+field+" = ?",original.get(field));
+            }
+        }
+    }
     @Test void faultAfterFirstSlotRollsBackWholeEstateThenRetryMovesExactlyOnce() throws Exception {
         try (var fixture = new HusbandryOwnershipMigrationTest.Repository(directory.resolve("farm.db"))) {
             var repo = fixture.value; var first = own(repo, testator, "owner"); var second = own(repo, testator, "owner");
