@@ -71,6 +71,7 @@ class CommandManagerCoverageTest {
         player.setOp(true);
         previousPlugin = Cooking.plugin;
         plugin = mock(Cooking.class);
+        when(plugin.isHusbandryEnabled()).thenReturn(true);
         Cooking.plugin = plugin;
         identities = new net.tfminecraft.cooking.testsupport.TestCharacters(plugin);
         InteractibleFurniture integration = mock(InteractibleFurniture.class);
@@ -248,6 +249,17 @@ class CommandManagerCoverageTest {
         assertEquals(List.of("§cGenetics must be a number."), messages());
         run("husbandry", "spawn", "cow", "2", "bad");
         assertEquals(List.of("§cCare must be a number."), messages());
+    }
+
+    @Test void husbandryCommandsExplainWhenAnotherPluginRunsLivestock() {
+        when(plugin.isHusbandryEnabled()).thenReturn(false);
+        MockedStatic<HusbandrySpawner> spawner = staticMock(HusbandrySpawner.class);
+        run("husbandry", "spawn", "cow");
+        assertEquals(List.of("§cHusbandry is disabled in husbandry.yml."), messages());
+        run("husbandry", "save");
+        assertEquals(List.of("§cHusbandry is disabled in husbandry.yml."), messages());
+        spawner.verifyNoInteractions();
+        verify(plugin, never()).getHusbandryRepository();
     }
 
     @Test void husbandrySpawnUsesDefaultsAndReportsClampedGeneticsAndCare() {

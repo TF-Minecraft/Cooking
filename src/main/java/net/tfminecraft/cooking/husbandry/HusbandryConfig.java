@@ -49,6 +49,7 @@ public final class HusbandryConfig {
     private static double geneticSlowdownDivisor = 1;
     private static double careInfluence = 0.02;
     private static String statsRevision = "1";
+    private static boolean enabled = true;
     private static boolean restoreLostAnimals = true;
     private static List<HusbandryAmountBand> amountBands = List.of();
     private static double mountSpeedMinPct = 0.40;
@@ -156,6 +157,14 @@ public final class HusbandryConfig {
 
     public static void setStatsRevision(String revision) {
         statsRevision = revision == null ? "" : revision.trim();
+    }
+
+    public static void setEnabled(boolean value) {
+        enabled = value;
+    }
+
+    public static boolean enabled() {
+        return enabled;
     }
 
     public static void setRestoreLostAnimals(boolean enabled) {

@@ -47,6 +47,7 @@ class HusbandryLoaderCoverageTest {
                 breeding: {genetic-variance-multiplier: 0.3, genetic-slowdown-divisor: 0.7, care-influence: 0.04}
                 stats-revision: '  new-revision  '
                 restore-lost-animals: false
+                enabled: false
                 profession: '  ranching  '
                 exp: {min: 4, max: 9}
                 species:
@@ -103,7 +104,7 @@ class HusbandryLoaderCoverageTest {
         assertEquals(Set.of(EntityType.COW, EntityType.PIG), HusbandryConfig.removeUnowned()); assertTrue(HusbandryConfig.isRemoveUnowned(EntityType.COW)); assertFalse(HusbandryConfig.isRemoveUnowned(null)); assertFalse(HusbandryConfig.isRemoveUnowned(EntityType.WOLF));
         assertFalse(HusbandryConfig.damageOtherPlayers()); assertFalse(HusbandryConfig.damageOwner()); assertFalse(HusbandryConfig.damageMobs()); assertFalse(HusbandryConfig.damageEnvironment());
         assertEquals(0.3, HusbandryConfig.geneticVarianceMultiplier()); assertEquals(0.7, HusbandryConfig.geneticSlowdownDivisor()); assertEquals(0.04, HusbandryConfig.careInfluence());
-        assertEquals("new-revision", HusbandryConfig.statsRevision()); assertFalse(HusbandryConfig.restoreLostAnimals()); assertEquals("ranching", HusbandryConfig.professionId());
+        assertEquals("new-revision", HusbandryConfig.statsRevision()); assertFalse(HusbandryConfig.restoreLostAnimals()); assertFalse(HusbandryConfig.enabled()); assertEquals("ranching", HusbandryConfig.professionId());
         assertEquals(0.1, HusbandryConfig.mountSpeedMinPct()); assertEquals(0.2, HusbandryConfig.mountSpeedGeneticsPct()); assertEquals(0.3, HusbandryConfig.mountSpeedCarePct());
         assertEquals(Set.of(EntityType.COW, EntityType.WOLF), HusbandryConfig.species().keySet());
         HusbandrySpecies cow = HusbandryConfig.species(EntityType.COW);
