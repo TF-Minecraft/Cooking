@@ -66,13 +66,6 @@ class HusbandryProductsTest {
         assertEquals(List.of("On slaughter", "Milk"), HusbandryProducts.modeLines(species));
     }
 
-    @Test
-    void milkFoodStringUsesAnimalOrigin() {
-        assertEquals("food(type=milk_bucket;origin=Goat)", HusbandryHarvest.milkFoodStringForType("GOAT"));
-        assertEquals("food(type=milk_bucket;origin=Cow)", HusbandryHarvest.milkFoodStringForType("COW"));
-        assertEquals("food(type=milk_bucket;origin=Cow)", HusbandryHarvest.milkFoodStringForType("PIG"));
-    }
-
     private static HusbandrySpecies species(
             boolean milk,
             String slaughterMeat,

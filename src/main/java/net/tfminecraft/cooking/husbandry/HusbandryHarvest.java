@@ -11,15 +11,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.tlibs.TLibs;
-import net.tfminecraft.cooking.carve.CarvableRoastUtils;
-import net.tfminecraft.cooking.carve.CarveSequence;
-import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.cooking.loader.CarveSequenceLoader;
-import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.api.CookingFoodApi;
 import net.tfminecraft.cooking.utils.InventoryAdder;
-import net.tfminecraft.cooking.utils.ItemBuilder;
-import net.tfminecraft.cooking.utils.ItemUpdater;
-import net.tfminecraft.cooking.utils.QualityUtils;
 
 public final class HusbandryHarvest {
 
@@ -141,17 +134,6 @@ public final class HusbandryHarvest {
         }
     }
 
-    public static String milkFoodString(EntityType type) {
-        return milkFoodStringForType(type == null ? null : type.name());
-    }
-
-    static String milkFoodStringForType(String typeName) {
-        if ("GOAT".equalsIgnoreCase(typeName)) {
-            return "food(type=milk_bucket;origin=Goat)";
-        }
-        return "food(type=milk_bucket;origin=Cow)";
-    }
-
     public static Sound milkSound(EntityType type) {
         if (type == EntityType.GOAT) {
             return Sound.ENTITY_GOAT_MILK;
@@ -159,48 +141,19 @@ public final class HusbandryHarvest {
         return Sound.ENTITY_COW_MILK;
     }
 
-    public static ItemStack buildFood(HusbandryAnimal animal, String foodString) {
-        return buildFood(animal, foodString, null);
-    }
-
     public static ItemStack buildMilk(HusbandryAnimal animal, EntityType type) {
-        return buildFood(animal, milkFoodString(type), new ItemStack(Material.MILK_BUCKET));
+        if (animal == null) {
+            return null;
+        }
+        return CookingFoodApi.buildMilk(type, rollQuality(animal, ThreadLocalRandom.current()));
     }
 
-    public static ItemStack buildFood(HusbandryAnimal animal, String foodString, ItemStack base) {
-        if (foodString == null || foodString.isBlank() || animal == null) {
+    public static ItemStack buildFood(HusbandryAnimal animal, String foodString) {
+        if (animal == null) {
             return null;
-        }
-        FoodParser.Result parsed = FoodParser.parse(foodString);
-        if (parsed == null || parsed.template == null) {
-            return null;
-        }
-        int quality = QualityUtils.clamp(rollQuality(animal, ThreadLocalRandom.current()));
-        ItemStack stack = ItemBuilder.buildSingleWithQuality(parsed.template, base, quality);
-        FoodItem item = FoodItem.fromItem(stack);
-        if (item == null) {
-            return stack;
-        }
-        CarvableRoastUtils.readCarveState(item, stack);
-        String seqId = item.getCarveSequencePdc() != null
-                ? item.getCarveSequencePdc()
-                : item.getCarveSequenceId();
-        if (seqId == null) {
-            return stack;
-        }
-        CarveSequence seq = CarveSequenceLoader.get(seqId);
-        if (seq == null) {
-            return stack;
         }
         int requested = HusbandryConfig.roastCutsFor(HusbandryConfig.effectiveGenetics(animal));
-        CarvableRoastUtils.RoastPortion portion = CarvableRoastUtils.portion(seq, requested);
-        item.setCarveState(seqId, portion.nextIndex(), portion.remaining());
-        CarvableRoastUtils.writeCarveState(stack, item);
-        ItemStack updated = ItemUpdater.applyItemUpdate(stack, item, null);
-        if (updated != null && !updated.getType().isAir()) {
-            stack = updated;
-        }
-        return stack;
+        return CookingFoodApi.buildRoast(foodString, rollQuality(animal, ThreadLocalRandom.current()), requested);
     }
 
     public static ItemStack buildTlibs(String path, int amount) {

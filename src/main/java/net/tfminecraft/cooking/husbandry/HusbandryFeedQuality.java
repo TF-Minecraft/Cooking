@@ -1,14 +1,12 @@
 package net.tfminecraft.cooking.husbandry;
 
+import java.util.OptionalInt;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataType;
 
-import net.tfminecraft.cooking.utils.Keys;
-import net.tfminecraft.cooking.utils.QualityUtils;
+import net.tfminecraft.cooking.api.CookingFoodApi;
 
 /**
  * Breeding-food stars scale the gene bonus above the parent average.
@@ -54,11 +52,11 @@ public final class HusbandryFeedQuality {
         if (isUniversalFeed(stack)) {
             return FULL_SCALE;
         }
-        Integer stars = starsOrNull(stack);
-        if (stars == null) {
+        OptionalInt stars = CookingFoodApi.qualityOf(stack);
+        if (stars.isEmpty()) {
             return FULL_SCALE;
         }
-        return scaleForStars(stars);
+        return scaleForStars(stars.getAsInt());
     }
 
     public static void offer(UUID animalId, double scale, long nowMillis) {
@@ -130,21 +128,6 @@ public final class HusbandryFeedQuality {
         } catch (RuntimeException ignored) {
             return false;
         }
-    }
-
-    private static Integer starsOrNull(ItemStack stack) {
-        if (stack == null || stack.getType().isAir() || !stack.hasItemMeta()) {
-            return null;
-        }
-        ItemMeta meta = stack.getItemMeta();
-        if (meta == null) {
-            return null;
-        }
-        Integer stored = meta.getPersistentDataContainer().get(Keys.QUALITY, PersistentDataType.INTEGER);
-        if (stored == null) {
-            return null;
-        }
-        return QualityUtils.clamp(stored);
     }
 
     private record TimedScale(double scale, long atMillis) {}
