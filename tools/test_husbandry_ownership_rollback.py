@@ -1,4 +1,5 @@
 import importlib.util
+import os
 from pathlib import Path
 import sqlite3
 import tempfile
@@ -66,6 +67,31 @@ class OwnershipRollbackTest(unittest.TestCase):
         self.database.commit()
         with self.assertRaisesRegex(ValueError, 'No immutable'):
             rollback.rollback(self.path)
+
+    def test_backup_stays_private_with_permissive_umask_and_never_changes_existing_modes(self):
+        self.path.chmod(0o600)
+        self.database.execute('UPDATE animals SET care=93')
+        self.database.commit()  # Committed WAL content must reach the restricted recovery image.
+        backup = self.path.with_name('private-recovery.db')
+        previous = os.umask(0)
+        try:
+            result = rollback.rollback(self.path, True, backup)
+        finally:
+            os.umask(previous)
+        self.assertTrue(result['applied'])
+        self.assertEqual(0o600, backup.stat().st_mode & 0o777)
+        self.assertEqual(0o600, self.path.stat().st_mode & 0o777)
+        with sqlite3.connect(backup) as recovered:
+            self.assertEqual((93, b'\x00\x01\xff'), recovered.execute('SELECT care,snapshot FROM animals').fetchone())
+            self.assertEqual(('ok',), recovered.execute('PRAGMA integrity_check').fetchone())
+        existing = self.path.with_name('existing.db')
+        existing.write_bytes(b'original recovery image')
+        existing.chmod(0o640)
+        with self.assertRaises(FileExistsError):
+            rollback.rollback(self.path, True, existing)
+        self.assertEqual(b'original recovery image', existing.read_bytes())
+        self.assertEqual(0o640, existing.stat().st_mode & 0o777)
+        self.assertEqual(0o600, self.path.stat().st_mode & 0o777)
 
 
 if __name__ == '__main__':

@@ -2,9 +2,11 @@ package net.tfminecraft.cooking.husbandry;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -18,6 +20,7 @@ import net.tfminecraft.tlibs.character.estate.EstateParticipant;
 import net.tfminecraft.tlibs.character.estate.Estates;
 import net.tfminecraft.tlibs.character.estate.Holdings;
 import net.tfminecraft.tlibs.character.estate.Outcome;
+import net.tfminecraft.tlibs.character.estate.Recipient;
 import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 
 import static net.tfminecraft.cooking.husbandry.HusbandryOwnershipStore.*;
@@ -51,6 +54,7 @@ final class HusbandryEstate implements EstateParticipant {
         if (!guard.test(decision)) return Outcome.retry("Animal estate guard does not hold");
         var db = repository.ownershipDatabase();
         try {
+            String capturedDecision = captured(decision);
             if (decision.property().character().isEmpty()) return receipts(decision);
             CharacterRef to = decision.property().character().orElseThrow();
             if (to.equals(decision.testator())) return receipts(decision);
@@ -67,7 +71,7 @@ final class HusbandryEstate implements EstateParticipant {
                             "SELECT animal_uuid, account_uuid, role FROM character_owners WHERE character_uuid = ?",
                             decision.testator().characterId().toString());
                     update(connection, "INSERT INTO husbandry_estate_intents VALUES (?, ?, ?, ?, ?, ?, ?, 'prepared')",
-                            decision.deathId().toString(), decision.revision(), decision.toString(),
+                            decision.deathId().toString(), decision.revision(), capturedDecision,
                             decision.testator().ownerId().toString(), decision.testator().characterId().toString(),
                             to.ownerId().toString(), to.characterId().toString());
                     for (String[] row : source) {
@@ -141,8 +145,8 @@ final class HusbandryEstate implements EstateParticipant {
             CharacterRef recipient;
             try { recipient = new CharacterRef(UUID.fromString(row[4]), UUID.fromString(row[5])); }
             catch (RuntimeException invalid) { throw new Held("Animal receipt recipient is invalid"); }
-            if (!row[1].startsWith("EstateDecision[deathId=" + decision.deathId() + ", testator=" + decision.testator() + ", diedAt=")
-                    || !row[1].contains(", property=" + net.tfminecraft.tlibs.character.estate.Recipient.character(recipient) + ", guildLocks=")
+            if (!row[1].startsWith("EstateDecision[deathId=" + decision.deathId() + ", testator=" + refText(decision.testator()) + ", diedAt=")
+                    || !row[1].contains(", property=Character[ref=" + refText(recipient) + "], guildLocks=")
                     || !row[1].endsWith(", revision=" + revision + "]"))
                 throw new Held("Historical animal receipt conflicts with its captured decision");
             List<String[]> original = scalar(connection,
@@ -163,7 +167,7 @@ final class HusbandryEstate implements EstateParticipant {
                     || !new java.util.HashSet<>(plannedIds).equals(new java.util.HashSet<>(movedIds)))
                 throw new Held("Animal receipt IDs conflict with the immutable source archive");
             if (revision == decision.revision()) {
-                if (!decision.toString().equals(row[1])
+                if (!captured(decision).equals(row[1])
                         || !decision.property().character().equals(java.util.Optional.of(recipient)))
                     throw new Held("Decision conflicts with stored animal receipt");
                 if (scalar(connection, "SELECT COUNT(*) FROM character_owners WHERE character_uuid = ?",
@@ -176,6 +180,37 @@ final class HusbandryEstate implements EstateParticipant {
                 WHERE s.death_id = ? AND o.character_uuid = ?
                 """, decision.deathId().toString(), decision.testator().characterId().toString()) != 0)
             throw new Held("Previously transferred animal reappeared at the testator; preserve receipts for review");
+    }
+
+    /** Fixed text of all twelve TLibs 2.6.0 fields; byte-identical to its Java 21 record text. */
+    private static String captured(EstateDecision decision) {
+        return "EstateDecision[deathId=" + decision.deathId() + ", testator=" + refText(decision.testator())
+                + ", diedAt=" + optionalText(decision.diedAt().map(Instant::toString))
+                + ", decidedAt=" + decision.decidedAt()
+                + ", heir=" + optionalText(decision.heir().map(HusbandryEstate::refText))
+                + ", deathGuild=" + optionalText(decision.deathGuild().map(UUID::toString))
+                + ", deathRealm=" + optionalText(decision.deathRealm().map(UUID::toString))
+                + ", money=" + partText(decision.money()) + ", property=" + partText(decision.property())
+                + ", guildLocks=" + partText(decision.guildLocks()) + ", letters=" + partText(decision.letters())
+                + ", revision=" + decision.revision() + "]";
+    }
+
+    private static String refText(CharacterRef ref) {
+        return "CharacterRef[ownerId=" + ref.ownerId() + ", characterId=" + ref.characterId() + "]";
+    }
+
+    private static String optionalText(Optional<String> value) {
+        return value.map(text -> "Optional[" + text + "]").orElse("Optional.empty");
+    }
+
+    private static String partText(Recipient recipient) {
+        Recipient.Kind kind = recipient.kind();
+        if (kind == Recipient.Kind.ACCOUNT) return "Account[accountId=" + recipient.account().orElseThrow() + "]";
+        if (kind == Recipient.Kind.CHARACTER) return "Character[ref=" + refText(recipient.character().orElseThrow()) + "]";
+        if (kind == Recipient.Kind.WAITING) return "Waiting[]";
+        if (kind == Recipient.Kind.FROZEN) return "Frozen[]";
+        if (kind == Recipient.Kind.SENDER) return "Sender[]";
+        throw new Held("Unsupported estate decision part " + kind + "; Cooking must be updated");
     }
 
     /** Independent raw rows retain unknown nullable/BLOB metadata even after the source slot is deleted. */

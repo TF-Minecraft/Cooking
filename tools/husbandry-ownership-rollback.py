@@ -2,6 +2,7 @@
 """Preview an offline ownership rollback; --apply preserves a consistent current SQLite backup first."""
 import argparse
 import json
+import os
 from pathlib import Path
 import sqlite3
 import time
@@ -35,8 +36,8 @@ def rollback(path, apply=False, backup=None):
             return result
         target = Path(backup) if backup else path.with_name(path.name + '.before-owner-rollback-' + str(time.time_ns()))
         # Never overwrite the only recovery image. SQLite backup includes committed WAL pages.
-        with target.open('xb'):
-            pass
+        descriptor = os.open(target, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(descriptor)
         with sqlite3.connect(target) as copy:
             database.backup(copy)
             if copy.execute('PRAGMA integrity_check').fetchone() != ('ok',):

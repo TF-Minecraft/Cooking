@@ -96,6 +96,7 @@ public final class HusbandryLocator {
         int restoring = 0;
         int dropped = 0;
         int missing = 0;
+        int held = 0;
         List<String> scannedWorlds = worlds.stream().map(HusbandryEntityScan.WorldDir::world).toList();
         for (Map.Entry<UUID, Long> target : targets.entrySet()) {
             UUID uuid = target.getKey();
@@ -134,6 +135,10 @@ public final class HusbandryLocator {
                 }
                 try {
                     String line = deleteGhost(repository, animal);
+                    if (line == null) {
+                        held++;
+                        continue;
+                    }
                     Bukkit.getLogger().warning(line);
                     dropped++;
                 } catch (SqliteDatabaseException ex) {
@@ -157,12 +162,13 @@ public final class HusbandryLocator {
                 Bukkit.getLogger().severe("[Cooking] Failed to save husbandry animal location: " + ex.getMessage());
             }
         }
-        if (located > 0 || restoring > 0 || dropped > 0 || missing > 0 || !result.complete()) {
+        if (located > 0 || restoring > 0 || dropped > 0 || missing > 0 || held > 0 || !result.complete()) {
             String failed = missing > 0
                     ? ", " + missing + " still marked missing after a failed drop"
                     : "";
             Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, restoring "
                     + restoring + " lost animals from snapshots, dropped " + dropped + " ghost animals" + failed
+                    + (held > 0 ? ", held " + held + " missing animal records for staff review" : "")
                     + (result.complete() ? "." : " (some chunks could not be read, none dropped)."));
         }
     }
@@ -181,13 +187,15 @@ public final class HusbandryLocator {
         return scannedWorlds != null && scannedWorlds.contains(storedWorld);
     }
 
-    /** Deletes the animal and its owners. Returns the log line for the dropped record. */
+    /** Deletes the animal and its owners, or returns null without mutation for an estate hold. */
     static String deleteGhost(HusbandryRepository repository, HusbandryAnimal animal) {
-        List<HusbandryOwner> owners = repository.listOwners(animal.uuid());
-        repository.deleteAnimal(animal.uuid());
-        for (HusbandryOwner owner : owners) {
-            repository.deleteCharacterOwner(animal.uuid(), owner.characterUuid());
+        if (repository.isEstateHeld(animal.uuid())) {
+            MISSING.add(animal.uuid());
+            return null;
         }
+        List<HusbandryOwner> owners = repository.listOwners(animal.uuid());
+        // Foreign-key cascades remove account owners, character owners and snapshots together.
+        repository.deleteAnimal(animal.uuid());
         HusbandryEntities.evict(animal.uuid());
         MISSING.remove(animal.uuid());
         return ghostLog(animal, owners);
