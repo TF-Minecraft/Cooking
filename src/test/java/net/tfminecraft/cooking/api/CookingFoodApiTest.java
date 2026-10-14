@@ -97,6 +97,28 @@ class CookingFoodApiTest {
         }
     }
 
+    @Test void roastsKeepThePositiveNumberOfCutsAskedFor() {
+        FoodItem roast = food("roast");
+        roast.setCarveState("roast_seq", 0, 3);
+        ItemStack built = new ItemStack(Material.BEEF);
+        CarveSequence sequence = new CarveSequence("roast_seq", 1, List.of(CarveCut.food("slice", 4, 4),
+                CarveCut.food("slice", 4, 4), CarveCut.item("bone", 1, 0, 0)));
+        try (MockedStatic<FoodParser> parser = mockStatic(FoodParser.class);
+             MockedStatic<ItemBuilder> builder = mockStatic(ItemBuilder.class);
+             MockedStatic<FoodItem> codec = mockStatic(FoodItem.class, CALLS_REAL_METHODS);
+             MockedStatic<CarveSequenceLoader> sequences = mockStatic(CarveSequenceLoader.class);
+             MockedStatic<ItemUpdater> updater = mockStatic(ItemUpdater.class)) {
+            parser.when(() -> FoodParser.parse("roast")).thenReturn(parsed(roast));
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(eq(roast), any(), anyInt())).thenReturn(built);
+            codec.when(() -> FoodItem.fromItem(built)).thenReturn(roast);
+            sequences.when(() -> CarveSequenceLoader.get("roast_seq")).thenReturn(sequence);
+
+            CookingFoodApi.buildRoast("roast", 3, 2);
+
+            assertEquals(3, roast.getCarveRemaining(), "Two meat cuts and the bone");
+        }
+    }
+
     @Test void qualityIsReadOnlyFromCookingItems() {
         assertEquals(OptionalInt.empty(), CookingFoodApi.qualityOf(null));
         assertEquals(OptionalInt.empty(), CookingFoodApi.qualityOf(new ItemStack(Material.AIR)));
