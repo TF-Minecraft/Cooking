@@ -1,9 +1,14 @@
 package net.tfminecraft.cooking;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandMap;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -23,6 +28,7 @@ import net.tfminecraft.cooking.farming.FarmingLoader;
 import net.tfminecraft.cooking.husbandry.HusbandryAnimalsCommand;
 import net.tfminecraft.cooking.husbandry.HusbandryBreedListener;
 import net.tfminecraft.cooking.husbandry.HusbandryCareListener;
+import net.tfminecraft.cooking.husbandry.HusbandryConfig;
 import net.tfminecraft.cooking.husbandry.HusbandryDamageListener;
 import net.tfminecraft.cooking.husbandry.HusbandryDeathListener;
 import net.tfminecraft.cooking.husbandry.HusbandryHarvestListener;
@@ -107,6 +113,7 @@ public class Cooking extends JavaPlugin {
     private final CropsLoader cropsLoader = new CropsLoader();
     private final HusbandryLoader husbandryLoader = new HusbandryLoader();
     private HusbandryRepository husbandryRepository;
+    private boolean husbandryEnabled;
 
     private final TagManager tagManager = new TagManager();
     private final LegacyFishScan legacyFishScan = new LegacyFishScan();
@@ -152,9 +159,14 @@ public class Cooking extends JavaPlugin {
         createConfigs();
         loadConfigs();
         TLibs.getItemAPI().registerPathHandler("c", CookingPathHandler.INSTANCE);
-        openHusbandryDatabase();
-        HusbandryLifecycleListener.applyStatsRevision();
-        net.tfminecraft.cooking.husbandry.HusbandryIdentity.start(this, husbandryRepository);
+        husbandryEnabled = HusbandryConfig.enabled();
+        if (husbandryEnabled) {
+            openHusbandryDatabase();
+            HusbandryLifecycleListener.applyStatsRevision();
+            net.tfminecraft.cooking.husbandry.HusbandryIdentity.start(this, husbandryRepository);
+        } else {
+            getLogger().info("Husbandry is disabled in husbandry.yml; animals are left to other plugins.");
+        }
         registerListeners();
 
         cookingManager.start();
@@ -174,17 +186,23 @@ public class Cooking extends JavaPlugin {
             SaturationGuard.start();
             NutritionDrainTask.start();
             Bukkit.getOnlinePlayers().forEach(NutritionLifecycleListener::initializeCurrent);
-            HusbandryLifecycleListener.resumeLoadedWorlds();
-            HusbandryTickTask.start();
-            HusbandryLocator.scanUnloaded();
+            if (husbandryEnabled) {
+                HusbandryLifecycleListener.resumeLoadedWorlds();
+                HusbandryTickTask.start();
+                HusbandryLocator.scanUnloaded();
+            }
             MMOItemsSupport.claimFirstIfPresent(getServer().getPluginManager(), getLogger());
         });
 
         getCommand("cooking").setExecutor(commands);
         getCommand("cooking").setTabCompleter(commands);
-        HusbandryAnimalsCommand animals = new HusbandryAnimalsCommand();
-        getCommand("animals").setExecutor(animals);
-        getCommand("animals").setTabCompleter(animals);
+        if (husbandryEnabled) {
+            HusbandryAnimalsCommand animals = new HusbandryAnimalsCommand();
+            getCommand("animals").setExecutor(animals);
+            getCommand("animals").setTabCompleter(animals);
+        } else {
+            releaseAnimalsCommand();
+        }
         if (ItemScanService.get() != null) {
             ItemScanService.get().subscribe(tagManager);
             ItemScanService.get().subscribe(legacyFishScan);
@@ -248,8 +266,31 @@ public class Cooking extends JavaPlugin {
         craftingManager.rebuildStations();
         NutritionDrainTask.stop();
         NutritionDrainTask.start();
-        HusbandryTickTask.stop();
-        HusbandryTickTask.start();
+        if (HusbandryConfig.enabled() != husbandryEnabled) {
+            getLogger().warning("husbandry.yml enabled changed; restart the server to apply it.");
+        }
+        if (husbandryEnabled) {
+            HusbandryTickTask.stop();
+            HusbandryTickTask.start();
+        }
+    }
+
+    /** True when Cooking runs livestock; read once at startup from husbandry.yml {@code enabled}. */
+    public boolean isHusbandryEnabled() {
+        return husbandryEnabled;
+    }
+
+    /** Frees /animals and /livestock so the plugin that runs livestock can register them. */
+    private void releaseAnimalsCommand() {
+        PluginCommand animals = getCommand("animals");
+        CommandMap map = getServer().getCommandMap();
+        animals.unregister(map);
+        Map<String, Command> known = map.getKnownCommands();
+        for (String label : List.copyOf(known.keySet())) {
+            if (known.get(label) == animals) {
+                known.remove(label);
+            }
+        }
     }
 
     // ----------------------------------------------------------------------
@@ -279,16 +320,18 @@ public class Cooking extends JavaPlugin {
         CropCustomCropsBridge.tryRegister(this);
         getServer().getPluginManager().registerEvents(new CustomFishingBridge(), this);
         CustomFishingBridge.tryRegister(this);
-        getServer().getPluginManager().registerEvents(new HusbandryLifecycleListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryCareListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryTamingListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryDeathListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryHarvestListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryBreedListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryNeuterListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryInspectListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryMountListener(), this);
-        getServer().getPluginManager().registerEvents(new HusbandryDamageListener(), this);
+        if (husbandryEnabled) {
+            getServer().getPluginManager().registerEvents(new HusbandryLifecycleListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryCareListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryTamingListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryDeathListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryHarvestListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryBreedListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryNeuterListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryInspectListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryMountListener(), this);
+            getServer().getPluginManager().registerEvents(new HusbandryDamageListener(), this);
+        }
         getServer().getPluginManager().registerEvents(new ConversionManager(), this);
         getServer().getPluginManager().registerEvents(new BundleFoodStacker(), this);
         getServer().getPluginManager().registerEvents(new RegenBlocker(), this);

@@ -62,6 +62,7 @@ class CookingLifecycleTest {
     private MockedStatic<HusbandryLifecycleListener> husbandry;
     private MockedStatic<HusbandryTickTask> husbandryTicks;
     private MockedStatic<HusbandryLocator> locator;
+    private MockedStatic<HusbandryIdentity> identities;
     private MockedStatic<LiquidContainerAging> liquidAging;
     private MockedStatic<ButterChurnAging> churnAging;
     @TempDir Path directory;
@@ -94,7 +95,7 @@ class CookingLifecycleTest {
         locator = staticMock(HusbandryLocator.class);
         liquidAging = staticMock(LiquidContainerAging.class);
         churnAging = staticMock(ButterChurnAging.class);
-        staticMock(net.tfminecraft.cooking.husbandry.HusbandryIdentity.class);
+        identities = staticMock(HusbandryIdentity.class);
         staticMock(CustomFishingCatalog.class);
         staticMock(CropCustomCropsBridge.class);
         staticMock(CustomFishingBridge.class);
@@ -140,6 +141,7 @@ class CookingLifecycleTest {
         assertConfigLoaded(plugin, CropsLoader.class, "crops.yml");
         assertConfigLoaded(plugin, HusbandryLoader.class, "husbandry.yml");
         assertConfigLoaded(plugin, CarveSequenceLoader.class, "carve-sequences.yml");
+        assertTrue(plugin.isHusbandryEnabled());
         repositories.verify(() -> HusbandryRepository.open(new File(plugin.getDataFolder(), "Data/husbandry.db")));
         verify(items).registerPathHandler("c", CookingPathHandler.INSTANCE);
         assertInstanceOf(CommandManager.class, plugin.getCommand("cooking").getExecutor());
@@ -255,6 +257,47 @@ class CookingLifecycleTest {
         nutrition.verify(NutritionDrainTask::start, times(2));
         husbandryTicks.verify(HusbandryTickTask::stop);
         husbandryTicks.verify(HusbandryTickTask::start, times(2));
+    }
+
+    @Test void disabledHusbandryOpensNoDatabaseRegistersNoAnimalListenersAndFreesAnimals() {
+        HusbandryConfig.setEnabled(false);
+        try {
+            Cooking plugin = loadPlugin();
+
+            assertFalse(plugin.isHusbandryEnabled());
+            assertNull(plugin.getHusbandryRepository());
+            repositories.verifyNoInteractions();
+            husbandry.verifyNoInteractions();
+            identities.verifyNoInteractions();
+            assertTrue(HandlerList.getRegisteredListeners(plugin).stream()
+                    .noneMatch(listener -> listener.getListener().getClass().getPackageName()
+                            .equals(HusbandryLifecycleListener.class.getPackageName())));
+            assertNotNull(server.getCommandMap().getCommand("cooking"));
+            for (String label : List.of("animals", "livestock", "cooking:animals", "cooking:livestock")) {
+                assertNull(server.getCommandMap().getCommand(label), label);
+            }
+
+            server.getScheduler().performOneTick();
+            plugin.reloadAll();
+
+            husbandryTicks.verifyNoInteractions();
+            locator.verifyNoInteractions();
+            assertFalse(plugin.isHusbandryEnabled(), "A reload must not switch husbandry on");
+        } finally {
+            HusbandryConfig.setEnabled(true);
+        }
+    }
+
+    @Test void reloadWarnsInsteadOfSwitchingHusbandryOffWhileRunning() {
+        Cooking plugin = loadPlugin();
+        HusbandryConfig.setEnabled(false);
+        try {
+            plugin.reloadAll();
+            assertTrue(plugin.isHusbandryEnabled());
+            husbandryTicks.verify(HusbandryTickTask::start, times(1));
+        } finally {
+            HusbandryConfig.setEnabled(true);
+        }
     }
 
     @Test void configGenerationPreservesExistingUserFilesAndFolderCreationIsIdempotent() throws Exception {

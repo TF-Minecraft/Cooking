@@ -199,6 +199,10 @@ public class CommandManager implements CommandExecutor, TabCompleter {
             sender.sendMessage("§cNo permission.");
             return true;
         }
+        if (Cooking.plugin != null && !Cooking.plugin.isHusbandryEnabled()) {
+            sender.sendMessage("§cHusbandry is disabled in husbandry.yml.");
+            return true;
+        }
         if (args.length >= 2 && args[1].equalsIgnoreCase("save")) {
             return handleHusbandrySave(sender);
         }

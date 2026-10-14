@@ -1,3 +1,7 @@
+# false hands livestock to another plugin, such as BreedingBuddies: Cooking opens no animal
+# database, registers no animal listeners and frees /animals. Read at startup only.
+enabled: true
+
 max-animals: 15
 care-max: 200
 
