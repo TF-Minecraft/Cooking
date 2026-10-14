@@ -297,10 +297,19 @@ class HusbandryRuntimeCoverageTest {
         final YamlConfiguration config = new YamlConfiguration();
         final HusbandryLoaderCoverageTest.ConfigSnapshot snapshot;
         final MockedStatic<TLibs> tlibs;
+        final net.tfminecraft.cooking.testsupport.TestCharacters characters;
         Farm(Path directory) throws Exception {
             this.directory = directory; snapshot = new HusbandryLoaderCoverageTest.ConfigSnapshot(); previous = Cooking.plugin;
             server = MockBukkit.mock(); world = addWorld("farm"); player = server.addPlayer("Farmer"); neighbour = server.addPlayer("Neighbour"); player.teleport(new Location(world, 0, 65, 0)); neighbour.teleport(new Location(world, 1, 65, 0));
             plugin = mock(Cooking.class); when(plugin.getName()).thenReturn("Cooking"); when(plugin.namespace()).thenReturn("cooking"); when(plugin.isEnabled()).thenReturn(true); Cooking.plugin = plugin;
+            characters = new net.tfminecraft.cooking.testsupport.TestCharacters(plugin);
+            characters.activate(player, player.getUniqueId()); characters.activate(neighbour, neighbour.getUniqueId());
+            when(characters.provider.info(any())).thenAnswer(call -> {
+                UUID id = call.getArgument(0); Player online = server.getPlayer(id);
+                return online == null ? Optional.empty() : Optional.of(new net.tfminecraft.tlibs.character.CharacterInfo(
+                        new net.tfminecraft.tlibs.character.CharacterRef(id, id), online.getName(),
+                        net.tfminecraft.tlibs.character.CharacterStatus.ALIVE, null, Set.of(), 0, null));
+            });
             repository = spy(HusbandryRepository.open(directory.resolve("husbandry.db").toFile())); when(plugin.getHusbandryRepository()).thenReturn(repository); HusbandryEntities.clearLoaded();
             config.loadFromString("""
                     max-animals: 2
@@ -341,10 +350,10 @@ class HusbandryRuntimeCoverageTest {
         HusbandryAnimal record(LivingEntity entity) { HusbandryAnimal animal = new HusbandryAnimal(entity.getUniqueId(), entity.getType().name(), HusbandryEntities.displayName(entity.getType())); animal.setLastProcessedAt(System.currentTimeMillis()); animal.setAfflictionAt(100); animal.setStatsRevision(HusbandryConfig.statsRevision()); repository.upsertAnimal(animal); HusbandryEntities.putLoaded(animal); return animal; }
         HusbandryAnimal offline(String type, String name) { HusbandryAnimal animal = new HusbandryAnimal(UUID.randomUUID(), type, name); animal.setLastProcessedAt(System.currentTimeMillis()); animal.setUnloadedAt(1L); animal.setLastLocation("farm", 0, 65, 0); repository.upsertAnimal(animal); return animal; }
         HusbandryAnimal ownedOffline(String name) { HusbandryAnimal animal = offline("COW", name); own(animal, player); return animal; }
-        void own(HusbandryAnimal animal, PlayerMock owner) { animal.setState(HusbandryAnimalState.OWNED); repository.upsertAnimal(animal); repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner.getUniqueId(), "owner")); }
+        void own(HusbandryAnimal animal, PlayerMock owner) { animal.setState(HusbandryAnimalState.OWNED); repository.upsertAnimal(animal); repository.upsertOwner(new HusbandryOwner(animal.uuid(), owner.getUniqueId(), owner.getUniqueId(), "owner")); }
         @Override public void close() throws Exception {
             for (HusbandryAnimal animal : repository.listOwnedAnimals()) HusbandryLocator.markFound(animal.uuid());
-            HusbandryTickTask.stop(); HusbandryEntities.clearLoaded(); repository.close(); MockBukkit.unmock(); tlibs.close(); Cooking.plugin = previous; snapshot.close();
+            HusbandryTickTask.stop(); HusbandryEntities.clearLoaded(); repository.close(); characters.close(); MockBukkit.unmock(); tlibs.close(); Cooking.plugin = previous; snapshot.close();
         }
     }
 

@@ -154,6 +154,7 @@ public class Cooking extends JavaPlugin {
         TLibs.getItemAPI().registerPathHandler("c", CookingPathHandler.INSTANCE);
         openHusbandryDatabase();
         HusbandryLifecycleListener.applyStatsRevision();
+        net.tfminecraft.cooking.husbandry.HusbandryIdentity.start(this, husbandryRepository);
         registerListeners();
 
         cookingManager.start();

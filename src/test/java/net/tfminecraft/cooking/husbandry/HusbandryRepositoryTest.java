@@ -145,10 +145,10 @@ class HusbandryRepositoryTest {
             HusbandryAnimal sheep = animal(UUID.randomUUID(), "SHEEP", "Woolly", 4);
             HusbandryAnimal pig = animal(UUID.randomUUID(), "PIG", "Ham", 1);
             repository.upsertAnimals(List.of(cow, sheep, pig));
-            repository.upsertOwner(new HusbandryOwner(cow.uuid(), player, "owner"));
-            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), player, "coowner"));
-            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), other, "owner"));
-            repository.upsertOwner(new HusbandryOwner(pig.uuid(), other, "owner"));
+            repository.upsertOwner(new HusbandryOwner(cow.uuid(), player, player, "owner"));
+            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), player, player, "coowner"));
+            repository.upsertOwner(new HusbandryOwner(sheep.uuid(), other, other, "owner"));
+            repository.upsertOwner(new HusbandryOwner(pig.uuid(), other, other, "owner"));
 
             HusbandryAnimal reloaded = repository.getAnimal(cow.uuid()).orElseThrow();
             assertEquals("world", reloaded.world());

@@ -126,6 +126,8 @@ public final class HusbandryTamingListener implements Listener {
         HusbandryOwnershipService.Result result =
                 HusbandryOwnershipService.claimOwner(player, animal, entity, name);
         switch (result) {
+            case HELD_OWNER -> player.sendMessage("§cThis animal has an unresolved estate; ask staff.");
+            case CHARACTER_REQUIRED -> player.sendMessage("§cChoose a character before owning animals.");
             case AT_CAP -> player.sendMessage("§cYou already own too many animals.");
             case NOT_OWNER -> player.sendMessage("§cThis animal already has an owner.");
             case OK -> {
@@ -194,6 +196,8 @@ public final class HusbandryTamingListener implements Listener {
         HusbandryOwnershipService.Result result =
                 HusbandryOwnershipService.addCoOwner(actor, target, animal);
         switch (result) {
+            case CHARACTER_REQUIRED -> actor.sendMessage("§cBoth players must choose a character first.");
+            case HELD_OWNER -> actor.sendMessage("§cThis animal has an unresolved owner; ask staff.");
             case NOT_OWNER -> actor.sendMessage("§cThis is not your animal.");
             case ALREADY_TARGET_OWNER -> actor.sendMessage("§eAlready an owner of this animal.");
             case TARGET_AT_CAP -> actor.sendMessage("§cThat player already owns too many animals.");

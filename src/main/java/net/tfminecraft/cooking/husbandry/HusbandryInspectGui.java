@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -37,7 +36,7 @@ public final class HusbandryInspectGui {
             return;
         }
         boolean mount = HusbandryMounts.isMount(entity);
-        HusbandryInspectHolder holder = new HusbandryInspectHolder(animal.uuid());
+        HusbandryInspectHolder holder = new HusbandryInspectHolder(animal.uuid(), HusbandryIdentity.session(player).orElse(null));
         String displayName = animal.name();
         if (displayName == null || displayName.isBlank() || "???".equals(displayName.trim())) {
             displayName = HusbandryEntities.displayName(entity.getType());
@@ -139,10 +138,11 @@ public final class HusbandryInspectGui {
     private static ItemStack ownersItem(UUID animalUuid) {
         List<String> lore = new ArrayList<>();
         for (HusbandryOwner owner : HusbandryOwnershipService.listOwners(animalUuid)) {
-            OfflinePlayer offline = Bukkit.getOfflinePlayer(owner.playerUuid());
-            String name = offline.getName() == null ? owner.playerUuid().toString() : offline.getName();
+            String name = HusbandryIdentity.name(owner.ref());
             lore.add("§7" + owner.role() + ": " + name);
         }
+        HusbandryRepository repository = HusbandryEntities.repository();
+        if (repository != null && repository.hasHeldOwner(animalUuid)) lore.add("§7Unresolved owner slot (staff review)");
         if (lore.isEmpty()) {
             lore.add("§7None (untamed)");
         }

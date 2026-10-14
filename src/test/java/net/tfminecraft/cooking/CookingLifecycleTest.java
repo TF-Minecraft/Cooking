@@ -94,6 +94,7 @@ class CookingLifecycleTest {
         locator = staticMock(HusbandryLocator.class);
         liquidAging = staticMock(LiquidContainerAging.class);
         churnAging = staticMock(ButterChurnAging.class);
+        staticMock(net.tfminecraft.cooking.husbandry.HusbandryIdentity.class);
         staticMock(CustomFishingCatalog.class);
         staticMock(CropCustomCropsBridge.class);
         staticMock(CustomFishingBridge.class);

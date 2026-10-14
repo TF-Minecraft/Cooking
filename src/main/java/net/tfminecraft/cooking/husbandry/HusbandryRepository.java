@@ -111,13 +111,6 @@ public final class HusbandryRepository {
     private static final String SELECT_ANIMAL = "SELECT * FROM animals WHERE uuid = ?";
     private static final String EXISTS_ANIMAL = "SELECT 1 FROM animals WHERE uuid = ? LIMIT 1";
     private static final String DELETE_ANIMAL = "DELETE FROM animals WHERE uuid = ?";
-    private static final String UPSERT_OWNER = """
-            INSERT INTO owners (animal_uuid, player_uuid, role) VALUES (?, ?, ?)
-            ON CONFLICT(animal_uuid, player_uuid) DO UPDATE SET role = excluded.role
-            """;
-    private static final String DELETE_OWNER = "DELETE FROM owners WHERE animal_uuid = ? AND player_uuid = ?";
-    private static final String COUNT_PLAYER = "SELECT COUNT(*) FROM owners WHERE player_uuid = ?";
-    private static final String LIST_OWNERS = "SELECT animal_uuid, player_uuid, role FROM owners WHERE animal_uuid = ?";
     // Skips animals whose row is already gone, so a late snapshot cannot trip the foreign key.
     private static final String UPSERT_SNAPSHOT = """
             INSERT INTO snapshots (animal_uuid, data, saved_at)
@@ -128,6 +121,7 @@ public final class HusbandryRepository {
     private static final String DELETE_SNAPSHOT = "DELETE FROM snapshots WHERE animal_uuid = ?";
 
     private final SqliteDatabase database;
+    private HusbandryOwnershipStore ownership;
 
     private HusbandryRepository(SqliteDatabase database) {
         this.database = database;
@@ -153,12 +147,14 @@ public final class HusbandryRepository {
     private void initSchema() {
         database.execute("PRAGMA journal_mode=WAL");
         database.execute("PRAGMA foreign_keys=ON");
+        database.execute("PRAGMA synchronous=FULL");
         database.execute("PRAGMA busy_timeout=5000");
         database.execute(CREATE_ANIMALS);
         database.execute(CREATE_OWNERS);
         database.execute(INDEX_OWNERS_PLAYER);
         database.execute(CREATE_SNAPSHOTS);
         migrateSchema();
+        ownership = new HusbandryOwnershipStore(database);
     }
 
     private void migrateSchema() {
@@ -310,42 +306,59 @@ public final class HusbandryRepository {
         executeUpdate(DELETE_ANIMAL, uuid.toString());
     }
 
-    public void upsertOwner(HusbandryOwner owner) {
-        if (owner == null || owner.animalUuid() == null || owner.playerUuid() == null) {
-            return;
+    public void upsertOwner(HusbandryOwner owner) { ownership.put(owner); }
+
+    public void saveAnimalAndOwner(HusbandryAnimal animal, HusbandryOwner owner) {
+        if (!animal.uuid().equals(owner.animalUuid()) || !HusbandryOwnershipStore.recognized(owner.role())) {
+            throw new IllegalArgumentException("Invalid animal ownership publication");
         }
-        executeUpdate(
-                UPSERT_OWNER,
-                owner.animalUuid().toString(),
-                owner.playerUuid().toString(),
-                owner.role());
+        if (ownership.estateHeld(animal.uuid())) throw new IllegalStateException("Animal estate intent requires staff review");
+        database.runTransaction(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(UPSERT_ANIMAL)) {
+                String[] before = HusbandryOwnershipStore.slot(connection, animal.uuid().toString(), owner.characterUuid().toString());
+                if (before != null && (!owner.playerUuid().toString().equals(before[0])
+                        || !HusbandryOwnershipStore.recognized(before[1]))) throw new IllegalArgumentException("Conflicting owner slot");
+                bindAnimal(statement, animal);
+                statement.executeUpdate();
+                HusbandryOwnershipStore.put(connection, animal.uuid().toString(), owner.ref(), owner.role());
+            } catch (SQLException ex) {
+                throw new SqliteDatabaseException("Could not publish animal ownership", ex);
+            }
+        });
     }
 
-    public void deleteOwner(UUID animalUuid, UUID playerUuid) {
-        if (animalUuid == null || playerUuid == null) {
-            return;
-        }
-        executeUpdate(DELETE_OWNER, animalUuid.toString(), playerUuid.toString());
+    /** The second UUID names a character, never an account. */
+    public void deleteCharacterOwner(UUID animalUuid, UUID characterUuid) { ownership.remove(animalUuid, characterUuid); }
+
+    /** An account is ambiguous once several of its characters can share the same animal. */
+    @Deprecated
+    public void deleteOwner(UUID animalUuid, UUID accountUuid) {
+        throw new IllegalArgumentException("Use an explicit character owner");
     }
 
-    public int countForPlayer(UUID playerUuid) {
-        if (playerUuid == null) {
-            return 0;
-        }
-        return queryOne(COUNT_PLAYER, result -> result.getInt(1), playerUuid.toString()).orElse(0);
-    }
+    public int countForPlayer(UUID playerUuid) { return ownership.countAccount(playerUuid); }
 
-    public List<HusbandryOwner> listOwners(UUID animalUuid) {
-        if (animalUuid == null) {
-            return List.of();
-        }
-        return queryList(
-                LIST_OWNERS,
-                result -> new HusbandryOwner(
-                        UUID.fromString(result.getString("animal_uuid")),
-                        UUID.fromString(result.getString("player_uuid")),
-                        result.getString("role")),
-                animalUuid.toString());
+    public List<HusbandryOwner> listOwners(UUID animalUuid) { return ownership.owners(animalUuid); }
+
+    public boolean hasAnyOwner(UUID animalUuid) { return ownership.hasAny(animalUuid); }
+    public boolean hasHeldOwner(UUID animalUuid) { return ownership.held(animalUuid); }
+    public boolean accountHasAnimal(UUID account, UUID animal) { return ownership.accountHas(account, animal); }
+    public boolean isEstateHeld(UUID animal) { return ownership.estateHeld(animal); }
+    public int heldOwners() { return ownership.heldCount(); }
+    public boolean migrateOwners(java.util.function.BooleanSupplier ready,
+            java.util.function.Function<UUID, Optional<net.tfminecraft.tlibs.character.CharacterRef>> heirs) {
+        return ownership.migrate(ready, heirs);
+    }
+    SqliteDatabase ownershipDatabase() { return database; }
+
+    public List<HusbandryOwned> listForCharacter(net.tfminecraft.tlibs.character.CharacterRef ref) {
+        if (ref == null) return List.of();
+        return queryList("""
+                SELECT a.*, o.role AS owner_role FROM animals a
+                INNER JOIN character_owners o ON o.animal_uuid = a.uuid
+                WHERE o.account_uuid = ? AND o.character_uuid = ? AND o.role IN ('owner','coowner')
+                """, result -> new HusbandryOwned(mapAnimal(result), result.getString("owner_role")),
+                ref.ownerId().toString(), ref.characterId().toString());
     }
 
     public List<HusbandryOwned> listForPlayer(UUID playerUuid) {
@@ -354,10 +367,11 @@ public final class HusbandryRepository {
         }
         return queryList(
                 """
-                SELECT a.*, o.role AS owner_role
+                SELECT a.*, MAX(o.role) AS owner_role
                 FROM animals a
-                INNER JOIN owners o ON o.animal_uuid = a.uuid
-                WHERE o.player_uuid = ?
+                INNER JOIN character_owners o ON o.animal_uuid = a.uuid
+                WHERE o.account_uuid = ? AND o.role IN ('owner','coowner')
+                GROUP BY a.uuid
                 """,
                 result -> new HusbandryOwned(mapAnimal(result), result.getString("owner_role")),
                 playerUuid.toString());
@@ -368,7 +382,10 @@ public final class HusbandryRepository {
                 """
                 SELECT a.*
                 FROM animals a
-                WHERE EXISTS (SELECT 1 FROM owners o WHERE o.animal_uuid = a.uuid)
+                WHERE EXISTS (SELECT 1 FROM character_owners o WHERE o.animal_uuid = a.uuid)
+                   OR EXISTS (SELECT 1 FROM owners o LEFT JOIN husbandry_owner_plan p
+                     ON p.animal_uuid = o.animal_uuid AND p.account_uuid = o.player_uuid
+                     WHERE o.animal_uuid = a.uuid AND (p.status IS NULL OR p.status = 'held'))
                 """,
                 HusbandryRepository::mapAnimal);
     }

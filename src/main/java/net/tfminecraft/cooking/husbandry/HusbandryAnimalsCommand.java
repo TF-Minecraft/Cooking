@@ -34,6 +34,7 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
         }
         boolean self = args.length == 0;
         UUID targetId;
+        net.tfminecraft.tlibs.character.CharacterRef targetCharacter = null;
         String ownerName;
         if (self) {
             if (!(sender instanceof Player player)) {
@@ -41,7 +42,12 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
                 return true;
             }
             targetId = player.getUniqueId();
-            ownerName = player.getName();
+            targetCharacter = HusbandryIdentity.session(player).map(session -> session.ref()).orElse(null);
+            if (targetCharacter == null) {
+                sender.sendMessage(Component.text("Choose a character before listing animals.", NamedTextColor.RED));
+                return true;
+            }
+            ownerName = HusbandryIdentity.name(targetCharacter);
         } else {
             OfflinePlayer offline = Bukkit.getOfflinePlayerIfCached(args[0]);
             if (offline == null) {
@@ -52,7 +58,7 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
             ownerName = offline.getName() == null ? args[0] : offline.getName();
         }
         List<HusbandryOwned> rows = new ArrayList<>();
-        for (HusbandryOwned owned : repository.listForPlayer(targetId)) {
+        for (HusbandryOwned owned : self ? repository.listForCharacter(targetCharacter) : repository.listForPlayer(targetId)) {
             HusbandryAnimal animal = HusbandryEntities.getLoaded(owned.animal().uuid()).orElse(owned.animal());
             Entity live = Bukkit.getEntity(animal.uuid());
             if (live != null) {
@@ -60,9 +66,14 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
             }
             rows.add(new HusbandryOwned(animal, owned.role()));
         }
-        for (Component line : HusbandryRoster.render(
-                ownerName, self, rows, HusbandryConfig.maxAnimals(), System.currentTimeMillis(),
-                HusbandryLocator::isMissing)) {
+        List<Component> lines = HusbandryRoster.render(ownerName, self, rows, HusbandryConfig.maxAnimals(),
+                System.currentTimeMillis(), HusbandryLocator::isMissing);
+        if (self) {
+            lines.set(0, Component.text("Your character's animals (" + rows.size() + ")", NamedTextColor.GOLD));
+            lines.add(1, Component.text("Account animal places: " + repository.countForPlayer(targetId)
+                    + "/" + HusbandryConfig.maxAnimals(), NamedTextColor.GRAY));
+        }
+        for (Component line : lines) {
             sender.sendMessage(line);
         }
         return true;

@@ -80,6 +80,10 @@ public final class HusbandryInspectListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
+        if (!inspect.isCurrent(player)) {
+            player.closeInventory();
+            return;
+        }
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || clicked.getType() != Material.WRITABLE_BOOK) {
             return;
