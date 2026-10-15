@@ -198,6 +198,7 @@ public class Cooking extends JavaPlugin {
         getCommand("cooking").setTabCompleter(commands);
         if (husbandryEnabled) {
             HusbandryAnimalsCommand animals = new HusbandryAnimalsCommand();
+            getServer().getPluginManager().registerEvents(animals, this);
             getCommand("animals").setExecutor(animals);
             getCommand("animals").setTabCompleter(animals);
         } else {

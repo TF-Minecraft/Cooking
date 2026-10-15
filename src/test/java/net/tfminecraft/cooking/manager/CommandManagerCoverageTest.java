@@ -139,6 +139,58 @@ class CommandManagerCoverageTest {
         assertTrue(tabs("husbandry", "spawn", "cow", "1", "2", "").isEmpty());
     }
 
+    @Test void previewAndQualityModesCompleteOnlyUsableFiniteArguments() {
+        assertEquals(List.of("mixing_bowl"), tabs("preview", ""));
+        assertEquals(List.of("mixing_bowl"), tabs("PREVIEW", "MiX"));
+        assertTrue(tabs("preview", "unknown").isEmpty());
+        assertEquals(List.of("flour", "water", "yeast", "dough", "all", "clear"), tabs("preview", "mixing_bowl", ""));
+        assertEquals(List.of("water"), tabs("preview", "MIXING_BOWL", "Wa"));
+        assertTrue(tabs("preview", "other", "").isEmpty());
+        assertTrue(tabs("preview", "mixing_bowl", "all", "").isEmpty());
+        assertEquals(List.of("pickup", "compose", "compose2"), tabs("qualitytest", ""));
+        assertEquals(List.of("compose", "compose2"), tabs("QUALITYTEST", "Co"));
+        assertTrue(tabs("qualitytest", "unknown").isEmpty());
+        assertTrue(tabs("qualitytest", "compose", "").isEmpty());
+        assertTrue(tabs("qualitytest", "pickup", "food(type=roast)", "").isEmpty());
+        assertTrue(commands.onTabComplete(server.getConsoleSender(), command, "cooking", new String[]{"preview", ""}).isEmpty());
+        player.setOp(false);
+        assertTrue(tabs("qualitytest", "").isEmpty());
+    }
+
+    @Test void compositionContextsFollowCompleteFoodExpressionsIncludingSpacesAndMultipleFoods() {
+        org.bukkit.configuration.MemoryConfiguration config = new org.bukkit.configuration.MemoryConfiguration();
+        config.set("name", "Roast");
+        config.set("update", false);
+        FoodItem roast = new FoodItem("roast", config);
+        staticMock(FoodLoader.class).when(() -> FoodLoader.getByString("roast")).thenReturn(roast);
+        List<String> contexts = List.of("CUTTING_BOARD", "MIXING_BOWL", "SAUCE_SCOOP", "SOUP_SCOOP", "CARVE",
+                "CHURN", "FRYING_PAN", "SAUSAGE_MAKER", "MILLING", "BAKING");
+        assertEquals(contexts, tabs("qualitytest", "compose", "food(type=roast)", ""));
+        assertEquals(List.of("BAKING"), tabs("qualitytest", "COMPOSE", "food(type=roast)", "bA"));
+        assertEquals(List.of("SAUCE_SCOOP", "SAUSAGE_MAKER"), tabs("qualitytest", "compose2", "food(type=roast)|food(type=roast)", "sA"));
+        assertEquals(contexts, tabs("qualitytest", "compose", "food(type=roast;origin=Sunday", "roast)", ""));
+        assertEquals(contexts, tabs("qualitytest", "compose2", "food(type=roast)", "|", "food(type=roast)", ""));
+        assertTrue(tabs("qualitytest", "compose", "food(type=roast)").isEmpty());
+        assertTrue(tabs("qualitytest", "compose", "food(type=roast", "").isEmpty());
+        assertTrue(tabs("qualitytest", "compose", "food(type=missing)", "").isEmpty());
+        assertTrue(tabs("qualitytest", "compose2", "food(type=roast)|", "").isEmpty());
+        assertTrue(tabs("qualitytest", "compose2", "food(type=roast)|incomplete", "").isEmpty());
+        assertTrue(tabs("qualitytest", "compose", "food(type=roast)", "unknown").isEmpty());
+        assertTrue(tabs("qualitytest", "compose", "food(type=roast)", "BAKING", "").isEmpty());
+        var parser = staticMock(FoodParser.class);
+        parser.when(() -> FoodParser.parse("empty")).thenReturn(new FoodParser.Result());
+        assertTrue(tabs("qualitytest", "compose", "empty", "").isEmpty());
+    }
+
+    @Test void numericExamplesMatchTheCurrentToken() {
+        assertEquals(List.of("1000"), tabs("husbandry", "spawn", "COW", "10"));
+        assertEquals(List.of("20"), tabs("husbandry", "spawn", "COW", "2"));
+        assertTrue(tabs("husbandry", "spawn", "COW", "9").isEmpty());
+        assertEquals(List.of("200"), tabs("HUSBANDRY", "SPAWN", "COW", "20", "2"));
+        assertEquals(List.of("100"), tabs("husbandry", "spawn", "COW", "20", "10"));
+        assertTrue(tabs("husbandry", "spawn", "COW", "20", "9").isEmpty());
+    }
+
     @Test void foodCommandValidatesArityTargetCharacterAndFoodRange() {
         MockedStatic<RPCharacters> characters = staticMock(RPCharacters.class);
         run("food");

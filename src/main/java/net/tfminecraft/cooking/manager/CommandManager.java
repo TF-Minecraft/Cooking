@@ -146,6 +146,35 @@ public class CommandManager implements CommandExecutor, TabCompleter {
                     .sorted(String.CASE_INSENSITIVE_ORDER)
                     .collect(Collectors.toList());
         }
+        if (sender instanceof Player && args.length >= 2) {
+            if (args[0].equalsIgnoreCase("preview")) {
+                if (args.length == 2) {
+                    return matching(List.of("mixing_bowl"), args[1]);
+                }
+                if (args.length == 3 && args[1].equalsIgnoreCase("mixing_bowl")) {
+                    return matching(List.of("flour", "water", "yeast", "dough", "all", "clear"), args[2]);
+                }
+            }
+            if (args[0].equalsIgnoreCase("qualitytest")) {
+                if (args.length == 2) {
+                    return matching(List.of("pickup", "compose", "compose2"), args[1]);
+                }
+                if (args.length >= 4 && (args[1].equalsIgnoreCase("compose")
+                        || args[1].equalsIgnoreCase("compose2"))) {
+                    String expression = String.join(" ", Arrays.copyOfRange(args, 2, args.length - 1));
+                    String[] foods = args[1].equalsIgnoreCase("compose2") ? expression.split("\\|", -1)
+                            : new String[] { expression };
+                    for (String food : foods) {
+                        FoodParser.Result parsed = FoodParser.parse(food.trim());
+                        if (parsed == null || parsed.template == null) {
+                            return Collections.emptyList();
+                        }
+                    }
+                    return matching(Arrays.stream(CompositionContext.values()).map(CompositionContext::name).toList(),
+                            args[args.length - 1]);
+                }
+            }
+        }
         if (args.length == 2 && args[0].equalsIgnoreCase("husbandry")) {
             String prefix = args[1].toLowerCase(Locale.ROOT);
             List<String> out = new ArrayList<>();
@@ -170,13 +199,18 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         }
         if (args.length == 4 && args[0].equalsIgnoreCase("husbandry")
                 && args[1].equalsIgnoreCase("spawn")) {
-            return List.of("0", "20", "1000");
+            return matching(List.of("0", "20", "1000"), args[3]);
         }
         if (args.length == 5 && args[0].equalsIgnoreCase("husbandry")
                 && args[1].equalsIgnoreCase("spawn")) {
-            return List.of("0", "100", "200");
+            return matching(List.of("0", "100", "200"), args[4]);
         }
         return Collections.emptyList();
+    }
+
+    private static List<String> matching(List<String> candidates, String token) {
+        String prefix = token.toLowerCase(Locale.ROOT);
+        return candidates.stream().filter(value -> value.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
     }
 
     private void sendUsage(Player player) {

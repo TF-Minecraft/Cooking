@@ -2,8 +2,11 @@ package net.tfminecraft.cooking.husbandry;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -14,12 +17,33 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.tfminecraft.cooking.Cooking;
 
-public final class HusbandryAnimalsCommand implements CommandExecutor, TabCompleter {
+public final class HusbandryAnimalsCommand implements CommandExecutor, TabCompleter, Listener {
+
+    private final Map<UUID, String> knownNames = new HashMap<>();
+
+    public HusbandryAnimalsCommand() {
+        // Populate outside completion; getOfflinePlayers may read player data.
+        for (OfflinePlayer player : Bukkit.getOfflinePlayers()) {
+            String name = player.getName();
+            if (name != null) {
+                knownNames.put(player.getUniqueId(), name);
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        knownNames.put(player.getUniqueId(), player.getName());
+    }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -85,13 +109,17 @@ public final class HusbandryAnimalsCommand implements CommandExecutor, TabComple
             return Collections.emptyList();
         }
         String prefix = args[0].toLowerCase(Locale.ROOT);
-        List<String> names = new ArrayList<>();
+        TreeSet<String> names = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+        for (String name : knownNames.values()) {
+            if (name.toLowerCase(Locale.ROOT).startsWith(prefix) && Bukkit.getOfflinePlayerIfCached(name) != null) {
+                names.add(name);
+            }
+        }
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getName().toLowerCase(Locale.ROOT).startsWith(prefix)) {
                 names.add(player.getName());
             }
         }
-        names.sort(String.CASE_INSENSITIVE_ORDER);
-        return names;
+        return new ArrayList<>(names);
     }
 }
