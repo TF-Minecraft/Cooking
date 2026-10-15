@@ -148,6 +148,43 @@ class HusbandryRemainingCoverageTest {
         assertTrue(f.repository.exists(offline.uuid()));
     }
 
+    @Test void animalTargetsUseKnownCachedNamesAndDropExpiredCacheEntriesWithoutRescanning() {
+        OfflinePlayer offline = mock(OfflinePlayer.class);
+        when(offline.getUniqueId()).thenReturn(UUID.randomUUID());
+        when(offline.getName()).thenReturn("OfflineOwner");
+        OfflinePlayer unknown = mock(OfflinePlayer.class);
+        OfflinePlayer uncached = mock(OfflinePlayer.class);
+        when(uncached.getName()).thenReturn("Uncached");
+        f.player.setOp(true);
+        try (var bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(Bukkit::getOfflinePlayers).thenReturn(new OfflinePlayer[]{offline, unknown, uncached, f.player});
+            bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("OfflineOwner")).thenReturn(offline);
+            bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("Uncached")).thenReturn(null);
+            var command = new HusbandryAnimalsCommand();
+            assertEquals(List.of("Farmer", "Neighbour", "OfflineOwner"), command.onTabComplete(f.player, null, "animals", new String[]{""}));
+            assertEquals(List.of("OfflineOwner"), command.onTabComplete(f.player, null, "livestock", new String[]{"oFf"}));
+            assertTrue(command.onTabComplete(f.player, null, "animals", new String[]{"missing"}).isEmpty());
+            bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("Uncached")).thenReturn(uncached);
+            assertEquals(List.of("Uncached"), command.onTabComplete(f.player, null, "animals", new String[]{"un"}));
+            command.onJoin(new org.bukkit.event.player.PlayerJoinEvent(offlinePlayer(offline.getUniqueId(), "RenamedOwner"), net.kyori.adventure.text.Component.empty()));
+            bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("RenamedOwner")).thenReturn(offline);
+            assertEquals(List.of("RenamedOwner"), command.onTabComplete(f.player, null, "livestock", new String[]{"re"}));
+            assertTrue(command.onTabComplete(f.player, null, "animals", new String[]{"off"}).isEmpty());
+            bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("RenamedOwner")).thenReturn(null);
+            assertTrue(command.onTabComplete(f.player, null, "livestock", new String[]{"re"}).isEmpty());
+            bukkit.verify(Bukkit::getOfflinePlayers, times(1));
+            assertTrue(command.onTabComplete(f.neighbour, null, "animals", new String[]{""}).isEmpty());
+            assertTrue(command.onTabComplete(f.player, null, "animals", new String[]{"Farmer", ""}).isEmpty());
+        }
+    }
+
+    private Player offlinePlayer(UUID id, String name) {
+        Player player = mock(Player.class);
+        when(player.getUniqueId()).thenReturn(id);
+        when(player.getName()).thenReturn(name);
+        return player;
+    }
+
     @Test void itemUsesHandleCreativeDurabilityBreakingStacksAndStoredLabels() {
         assertFalse(HusbandryItems.matches(null, "feed")); assertFalse(HusbandryItems.matches(new ItemStack(Material.WHEAT), " ")); assertFalse(HusbandryItems.matches(new ItemStack(Material.WHEAT), null));
         HusbandryItems.useFromMainHand(null); HusbandryItems.consumeOne(null); ItemStack empty = new ItemStack(Material.AIR); HusbandryItems.consumeOne(empty); assertSame(empty, HusbandryItems.applyUse(empty)); assertNull(HusbandryItems.applyUse(null));
