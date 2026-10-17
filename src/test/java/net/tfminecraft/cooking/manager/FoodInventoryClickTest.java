@@ -368,8 +368,9 @@ class FoodInventoryClickTest {
         player.getInventory().setItem(9, beef(2, 10));
         player.setItemOnCursor(beef(1, 100));
         InventoryView view = new InventoryViewMock(player, grid, player.getInventory(), InventoryType.CRAFTING) {};
+        // Double-clicked in the grid itself (raw slot 1).
         InventoryClickEvent event = new InventoryClickEvent(view,
-                InventoryType.SlotType.CONTAINER, 10, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
+                InventoryType.SlotType.CRAFTING, 1, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
 
         server.getPluginManager().callEvent(event);
 

@@ -46,8 +46,12 @@ public class ConversionManager implements Listener {
                 || PlayerActionContext.capture(player) == null) return;
         Inventory top = event.getView().getTopInventory();
         if (!stackingInventory(top)) return;
-        if (event.getSlotType() != InventoryType.SlotType.CONTAINER
-                && event.getSlotType() != InventoryType.SlotType.QUICKBAR) return;
+        InventoryType.SlotType slotType = event.getSlotType();
+        // A double-click may start in the crafting grid; collectFood never takes the result.
+        boolean gridCollect = slotType == InventoryType.SlotType.CRAFTING
+                && event.getAction() == InventoryAction.COLLECT_TO_CURSOR;
+        if (slotType != InventoryType.SlotType.CONTAINER
+                && slotType != InventoryType.SlotType.QUICKBAR && !gridCollect) return;
         Inventory clicked = event.getClickedInventory();
         if (clicked == null) return;
 
