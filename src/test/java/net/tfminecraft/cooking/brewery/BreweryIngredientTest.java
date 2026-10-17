@@ -14,6 +14,7 @@ import java.util.logging.Logger;
 
 import org.bukkit.Material;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -115,7 +116,7 @@ class BreweryIngredientTest {
         assertInstanceOf(SimpleItem.class, event.getRecipeItem());
         assertEquals(before, wheat);
         assertFalse(event.isCancelled());
-        assertFalse(BCauldronRecipe.getAddedRecipes().getFirst().isSaveInData());
+        assertTrue(BCauldronRecipe.getAllRecipes().isEmpty());
     }
 
     @Test void replacesOnlyTheRecordedIdentityForVanillaAndCustomWholeFoods() {
@@ -183,7 +184,7 @@ class BreweryIngredientTest {
         assertTrue(failed.isCancelled()); assertEquals(10, failed.getIngredient().getAmount());
     }
 
-    @Test void runtimeGateSurvivesAcceptedListRebuildAndIsRemovedOnClose() {
+    @Test void runtimeGateSurvivesAcceptedListRebuildWithoutARecipeAndIsRemovedOnClose() {
         RecipeItem gate = BCauldronRecipe.acceptedCustom.getFirst();
         assertFalse(gate.matches(mock(Ingredient.class))); assertFalse(gate.hasMaterials()); assertTrue(gate.getMaterials().isEmpty());
         assertEquals("cooking:identity_gate", gate.getDebugID()); assertEquals(System.identityHashCode(gate), gate.hashCode());
@@ -191,10 +192,15 @@ class BreweryIngredientTest {
         assertThrows(IllegalStateException.class, () -> gate.toIngredient(new ItemStack(Material.APPLE)));
         assertThrows(IllegalStateException.class, gate::toIngredientGeneric);
         assertFalse(gate.matches((ItemStack)null));
-        BCauldronRecipe.acceptedCustom.clear();
-        BCauldronRecipe.getAddedRecipes().forEach(BCauldronRecipe::updateAcceptedLists);
+        // Brewery reloads re-add every recipe's items without clearing the accepted list.
+        BCauldronRecipe reloaded = new BCauldronRecipe("reloaded", "Reloaded");
+        reloaded.setIngredients(List.of(new SimpleItem(Material.WHEAT)));
+        BreweryApi.addCauldronRecipe(reloaded, false);
+        assertSame(gate, BCauldronRecipe.acceptedCustom.getFirst());
         assertSame(gate, RecipeItem.getMatchingRecipeItem(item("wheat", "Wheat", Material.TROPICAL_FISH), false));
-        cleanup.run();assertTrue(BCauldronRecipe.recipes.isEmpty());assertTrue(BCauldronRecipe.acceptedCustom.isEmpty());
+        BCauldronRecipe.recipes.clear();
+        cleanup.run();assertTrue(BCauldronRecipe.acceptedCustom.isEmpty());
+        assertTrue(HandlerList.getRegisteredListeners(server.getPluginManager().getPlugin("BreweryCookingTest")).isEmpty());
     }
 
     @Test void optionalBridgeHandlesMissingDisabledLateAndRepeatedEnablesAndClosesCleanly() {
@@ -211,19 +217,20 @@ class BreweryIngredientTest {
         bridge.onPluginEnable(new PluginEnableEvent(optional));bridge.registerIfPresent();
         Plugin other = mock(Plugin.class);when(other.getName()).thenReturn("Other");bridge.onPluginEnable(new PluginEnableEvent(other));
         verify(logger).info("BreweryX Cooking ingredient resolver enabled.");
+        int gates = BCauldronRecipe.acceptedCustom.size();
+        bridge.onPluginDisable(new PluginDisableEvent(other));assertEquals(gates, BCauldronRecipe.acceptedCustom.size());
+        bridge.onPluginDisable(new PluginDisableEvent(optional));assertEquals(gates - 1, BCauldronRecipe.acceptedCustom.size());
+        bridge.registerIfPresent();verify(logger, times(2)).info("BreweryX Cooking ingredient resolver enabled.");
         bridge.close();bridge.close();
     }
 
-    @Test void failedGateRegistrationUnregistersItsListenerAndLeavesNoPartialRecipe() {
-        JavaPlugin owner = MockBukkit.createMockPlugin("FailedBreweryBridge");
-        int count = BCauldronRecipe.recipes.size();
-        try (var failedApi = mockStatic(BreweryApi.class)) {
-            failedApi.when(() -> BreweryApi.addCauldronRecipe(any(), eq(false)))
-                    .thenThrow(new IllegalStateException("recipe registration failed"));
-            assertThrows(IllegalStateException.class, () -> BreweryIngredientListener.register(owner));
-        }
-        assertTrue(HandlerList.getRegisteredListeners(owner).isEmpty());
-        assertEquals(count, BCauldronRecipe.recipes.size());
+    @Test void failedListenerRegistrationRemovesTheGate() {
+        JavaPlugin owner = mock(JavaPlugin.class, RETURNS_DEEP_STUBS);
+        var manager = owner.getServer().getPluginManager();
+        doThrow(new IllegalStateException("listener registration failed")).when(manager).registerEvents(any(), same(owner));
+        List<RecipeItem> before = new ArrayList<>(BCauldronRecipe.acceptedCustom);
+        assertThrows(IllegalStateException.class, () -> BreweryIngredientListener.register(owner));
+        assertEquals(before, BCauldronRecipe.acceptedCustom);
     }
 
     private IngedientAddEvent event(ItemStack item) {

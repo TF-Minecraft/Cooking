@@ -1,7 +1,5 @@
 package net.tfminecraft.cooking.brewery;
 
-import java.util.List;
-
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -9,7 +7,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import com.dre.brewery.api.BreweryApi;
 import com.dre.brewery.api.events.IngedientAddEvent;
 import com.dre.brewery.recipe.BCauldronRecipe;
 import com.dre.brewery.recipe.RecipeItem;
@@ -23,19 +20,16 @@ import net.tfminecraft.tlibs.TLibs;
 public final class BreweryIngredientListener implements Listener {
     public static Runnable register(JavaPlugin plugin) {
         CookingIngredientGate gate = new CookingIngredientGate();
-        BCauldronRecipe acceptance = new BCauldronRecipe("tfmc_cooking_identity_gate", "Cooking ingredient acceptance");
-        acceptance.setIngredients(List.of(gate));
-        acceptance.setSaveInData(false);
         BreweryIngredientListener listener = new BreweryIngredientListener();
-        plugin.getServer().getPluginManager().registerEvents(listener, plugin);
+        // Brewery only appends to this list when it reloads, so the gate stays until cleanup. A cauldron
+        // recipe would also carry it, but would break /brew simulate, which cannot describe custom items.
+        BCauldronRecipe.acceptedCustom.add(gate);
         Runnable cleanup = () -> {
             HandlerList.unregisterAll(listener);
-            BCauldronRecipe.getAllRecipes().removeIf(recipe -> recipe == acceptance);
             BCauldronRecipe.acceptedCustom.removeIf(item -> item == gate);
         };
-        // Added cauldron recipes survive Brewery config reloads; this one never matches a completed brew.
         try {
-            BreweryApi.addCauldronRecipe(acceptance, false);
+            plugin.getServer().getPluginManager().registerEvents(listener, plugin);
         } catch (RuntimeException | LinkageError exception) {
             cleanup.run();
             throw exception;

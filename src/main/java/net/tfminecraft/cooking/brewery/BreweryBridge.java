@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.brewery;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -16,6 +17,11 @@ public final class BreweryBridge implements Listener, AutoCloseable {
     @EventHandler
     public void onPluginEnable(PluginEnableEvent event) {
         if ("BreweryX".equals(event.getPlugin().getName())) registerIfPresent();
+    }
+
+    @EventHandler
+    public void onPluginDisable(PluginDisableEvent event) {
+        if ("BreweryX".equals(event.getPlugin().getName())) close();
     }
 
     public void registerIfPresent() {
