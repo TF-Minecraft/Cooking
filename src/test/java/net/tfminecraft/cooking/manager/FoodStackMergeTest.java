@@ -89,7 +89,23 @@ class FoodStackMergeTest {
 		assertFalse(ConversionManager.sameApartFromAging(plain, with(plain, m -> m.getPersistentDataContainer()
 				.set(Keys.BASE_FOOD, PersistentDataType.DOUBLE, 12.0))));
 		assertFalse(ConversionManager.sameApartFromAging(plain, with(plain, m -> m.getPersistentDataContainer()
-				.set(Keys.CATCH_SIZE_CM, PersistentDataType.INTEGER, 90))));
+				.set(Keys.SEAFOOD_CUT_TYPE, PersistentDataType.STRING, "fish"))));
 		assertFalse(ConversionManager.sameApartFromAging(plain, new ItemStack(Material.COOKED_PORKCHOP)));
+	}
+	@Test
+	void catchSizeDoesNotKeepEqualFishApart() {
+		ItemStack plain = roast(1, 1_000L, "cooked.3", "Fresh");
+
+		assertTrue(ConversionManager.sameApartFromAging(
+				with(plain, m -> m.getPersistentDataContainer().set(Keys.CATCH_SIZE_CM, PersistentDataType.INTEGER, 45)),
+				with(plain, m -> m.getPersistentDataContainer().set(Keys.CATCH_SIZE_CM, PersistentDataType.INTEGER, 90))));
+	}
+
+	@Test
+	void theCleanCatchMarkerDoesNotKeepOlderFishApart() {
+		ItemStack plain = roast(1, 1_000L, "cooked.3", "Fresh");
+
+		assertTrue(ConversionManager.sameApartFromAging(plain,
+				with(plain, m -> m.getPersistentDataContainer().set(Keys.CLEAN_CATCH, PersistentDataType.BYTE, (byte) 1))));
 	}
 }

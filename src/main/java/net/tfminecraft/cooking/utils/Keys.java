@@ -76,4 +76,8 @@ public class Keys {
 
     public static final NamespacedKey CUSTOM_FISHING_ID =
             new NamespacedKey(Cooking.plugin, "custom_fishing_id");
+
+    /** On whole fish built without the caught item's CustomFishing data. */
+    public static final NamespacedKey CLEAN_CATCH =
+            new NamespacedKey(Cooking.plugin, "clean_catch");
 }

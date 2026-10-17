@@ -55,8 +55,11 @@ class RuntimeUtilitiesCoverageTest {
         when(inventory.getItem(2)).thenReturn(stack(food("other"),Material.BREAD,1)); when(inventory.getItem(4)).thenReturn(partial);
         ItemStack input=stack(bread,Material.BREAD,4); when(inventory.addItem(any(ItemStack.class))).thenAnswer(call->{
             ItemStack remaining=call.getArgument(0); assertEquals(2,remaining.getAmount()); return new HashMap<>(Map.of(0,remaining)); });
-        assertEquals(2,InventoryAdder.addItem(player,input).getAmount()); assertEquals(64,partial.getAmount()); assertEquals(4,input.getAmount());
-        partial.setAmount(60); assertNull(InventoryAdder.addItem(player,input)); assertEquals(64,partial.getAmount());
+        // The merged stack is written back to its slot.
+        assertEquals(2,InventoryAdder.addItem(player,input).getAmount()); assertEquals(4,input.getAmount());
+        verify(inventory).setItem(eq(4),argThat(item->item.getAmount()==64));
+        partial.setAmount(60); assertNull(InventoryAdder.addItem(player,input));
+        verify(inventory,times(2)).setItem(eq(4),argThat(item->item.getAmount()==64));
         when(inventory.addItem(any(ItemStack.class))).thenReturn(new HashMap<>());
         assertNull(InventoryAdder.addItem(player,input));
         ItemStack ordinary=new ItemStack(Material.STONE); assertNull(InventoryAdder.addItem(player,ordinary));

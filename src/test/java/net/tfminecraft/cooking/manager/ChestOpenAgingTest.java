@@ -133,4 +133,15 @@ class ChestOpenAgingTest {
         assertEquals(0, FoodItem.fromItem(chest.getItem(0)).getTagTrack("freshness").getValue());
         assertEquals(Material.STONE, chest.getItem(2).getType());
     }
+    @Test
+    void aDoubleChestMergesLikeASingleOne() {
+        chest = server.createInventory(mock(org.bukkit.block.DoubleChest.class), 18);
+        chest.setItem(0, beef(2, 0, 0));
+        chest.setItem(17, beef(1, 0, 100));
+
+        open();
+
+        assertEquals(now - 100_000L, clock(chest.getItem(0)));
+        assertEquals(now - 100_000L, clock(chest.getItem(17)));
+    }
 }

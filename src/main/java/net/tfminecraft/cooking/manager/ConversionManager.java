@@ -46,13 +46,21 @@ public class ConversionManager implements Listener {
                 || PlayerActionContext.capture(player) == null) return;
         Inventory top = event.getView().getTopInventory();
         if (!stackingInventory(top)) return;
-        if (event.getSlotType() != InventoryType.SlotType.CONTAINER
-                && event.getSlotType() != InventoryType.SlotType.QUICKBAR) return;
+        InventoryType.SlotType slotType = event.getSlotType();
+        // A double-click may start in the crafting grid; collectFood never takes the result.
+        boolean gridCollect = slotType == InventoryType.SlotType.CRAFTING
+                && event.getAction() == InventoryAction.COLLECT_TO_CURSOR;
+        if (slotType != InventoryType.SlotType.CONTAINER
+                && slotType != InventoryType.SlotType.QUICKBAR && !gridCollect) return;
         Inventory clicked = event.getClickedInventory();
         if (clicked == null) return;
 
         if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY && event.isShiftClick()) {
             shiftFood(event, top, clicked);
+            return;
+        }
+        if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+            collectFood(event, top);
             return;
         }
         if (event.getClick() != ClickType.LEFT && event.getClick() != ClickType.RIGHT) return;
@@ -127,6 +135,58 @@ public class ConversionManager implements Listener {
         event.setCurrentItem(remainder(item, remaining));
     }
 
+    private record Slot(Inventory inventory, int index) {
+        ItemStack item() {
+            return inventory.getItem(index);
+        }
+    }
+
+    /**
+     * Double-click gathers only exact copies, so food that aged apart would stay behind. When some
+     * did, gather it the way vanilla does: the container or crafting grid first, then storage, the
+     * hotbar and the off-hand, part stacks before full ones. Otherwise vanilla gathers as usual.
+     */
+    private static void collectFood(InventoryClickEvent event, Inventory top) {
+        ItemStack cursor = event.getCursor();
+        if (FoodItem.fromItem(cursor) == null) return;
+        Inventory bottom = event.getView().getBottomInventory();
+        boolean crafting = top.getType() == InventoryType.CRAFTING;
+        List<Slot> order = new ArrayList<>();
+        // The crafting result (slot 0) is never gathered.
+        for (int i = crafting ? 1 : 0; i < top.getSize(); i++) order.add(new Slot(top, i));
+        // The player view then lists the armour, head to feet.
+        if (crafting) for (int i = 39; i >= 36; i--) order.add(new Slot(bottom, i));
+        for (int i = 9; i < 36; i++) order.add(new Slot(bottom, i));
+        for (int i = 0; i < 9; i++) order.add(new Slot(bottom, i));
+        if (crafting) order.add(new Slot(bottom, 40));
+
+        List<Slot> food = new ArrayList<>();
+        boolean agedApart = false;
+        for (Slot slot : order) {
+            ItemStack item = slot.item();
+            if (!stackableFood(cursor, item)) continue;
+            food.add(slot);
+            agedApart |= !item.isSimilar(cursor);
+        }
+        if (!agedApart) return;
+        event.setCancelled(true);
+
+        ItemStack gathered = cursor;
+        int limit = Math.min(cursor.getMaxStackSize(), bottom.getMaxStackSize());
+        for (boolean fullStacks : new boolean[] {false, true}) {
+            for (Slot slot : food) {
+                ItemStack item = slot.item();
+                int room = limit - gathered.getAmount();
+                // A slot emptied by the first pass is null in the second.
+                if (room <= 0 || item == null || (item.getAmount() >= item.getMaxStackSize()) != fullStacks) continue;
+                int amount = Math.min(room, item.getAmount());
+                gathered = mergedFood(gathered, item, amount);
+                slot.inventory().setItem(slot.index(), remainder(item, item.getAmount() - amount));
+            }
+        }
+        event.getView().setCursor(gathered);
+    }
+
     private static boolean stackableFood(ItemStack a, ItemStack b) {
         if (a == null || b == null || a.isEmpty() || b.isEmpty() || a.getType() != b.getType()) return false;
         FoodItem foodA = FoodItem.fromItem(a);
@@ -137,7 +197,8 @@ public class ConversionManager implements Listener {
         return InventoryAdder.equalsFood(foodA, foodB) && sameApartFromAging(a, b);
     }
 
-    private static ItemStack mergedFood(ItemStack current, ItemStack incoming, int amount) {
+    /** current with amount more of incoming, keeping the more aged copy's data. */
+    public static ItemStack mergedFood(ItemStack current, ItemStack incoming, int amount) {
         ItemStack merged = BundleFoodStacker.moreAged(current, incoming).clone();
         merged.setAmount(current.getAmount() + amount);
         return merged;
@@ -278,6 +339,7 @@ public class ConversionManager implements Listener {
         InventoryHolder holder = top.getHolder();
         if (holder != null &&
             !(holder instanceof org.bukkit.block.BlockState) &&
+            !(holder instanceof org.bukkit.block.DoubleChest) &&
             !(holder instanceof org.bukkit.entity.Entity) &&
             !(holder instanceof Player)) {
             return;
@@ -323,7 +385,8 @@ public class ConversionManager implements Listener {
     /**
      * True when two food stacks differ only in how far they have aged, so one can be copied over
      * the other to let them stack. equalsFood matches by kind and tag step alone, so without this
-     * a carved roast, a sausage chain or a big catch would be replaced by a fresh copy of another.
+     * a carved roast or a sausage chain would be replaced by a fresh copy of another. Catch size
+     * changes nothing once a fish is caught, so fish of one kind and quality stack whatever their size.
      */
     public static boolean sameApartFromAging(ItemStack a, ItemStack b) {
         return withoutAging(a).isSimilar(withoutAging(b));
@@ -335,12 +398,15 @@ public class ConversionManager implements Listener {
         ItemMeta meta = copy.getItemMeta();
         if (meta == null) return copy;
         var pdc = meta.getPersistentDataContainer();
-        // The clock, the progress within each tag step, and the lore written from them. Food lore
+        // The clock, the progress within each tag step, catch size, the clean-catch marker (fish
+        // built from plain vanilla fish never got it), and the lore written from them. Food lore
         // is always rebuilt whole from the item's data (ItemBuilder.stamp), which is compared.
         pdc.remove(Keys.LAST_UPDATE);
         pdc.remove(Keys.AGE_REMAINDER);
         pdc.remove(Keys.TAGS);
         pdc.remove(Keys.LORE_INDEX_MAP);
+        pdc.remove(Keys.CATCH_SIZE_CM);
+        pdc.remove(Keys.CLEAN_CATCH);
         meta.lore(null);
         copy.setItemMeta(meta);
         return copy;
