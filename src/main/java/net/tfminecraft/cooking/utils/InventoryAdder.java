@@ -26,7 +26,8 @@ public class InventoryAdder {
             if (space <= 0) continue;
 
             int add = Math.min(space, amount);
-            cur.setAmount(cur.getAmount() + add);
+            // Keep the older copy's data, so adding food never makes the stack fresher.
+            inv.setItem(slot, ConversionManager.mergedFood(cur, in, add));
             amount -= add;
 
             if (amount <= 0) return null;

@@ -49,7 +49,7 @@ public class TagManager implements ItemScanHandler {
         }
     }
 
-    static boolean isHeldSlot(Player player, Inventory inventory, int slot) {
+    public static boolean isHeldSlot(Player player, Inventory inventory, int slot) {
         if (player == null || !(inventory instanceof PlayerInventory playerInventory)) {
             return false;
         }

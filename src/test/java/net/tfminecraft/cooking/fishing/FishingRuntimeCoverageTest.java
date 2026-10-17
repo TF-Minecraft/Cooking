@@ -43,6 +43,7 @@ public class FishingRuntimeCoverageTest {
     PluginManager plugins;
     Plugin customFishing;
     MockedStatic<Bukkit> bukkit;
+    MockedStatic<SeafoodWholeItems> wholeItems;
     boolean oldRegistered;
     CatchMapping tuna = new CatchMapping("tuna", "Tuna", "fish");
 
@@ -55,6 +56,9 @@ public class FishingRuntimeCoverageTest {
         Server server=mock(Server.class); when(server.getPluginManager()).thenReturn(plugins);
         when(Cooking.plugin.getServer()).thenReturn(server); when(Cooking.plugin.getLogger()).thenReturn(Logger.getLogger("fishing-test"));
         bukkit=mockStatic(Bukkit.class,CALLS_REAL_METHODS); bukkit.when(Bukkit::getPluginManager).thenReturn(plugins);
+        // MockBukkit has no custom model data or item model components, so keep the fresh look as it is.
+        wholeItems=mockStatic(SeafoodWholeItems.class,CALLS_REAL_METHODS);
+        wholeItems.when(()->SeafoodWholeItems.copyLook(any(),any())).thenAnswer(inv->inv.getArgument(1));
         CustomFishingCatalog.replace(Map.of("tuna",tuna),Map.of("rod",new RodBand(3,3)),new RodBand(2,2),Map.of(),Map.of(),Map.of(17,"tuna"),45);
         QualityConfig.apply(1,5,null,null); PermissionEffectsConfig.apply(List.of(),List.of());
         env.originQuality.when(()->net.tfminecraft.cooking.quality.OriginQualityResolver.applyPickupPermissions(any(),anyInt()))
@@ -64,7 +68,7 @@ public class FishingRuntimeCoverageTest {
                 .thenAnswer(inv->env.stack(inv.getArgument(0),Material.COD,1));
     }
     @AfterEach void cleanup() throws Exception {
-        bukkit.close(); env.close();
+        wholeItems.close(); bukkit.close(); env.close();
         var field=CustomFishingBridge.class.getDeclaredField("registered"); field.setAccessible(true); field.setBoolean(null,oldRegistered);
         CustomFishingCatalog.load(new File("src/main/resources/custom-fishing.yml"));
     }
@@ -144,6 +148,11 @@ public class FishingRuntimeCoverageTest {
             ItemStack converted=LegacyFishConversion.convert(env.player,external);
             assertEquals(7,converted.getAmount()); assertEquals(45,env.resolve(converted).getCatchSizeCm());
             LegacyFishScan scan=new LegacyFishScan(); assertFalse(scan.matches(null)); assertFalse(scan.matches(new ItemStack(Material.SALMON)));
+            // The workshop resolves food by its own key; the scan reads the real food id.
+            ItemMeta convertedMeta=converted.getItemMeta();
+            convertedMeta.getPersistentDataContainer().set(net.tfminecraft.cooking.utils.Keys.FOOD_ID,
+                    org.bukkit.persistence.PersistentDataType.STRING,CustomFishingCatalog.WHOLE_TYPE);
+            converted.setItemMeta(convertedMeta);
             assertTrue(scan.matches(external)); assertFalse(scan.matches(converted));
             scan.update(env.player,null,0,external); scan.update(env.player,env.player.getInventory(),-1,external);
             scan.update(env.player,env.player.getInventory(),4,external); assertEquals(7,env.player.getInventory().getItem(4).getAmount());

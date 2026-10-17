@@ -31,6 +31,7 @@ import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
+import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.Keys;
 
@@ -302,5 +303,118 @@ class FoodInventoryClickTest {
         assertFalse(event.isCancelled());
         assertEquals(older, chest.getItem(0));
         assertEquals(newer, player.getItemOnCursor());
+    }
+    @Test
+    void doubleClickGathersFoodThatAgedApartAndKeepsTheOlderAge() {
+        ItemStack older = beef(2, 100);
+        chest.setItem(0, older);
+        chest.setItem(1, new ItemStack(Material.STONE));
+        chest.setItem(2, beef(2, 1_000_100));
+        player.getInventory().setItem(9, beef(3, 10));
+        player.getInventory().setItem(0, beef(1, 50));
+        player.setItemOnCursor(beef(1, 5));
+
+        assertTrue(click(3, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR).isCancelled());
+
+        assertEquals(7, player.getItemOnCursor().getAmount());
+        assertTrue(player.getItemOnCursor().isSimilar(older));
+        assertNull(chest.getItem(0));
+        assertNull(player.getInventory().getItem(9));
+        assertNull(player.getInventory().getItem(0));
+        assertEquals(Material.STONE, chest.getItem(1).getType());
+        assertEquals(2, chest.getItem(2).getAmount());
+    }
+
+    @Test
+    void doubleClickTakesPartStacksBeforeFullOnesAndStopsAtAFullCursor() {
+        chest.setItem(0, beef(64, 100));
+        player.getInventory().setItem(9, beef(10, 10));
+        player.setItemOnCursor(beef(1, 5));
+
+        click(3, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
+
+        assertEquals(64, player.getItemOnCursor().getAmount());
+        assertNull(player.getInventory().getItem(9));
+        assertEquals(11, chest.getItem(0).getAmount());
+    }
+
+    @Test
+    void doubleClickInThePlayerInventoryAlsoGathersArmourAndTheOffHand() {
+        player.closeInventory();
+        player.getInventory().setItem(9, beef(2, 10));
+        ItemStack oldest = beef(1, 200);
+        player.getInventory().setItemInOffHand(oldest);
+        player.getInventory().setHelmet(beef(1, 150));
+        player.setItemOnCursor(beef(3, 100));
+
+        assertTrue(click(10, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR).isCancelled());
+
+        assertEquals(7, player.getItemOnCursor().getAmount());
+        assertNull(player.getInventory().getHelmet());
+        assertTrue(player.getItemOnCursor().isSimilar(oldest));
+        assertNull(player.getInventory().getItem(9));
+        assertTrue(player.getInventory().getItemInOffHand().isEmpty());
+    }
+
+    @Test
+    void doubleClickInThePlayerInventoryGathersTheCraftingGridButNotTheResult() {
+        player.closeInventory();
+        Inventory grid = mock(Inventory.class);
+        when(grid.getSize()).thenReturn(5);
+        when(grid.getType()).thenReturn(InventoryType.CRAFTING);
+        when(grid.getHolder()).thenReturn(player);
+        ItemStack oldest = beef(2, 300);
+        when(grid.getItem(2)).thenReturn(oldest);
+        player.getInventory().setItem(9, beef(2, 10));
+        player.setItemOnCursor(beef(1, 100));
+        InventoryView view = new InventoryViewMock(player, grid, player.getInventory(), InventoryType.CRAFTING) {};
+        InventoryClickEvent event = new InventoryClickEvent(view,
+                InventoryType.SlotType.CONTAINER, 10, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR);
+
+        server.getPluginManager().callEvent(event);
+
+        assertTrue(event.isCancelled());
+        assertEquals(5, player.getItemOnCursor().getAmount());
+        assertTrue(player.getItemOnCursor().isSimilar(oldest));
+        verify(grid).setItem(2, null);
+        verify(grid, never()).getItem(0);
+    }
+
+    @Test
+    void doubleClickOverExactCopiesIsLeftToVanilla() {
+        ItemStack cursor = beef(1, 10);
+        chest.setItem(0, cursor.clone());
+        player.setItemOnCursor(cursor);
+
+        assertFalse(click(3, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR).isCancelled());
+        assertEquals(1, chest.getItem(0).getAmount());
+    }
+
+    @Test
+    void doubleClickWithoutFoodIsLeftToVanilla() {
+        player.setItemOnCursor(new ItemStack(Material.STONE));
+        assertFalse(click(3, ClickType.DOUBLE_CLICK, InventoryAction.COLLECT_TO_CURSOR).isCancelled());
+    }
+
+    @Test
+    void addingOlderFoodToAFresherStackKeepsTheOlderAge() {
+        player.getInventory().setItem(0, beef(2, 10));
+        ItemStack older = beef(3, 100);
+
+        assertNull(InventoryAdder.addItem(player, older));
+
+        assertEquals(5, player.getInventory().getItem(0).getAmount());
+        assertTrue(player.getInventory().getItem(0).isSimilar(older));
+    }
+
+    @Test
+    void addingFresherFoodKeepsTheStacksOlderAge() {
+        ItemStack older = beef(2, 100);
+        player.getInventory().setItem(0, older);
+
+        assertNull(InventoryAdder.addItem(player, beef(3, 10)));
+
+        assertEquals(5, player.getInventory().getItem(0).getAmount());
+        assertTrue(player.getInventory().getItem(0).isSimilar(older));
     }
 }
