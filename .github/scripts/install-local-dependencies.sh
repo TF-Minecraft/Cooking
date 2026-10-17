@@ -5,6 +5,10 @@ set -euo pipefail
 sha256sum --check .github/dependencies.sha256
 
 mvn -B --no-transfer-progress org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
+    -Dfile="libs/BreweryX-3.7.0.jar" -DgroupId="local" -DartifactId="BreweryX" \
+    -Dversion="3.7.0-tfmc-d7156d1cd242" -Dpackaging=jar -DgeneratePom=true "$@"
+
+mvn -B --no-transfer-progress org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \
     -Dfile="libs/gson-2.14.0.jar" -DgroupId="local" -DartifactId="gson" \
     -Dversion="2.14.0-tfmc-2cbd119bf196" -Dpackaging=jar -DgeneratePom=true "$@"
 mvn -B --no-transfer-progress org.apache.maven.plugins:maven-install-plugin:3.1.4:install-file \

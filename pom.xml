@@ -33,6 +33,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>local</groupId>
+            <artifactId>BreweryX</artifactId>
+            <version>3.7.0-tfmc-d7156d1cd242</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.googlecode.json-simple</groupId>
             <artifactId>json-simple</artifactId>
             <version>1.1.1</version>
