@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.item.CookingPathHandler;
+import net.tfminecraft.cooking.brewery.BreweryBridge;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.ModelLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
@@ -97,6 +98,7 @@ public class Cooking extends JavaPlugin {
     private boolean incompatibleCharacterApi;
 
     private final CommandManager commands = new CommandManager();
+    private final BreweryBridge breweryBridge = new BreweryBridge(this);
 
     private final ModelLoader modelLoader = new ModelLoader();
     private final FoodLoader foodLoader = new FoodLoader();
@@ -223,6 +225,7 @@ public class Cooking extends JavaPlugin {
     @Override
     public void onDisable() {
         if (incompatibleCharacterApi) return;
+        breweryBridge.close();
         SaturationGuard.stop();
         NutritionDrainTask.stop();
         HusbandryTickTask.stop();
@@ -298,6 +301,8 @@ public class Cooking extends JavaPlugin {
     //  Listeners
     // ----------------------------------------------------------------------
     public void registerListeners() {
+        getServer().getPluginManager().registerEvents(breweryBridge, this);
+        breweryBridge.registerIfPresent();
         getServer().getPluginManager().registerEvents(plateManager, this);
         getServer().getPluginManager().registerEvents(craftingManager, this);
         getServer().getPluginManager().registerEvents(cookingManager, this);
