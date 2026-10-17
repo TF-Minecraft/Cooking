@@ -76,6 +76,9 @@ class BrewingIngredientResolverTest {
                 new TagStep("raw", "Raw", 0, 1, 1), new TagStep("cooked", "Cooked", 1, 1, 1)));
         egg.addOrModifyTrack(cooked);
         assertEquals("v.egg", BrewingIngredientResolver.sourceFor(egg));
+        // A raw egg taken off the heat early is warm but still an egg; a warm cooked egg is not.
+        egg.addOrModifyTrack(new TagTrack("warmth", true, List.of(new TagStep("hot", "Hot", 0, 1, 1))));
+        assertEquals("v.egg", BrewingIngredientResolver.sourceFor(egg));
         egg.getTagTrack("cooked").setValue(1);
         assertNull(BrewingIngredientResolver.sourceFor(egg));
         FoodItem potato = food("vegetable_1", "Potato");

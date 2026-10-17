@@ -16,6 +16,8 @@ import net.tfminecraft.cooking.utils.Keys;
 
 /** Resolves whole ingredients back to their configured input, independently of their visual model. */
 public final class BrewingIngredientResolver {
+    private static final Set<String> IDENTITY_NEUTRAL = Set.of("freshness", "warmth");
+
     private BrewingIngredientResolver() {}
 
     public static boolean isCookingItem(ItemStack item) {
@@ -25,9 +27,9 @@ public final class BrewingIngredientResolver {
 
     public static String sourceFor(FoodItem food) {
         if (food == null || food.getOrigin() == null || food.hasSauce() || !food.getIngredients().isEmpty()) return null;
-        // Freshness never changes identity. Other preparation states must remain raw.
+        // Freshness and warmth never change identity. Other preparation states must remain raw.
         for (TagTrack track : food.getTagTracks()) {
-            if (track.getCurrentStep() == null || "freshness".equals(track.getId())) continue;
+            if (track.getCurrentStep() == null || IDENTITY_NEUTRAL.contains(track.getId())) continue;
             if (!"cooked".equals(track.getId()) || !"raw".equals(track.getCurrentStep().getId())) return null;
         }
 
