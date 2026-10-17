@@ -14,6 +14,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.item.CookingPathHandler;
+import net.tfminecraft.cooking.brewery.BreweryPotatoBridge;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.loader.ModelLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
@@ -298,6 +299,9 @@ public class Cooking extends JavaPlugin {
     //  Listeners
     // ----------------------------------------------------------------------
     public void registerListeners() {
+        BreweryPotatoBridge breweryPotatoes = new BreweryPotatoBridge(this);
+        getServer().getPluginManager().registerEvents(breweryPotatoes, this);
+        breweryPotatoes.registerIfPresent();
         getServer().getPluginManager().registerEvents(plateManager, this);
         getServer().getPluginManager().registerEvents(craftingManager, this);
         getServer().getPluginManager().registerEvents(cookingManager, this);

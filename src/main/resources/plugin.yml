@@ -5,7 +5,7 @@ version: ${project.version}
 author: Drefvelin
 
 depend: [TLibs, InteractibleFurniture]
-softdepend: [RPCharacters, MMOCore, MMOItems, CustomCrops, SimpleFactions, CustomFishing]
+softdepend: [RPCharacters, MMOCore, MMOItems, CustomCrops, SimpleFactions, CustomFishing, BreweryX]
 
 commands:
   cooking:
