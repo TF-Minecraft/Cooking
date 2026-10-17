@@ -13,6 +13,9 @@ import java.util.Set;
 import java.util.logging.Logger;
 
 import org.bukkit.Material;
+import org.bukkit.block.BlockFace;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.server.PluginDisableEvent;
 import org.bukkit.event.server.PluginEnableEvent;
@@ -199,6 +202,17 @@ class BreweryIngredientTest {
         assertSame(gate, BCauldronRecipe.acceptedCustom.getFirst());
         assertSame(gate, RecipeItem.getMatchingRecipeItem(item("wheat", "Wheat", Material.TROPICAL_FISH), false));
         BCauldronRecipe.recipes.clear();
+        // Another plugin clearing the list is repaired by the next Cooking item clicked on a block.
+        BCauldronRecipe.acceptedCustom.clear();
+        var player = server.addPlayer();
+        for (Action action : List.of(Action.LEFT_CLICK_BLOCK, Action.RIGHT_CLICK_AIR))
+            server.getPluginManager().callEvent(new PlayerInteractEvent(player, action, item("wheat", "Wheat", Material.TROPICAL_FISH), null, BlockFace.UP));
+        server.getPluginManager().callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, new ItemStack(Material.WHEAT), null, BlockFace.UP));
+        server.getPluginManager().callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, null, null, BlockFace.UP));
+        assertTrue(BCauldronRecipe.acceptedCustom.isEmpty());
+        for (int i = 0; i < 2; i++)
+            server.getPluginManager().callEvent(new PlayerInteractEvent(player, Action.RIGHT_CLICK_BLOCK, item("wheat", "Wheat", Material.TROPICAL_FISH), null, BlockFace.UP));
+        assertEquals(List.of(gate), BCauldronRecipe.acceptedCustom);
         cleanup.run();assertTrue(BCauldronRecipe.acceptedCustom.isEmpty());
         assertTrue(HandlerList.getRegisteredListeners(server.getPluginManager().getPlugin("BreweryCookingTest")).isEmpty());
     }

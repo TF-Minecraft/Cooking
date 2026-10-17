@@ -4,6 +4,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -18,15 +20,14 @@ import net.tfminecraft.tlibs.TLibs;
 
 /** Replaces only Brewery's internal ingredient copy; Brewery consumes the original item normally. */
 public final class BreweryIngredientListener implements Listener {
+    private final CookingIngredientGate gate = new CookingIngredientGate();
+
     public static Runnable register(JavaPlugin plugin) {
-        CookingIngredientGate gate = new CookingIngredientGate();
         BreweryIngredientListener listener = new BreweryIngredientListener();
-        // Brewery only appends to this list when it reloads, so the gate stays until cleanup. A cauldron
-        // recipe would also carry it, but would break /brew simulate, which cannot describe custom items.
-        BCauldronRecipe.acceptedCustom.add(gate);
+        listener.ensureGate();
         Runnable cleanup = () -> {
             HandlerList.unregisterAll(listener);
-            BCauldronRecipe.acceptedCustom.removeIf(item -> item == gate);
+            BCauldronRecipe.acceptedCustom.removeIf(item -> item == listener.gate);
         };
         try {
             plugin.getServer().getPluginManager().registerEvents(listener, plugin);
@@ -35,6 +36,18 @@ public final class BreweryIngredientListener implements Listener {
             throw exception;
         }
         return cleanup;
+    }
+
+    // Brewery only appends to this list when it reloads. A cauldron recipe would also keep the gate there,
+    // but would break /brew simulate, which cannot describe custom items.
+    private void ensureGate() {
+        if (!BCauldronRecipe.acceptedCustom.contains(gate)) BCauldronRecipe.acceptedCustom.add(gate);
+    }
+
+    /** Restores the gate before Brewery's click handler if anything rebuilt the accepted list. */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onCauldronClick(PlayerInteractEvent event) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && BrewingIngredientResolver.isCookingItem(event.getItem())) ensureGate();
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
