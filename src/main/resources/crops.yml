@@ -9,6 +9,11 @@ planting:
   allow-glass-roofs: true
   # Additional Bukkit block materials allowed anywhere above the crop.
   allowed-cover: []
+  # Decoration allowed only within max-height blocks above the crop (pergolas, lantern posts).
+  # "#name" entries are vanilla block tags. Double slabs are full blocks and still count as a roof.
+  low-cover:
+    max-height: 5
+    materials: ["#slabs", "#stairs", "#all_signs"]
   exempt-vanilla: [NETHER_WART, BROWN_MUSHROOM, RED_MUSHROOM]
   exempt-custom: [yeast]
 

@@ -4,10 +4,18 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.List;
+import java.util.Set;
+import java.util.logging.Logger;
+
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.type.Slab;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +24,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.MockedStatic;
 
 import net.momirealms.customcrops.api.core.mechanic.crop.CropConfig;
 import net.momirealms.customcrops.api.event.CropPlantEvent;
@@ -96,10 +105,11 @@ class CropPlantingTest {
         assertTrue(CropPlantingRule.customRequiresOpenSky("rice"));
     }
 
-    private void roof(Material material, int y) {
+    private Block roof(Material material, int y) {
         Block block = mock(Block.class);
         when(block.getType()).thenReturn(material);
         when(world.getBlockAt(4, y, 8)).thenReturn(block);
+        return block;
     }
 
     @AfterEach
@@ -135,5 +145,72 @@ class CropPlantingTest {
         CropPlantingRule.configure(config);
         assertFalse(CropPlantingRule.requiresOpenSky(Material.CARROTS));
         assertFalse(CropPlantingRule.customRequiresOpenSky("rice"));
+    }
+
+    @Test
+    void lowCoverCountsOnlyWithinItsHeight() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("low-cover.max-height", 5);
+        config.set("low-cover.materials", List.of("OAK_SLAB", "OAK_STAIRS", "OAK_SIGN"));
+        CropPlantingRule.configure(config);
+        roof(Material.OAK_SIGN, 65);
+        roof(Material.OAK_STAIRS, 67);
+        roof(Material.OAK_SLAB, 69);
+        assertTrue(CropPlantingRule.hasOpenSky(location));
+        roof(Material.OAK_SLAB, 70);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+        roof(Material.AIR, 70);
+        roof(Material.STONE, 90);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+    }
+
+    @Test
+    void doubleSlabsStayARoofAndMissingLowCoverChangesNothing() {
+        YamlConfiguration config = new YamlConfiguration();
+        config.set("low-cover.materials", List.of("OAK_SLAB"));
+        CropPlantingRule.configure(config);
+        Block slab = roof(Material.OAK_SLAB, 66);
+        Slab data = mock(Slab.class);
+        when(slab.getBlockData()).thenReturn(data);
+        when(data.getType()).thenReturn(Slab.Type.TOP);
+        assertTrue(CropPlantingRule.hasOpenSky(location), "max-height defaults to 5");
+        when(data.getType()).thenReturn(Slab.Type.DOUBLE);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+
+        CropPlantingRule.configure(new YamlConfiguration());
+        when(data.getType()).thenReturn(Slab.Type.BOTTOM);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+        config.set("low-cover.max-height", -3);
+        CropPlantingRule.configure(config);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void lowCoverReadsBlockTagsAndWarnsOnUnknownEntries() {
+        Tag<Material> slabs = mock(Tag.class);
+        when(slabs.getValues()).thenReturn(Set.of(Material.OAK_SLAB, Material.STONE_SLAB));
+        Tag<Material> signs = mock(Tag.class);
+        when(signs.getValues()).thenReturn(Set.of(Material.OAK_SIGN, Material.OAK_WALL_HANGING_SIGN));
+        Logger logger = mock(Logger.class);
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class)) {
+            bukkit.when(Bukkit::getLogger).thenReturn(logger);
+            bukkit.when(() -> Bukkit.getTag(Tag.REGISTRY_BLOCKS, NamespacedKey.minecraft("slabs"), Material.class))
+                    .thenReturn(slabs);
+            bukkit.when(() -> Bukkit.getTag(Tag.REGISTRY_BLOCKS, NamespacedKey.minecraft("all_signs"), Material.class))
+                    .thenReturn(signs);
+            YamlConfiguration config = new YamlConfiguration();
+            config.set("low-cover.materials", List.of("#SLABS", "#minecraft:all_signs", "#nope", "#", "#bad key", "DIAMOND"));
+            CropPlantingRule.configure(config);
+            verify(logger).warning("[Cooking] Invalid planting material in low-cover.materials: #nope");
+            verify(logger).warning("[Cooking] Invalid planting material in low-cover.materials: #");
+            verify(logger).warning("[Cooking] Invalid planting material in low-cover.materials: #bad key");
+            verify(logger).warning("[Cooking] Invalid planting material in low-cover.materials: DIAMOND");
+        }
+        roof(Material.STONE_SLAB, 65);
+        roof(Material.OAK_WALL_HANGING_SIGN, 66);
+        assertTrue(CropPlantingRule.hasOpenSky(location));
+        roof(Material.OAK_STAIRS, 67);
+        assertFalse(CropPlantingRule.hasOpenSky(location));
     }
 }

@@ -17,7 +17,7 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 
 ## A complete food journey
 
-Crops are planted outdoors under open sky or beneath the glass roof of a greenhouse. A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
+Crops are planted outdoors under open sky, beneath the glass roof of a greenhouse, or under a low pergola of slabs, stairs and signs. A harvest can become flour, dough, bread, or part of a cooked dish. Milk and meat enter their own preparation chains, and the result can be served through furniture as well as carried as food items. Cooking connects these activities into a shared system for farmers, cooks, and diners.
 
 ## Documentation
 
