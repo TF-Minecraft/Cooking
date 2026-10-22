@@ -101,7 +101,7 @@ garlic:
         '&&':
           condition_1:
             type: random
-            value: 0.05
+            value: 0.0379
           condition_2:
             type: point-less-than
             value: 3
