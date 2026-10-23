@@ -106,10 +106,13 @@ plum:
         '&&':
           condition_1:
             type: random
-            value: 0.05
+            value: 0.0361
           condition_2:
             type: point-less-than
             value: 5
+          condition_3:
+            type: point-more-than
+            value: 1
   custom-bone-meal:
     default:
       item: BONE_MEAL

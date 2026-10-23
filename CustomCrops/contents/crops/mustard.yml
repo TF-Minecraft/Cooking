@@ -103,7 +103,7 @@ mustard:
         '&&':
           condition_1:
             type: random
-            value: 0.05
+            value: 0.0275
           condition_2:
             type: point-less-than
             value: 4
