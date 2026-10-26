@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.cache;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -61,7 +62,7 @@ class BundledSauceVisualsTest {
     private void assertPackItem(String path) {
         assertTrue(path.startsWith(NAMESPACE), path);
         ConfigurationSection item = items.getConfigurationSection(path.substring(NAMESPACE.length()));
-        assertTrue(item != null, path + " is not in the bundled pack");
+        assertNotNull(item, path + " is not in the bundled pack");
         String model = item.getString("resource.model_path");
         File json = new File(PACK, "resourcepack/assets/tfmc_cooking/models/" + model + ".json");
         assertTrue(json.isFile(), json.getPath());
