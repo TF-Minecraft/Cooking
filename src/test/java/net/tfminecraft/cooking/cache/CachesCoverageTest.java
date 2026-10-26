@@ -156,13 +156,16 @@ class CachesCoverageTest {
     @Test void categoryNamesAndSauceColoursUseConfiguredValuesOrFallbacks() {
         CategoryDictionary.dictionary.put("meat","Custom Meat"); assertEquals("Custom Meat",CategoryDictionary.getName("meat"));
         assertTrue(CategoryDictionary.getName("garden_vegetable").endsWith("Garden Vegetable"));
-        ItemCache.liquidFallback="fallback"; CategoryDictionary.sauceDict.put("ff0000","red|deep.red");
+        ItemCache.liquidFallback="fallback"; ItemCache.platedLiquidFallback="plated.fallback"; CategoryDictionary.sauceDict.put("ff0000","red|deep.red");
         CategoryDictionary.sauceDict.put("000000","black"); CategoryDictionary.sauceDict.put("bad","invalid");
         assertEquals("red",CategoryDictionary.getSauceItemPath("#fe0101",0)); assertEquals("deep.red",CategoryDictionary.getSauceItemPath("ff0000",1));
         for(String colour:new String[]{null,"000000","bad"}) assertEquals("fallback",CategoryDictionary.getSauceItemPath(colour,0));
+        for(String colour:new String[]{null,"000000","bad"}) assertEquals("plated.fallback",CategoryDictionary.getSauceItemPath(colour,CategoryDictionary.PLATED));
         assertEquals("fallback",CategoryDictionary.getSauceItemPath("ff0000",-1)); assertEquals("fallback",CategoryDictionary.getSauceItemPath("ff0000",2));
-        CategoryDictionary.sauceDict.put("ff0000","red| "); assertEquals("fallback",CategoryDictionary.getSauceItemPath("ff0000",1));
+        CategoryDictionary.sauceDict.put("ff0000","red| "); assertEquals("plated.fallback",CategoryDictionary.getSauceItemPath("ff0000",1));
+        CategoryDictionary.sauceDict.put("ff0000","red"); assertEquals("plated.fallback",CategoryDictionary.getSauceItemPath("ff0000",1));
         CategoryDictionary.sauceDict.clear(); assertEquals("fallback",CategoryDictionary.getSauceItemPath("ff0000",0));
+        assertEquals("plated.fallback",CategoryDictionary.getSauceItemPath("ff0000",1));
         assertNotNull(new CategoryDictionary());
     }
 

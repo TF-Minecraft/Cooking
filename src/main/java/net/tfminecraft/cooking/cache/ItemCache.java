@@ -47,6 +47,7 @@ public class ItemCache {
     public static HashMap<String, String> liquidModels = new HashMap<>();
     public static HashMap<String, String> colourMap = new HashMap<>();
     public static String liquidFallback;
+    public static String platedLiquidFallback;
 
     //TOOLS
     public static String ladle;

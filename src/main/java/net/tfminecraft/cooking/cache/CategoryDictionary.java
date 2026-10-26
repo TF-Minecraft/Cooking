@@ -24,12 +24,17 @@ public class CategoryDictionary {
         return StringFormatter.formatHex(dictionary.getOrDefault(key, "#8f8f8f" + WordUtils.capitalize(new String(key).replace("_", " "))));
     }
 
+    /** sauce-dict entries are "station model|plated model"; index 1 picks the plated one. */
+    public static final int PLATED = 1;
+
     public static String getSauceItemPath(String colour, int index) {
+        // A plate needs a splash: the station fallback is a pan-sized liquid surface.
+        String fallback = index == PLATED ? ItemCache.platedLiquidFallback : ItemCache.liquidFallback;
         // Uncoloured names (water-only mixes, or older "000000Mixed Sauce" items) have no hex to read.
-        if (colour == null) return ItemCache.liquidFallback;
+        if (colour == null) return fallback;
         int rTotal = 0, gTotal = 0, bTotal = 0, count = 0;
         String hex = colour.replace("#", "");
-        if (hex.equalsIgnoreCase("000000")) return ItemCache.liquidFallback;
+        if (hex.equalsIgnoreCase("000000")) return fallback;
 
         try {
             int r = Integer.parseInt(hex.substring(0, 2), 16);
@@ -43,7 +48,7 @@ public class CategoryDictionary {
         } catch (Exception ignored) {}
 
         if (count == 0)
-            return ItemCache.liquidFallback;
+            return fallback;
 
         int rAvg = rTotal / count;
         int gAvg = gTotal / count;
@@ -82,6 +87,6 @@ public class CategoryDictionary {
             }
         }
 
-        return ItemCache.liquidFallback;
+        return fallback;
     }
 }

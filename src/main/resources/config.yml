@@ -33,6 +33,7 @@ carve-tool: ia.tfmc_cooking:cutting_knife
 
 water: ia.tfmc_cooking:water
 liquid-fallback: ia.tfmc_cooking:water
+plated-liquid-fallback: ia.tfmc_cooking:water_plated
 empty-cup: ia.tfmc_cooking:empty_cup
 cup-of-water: ia.tfmc_cooking:cup_of_water
 cup-of-milk: ia.tfmc_cooking:cup_of_milk
@@ -181,7 +182,7 @@ dictionary:
   liquid: "#3d85c6Liquid"
 
 sauce-dict:
-    - ffffff ia.tfmc_cooking:milk|ia.tfmc_cooking:milk
+    - ffffff ia.tfmc_cooking:milk|ia.tfmc_cooking:milk_plated
     - 80352e ia.tfmc_cooking:red_dark|ia.tfmc_cooking:red_dark_plated
     - a8552e ia.tfmc_cooking:red_light|ia.tfmc_cooking:red_light_plated
     - a86c2e ia.tfmc_cooking:brown_light|ia.tfmc_cooking:brown_light_plated

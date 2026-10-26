@@ -15,16 +15,20 @@ import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 class SauceColourTest {
     private static final String WATER = "ia.test:water";
+    private static final String WATER_PLATED = "ia.test:water_plated";
     private static final String MILK_PLATED = "ia.test:milk_plated";
 
     private String previousFallback;
+    private String previousPlatedFallback;
     private HashMap<String, String> previousDict;
 
     @BeforeEach
     void setUp() {
         previousFallback = ItemCache.liquidFallback;
+        previousPlatedFallback = ItemCache.platedLiquidFallback;
         previousDict = CategoryDictionary.sauceDict;
         ItemCache.liquidFallback = WATER;
+        ItemCache.platedLiquidFallback = WATER_PLATED;
         CategoryDictionary.sauceDict = new HashMap<>();
         CategoryDictionary.sauceDict.put("ffffff", "ia.test:milk|" + MILK_PLATED);
     }
@@ -32,6 +36,7 @@ class SauceColourTest {
     @AfterEach
     void tearDown() {
         ItemCache.liquidFallback = previousFallback;
+        ItemCache.platedLiquidFallback = previousPlatedFallback;
         CategoryDictionary.sauceDict = previousDict;
     }
 
@@ -52,23 +57,23 @@ class SauceColourTest {
     }
 
     @Test
-    void waterOnlySauceNameShowsTheWaterVisual() {
+    void waterOnlySauceNameShowsThePlatedWaterVisual() {
         String name = StringFormatter.formatHex(
                 DisplayUtils.getNameColour(DisplayUtils.getMergedColour(List.of("000000"))) + "Mixed Sauce");
 
         assertEquals("§fMixed Sauce", name);
         assertNull(StringFormatter.extractHexColor(name));
-        assertEquals(WATER, CategoryDictionary.getSauceItemPath(StringFormatter.extractHexColor(name), 1));
+        assertEquals(WATER_PLATED, CategoryDictionary.getSauceItemPath(StringFormatter.extractHexColor(name), CategoryDictionary.PLATED));
     }
 
     @Test
-    void olderUncolouredSauceNameShowsTheWaterVisual() {
-        assertEquals(WATER, CategoryDictionary.getSauceItemPath(StringFormatter.extractHexColor("000000Mixed Sauce"), 1));
+    void olderUncolouredSauceNameShowsThePlatedWaterVisual() {
+        assertEquals(WATER_PLATED, CategoryDictionary.getSauceItemPath(StringFormatter.extractHexColor("000000Mixed Sauce"), CategoryDictionary.PLATED));
     }
 
     @Test
     void milkOnlySauceColourShowsTheMilkVisual() {
         // Scooping stores this merged colour on the ladle; the name alone can't carry it (Paper keeps #ffffff as named white).
-        assertEquals(MILK_PLATED, CategoryDictionary.getSauceItemPath(DisplayUtils.getMergedColour(List.of("ffffff")), 1));
+        assertEquals(MILK_PLATED, CategoryDictionary.getSauceItemPath(DisplayUtils.getMergedColour(List.of("ffffff")), CategoryDictionary.PLATED));
     }
 }
