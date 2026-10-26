@@ -55,6 +55,7 @@ public class ConfigLoader {
         ItemCache.firePitSpinAxis = config.getString("fire-pit-spin-axis", "x").toLowerCase();
         ItemCache.carveTool = config.getString("carve-tool", "ia.tfmc_cooking:cutting_knife");
         ItemCache.liquidFallback = config.getString("liquid-fallback", "ia.tfmc_cooking:water");
+        ItemCache.platedLiquidFallback = config.getString("plated-liquid-fallback", "ia.tfmc_cooking:water_plated");
 
         ItemCache.water = config.getString("water", "v.water_bucket");
         ItemCache.emptyCup = config.getString("empty-cup", "ia.tfmc_cooking:empty_cup");

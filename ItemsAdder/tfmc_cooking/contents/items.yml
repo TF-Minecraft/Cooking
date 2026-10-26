@@ -1293,6 +1293,20 @@ items:
       generate: false
       model_path: item/liquid/red_dark_plated
 
+  milk_plated:
+    display_name: "Milk Plated"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/liquid/milk_plated
+
+  water_plated:
+    display_name: "Water Plated"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/liquid/water_plated
+
   ladle:
     display_name: "Ladle"
     resource:

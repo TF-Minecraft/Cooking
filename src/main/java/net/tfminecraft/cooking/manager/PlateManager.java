@@ -171,7 +171,7 @@ public class PlateManager implements Listener{
         ItemMeta baseMeta = base.getItemMeta();
         String saucePath = CategoryDictionary.getSauceItemPath(sauceColour(
             baseMeta.getPersistentDataContainer().get(Keys.SAUCE_COLOUR, PersistentDataType.STRING),
-            baseMeta.getDisplayName()), 1);
+            baseMeta.getDisplayName()), CategoryDictionary.PLATED);
         ItemStack visual = TLibs.getItemAPI().getCreator().getItemFromPath(saucePath);
         if (visual != null && !visual.getType().isAir()) f.getOrCreatePlacedSlot("sauce").forceModel(visual);
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
