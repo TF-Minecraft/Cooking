@@ -27,6 +27,7 @@ import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
@@ -163,7 +164,7 @@ public class PlateManager implements Listener{
         if (emptyLadle == null || emptyLadle.getType().isAir()) return;
 
         updates.forEach(PlacedSlot::forceModel);
-        p.getInventory().setItemInMainHand(emptyLadle.clone());
+        HeldStack.useOneKeepStack(p, emptyLadle.clone());
         p.swingMainHand();
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
 
@@ -199,8 +200,11 @@ public class PlateManager implements Listener{
                 placed.applyDisplayData(spread);
             }
         }
-        f.getOrCreatePlacedSlot("food_item").forceModel(base);
-        p.getInventory().setItemInMainHand(emptyLadle.clone());
+        // One serving per bowl, even from a stack of filled ladles.
+        ItemStack serving = base.clone();
+        serving.setAmount(1);
+        f.getOrCreatePlacedSlot("food_item").forceModel(serving);
+        HeldStack.useOneKeepStack(p, emptyLadle.clone());
         p.swingMainHand();
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND

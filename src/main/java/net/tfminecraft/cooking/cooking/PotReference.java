@@ -41,6 +41,7 @@ import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
@@ -230,7 +231,7 @@ public class PotReference extends CookingReference {
         output.setItemMeta(m);
 
         // ---------- GIVE TO PLAYER ----------
-        p.getInventory().setItemInMainHand(output);
+        HeldStack.useOneIntoHand(p, output);
         p.swingMainHand();
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
         org.bukkit.Bukkit.getPluginManager().callEvent(

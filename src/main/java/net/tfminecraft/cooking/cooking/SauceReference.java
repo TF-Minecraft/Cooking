@@ -57,6 +57,7 @@ import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.HeldStack;
 
 import net.tfminecraft.cooking.utils.ItemBuilder;
 
@@ -332,7 +333,7 @@ public class SauceReference extends CookingReference {
 
 
 
-        p.getInventory().setItemInMainHand(output);
+        HeldStack.useOneIntoHand(p, output);
 
         p.swingMainHand();
 
