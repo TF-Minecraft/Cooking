@@ -17,6 +17,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
@@ -173,6 +174,21 @@ class CookingAndTagManagersCoverageTest {
         cooking.empty(cauldron(Action.RIGHT_CLICK_BLOCK, Material.CAULDRON));
         env.hold(env.stack(kitchen.food("steak", "meat"), Material.BEEF, 1)); var meat = cauldron(Action.RIGHT_CLICK_BLOCK, Material.CAULDRON);
         cooking.empty(meat); assertFalse(meat.isCancelled()); assertEquals(Material.BEEF, env.player.getInventory().getItemInMainHand().getType());
+    }
+
+    @Test
+    void emptyingOneOfAStackOfFilledLadlesKeepsTheRestAndGivesTheEmptyLadle() {
+        env.hold(env.stack(kitchen.food("soup", "soup"), Material.PAPER, 3));
+        cooking.empty(cauldron(Action.RIGHT_CLICK_BLOCK, Material.CAULDRON));
+        assertEquals(Material.PAPER, env.player.getInventory().getItemInMainHand().getType());
+        assertEquals(2, env.player.getInventory().getItemInMainHand().getAmount());
+        assertTrue(env.player.getInventory().contains(Material.STICK, 1));
+
+        Block block = mock(Block.class); when(block.getType()).thenReturn(Material.CAULDRON);
+        var offHand = new PlayerInteractEvent(env.player, Action.RIGHT_CLICK_BLOCK, null, block, BlockFace.UP, EquipmentSlot.OFF_HAND);
+        cooking.empty(offHand);
+        assertFalse(offHand.isCancelled());
+        assertEquals(2, env.player.getInventory().getItemInMainHand().getAmount(), "The off-hand pass of the same click empties nothing");
     }
 
     @Test

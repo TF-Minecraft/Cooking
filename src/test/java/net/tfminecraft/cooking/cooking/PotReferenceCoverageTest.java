@@ -322,6 +322,22 @@ class PotReferenceCoverageTest {
     }
 
     @Test
+    void scoopingWithAStackOfLadlesHoldsTheSoupAndKeepsTheSpareLadles() {
+        PotReference pot = preparedSoup();
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.PAPER, 3));
+        pot.scoop(env.player, env.player.getInventory().getItemInMainHand());
+
+        ItemStack held = env.player.getInventory().getItemInMainHand();
+        assertEquals(1, held.getAmount());
+        assertEquals("soup", env.resolve(held).getId());
+        int spare = 0;
+        for (ItemStack item : env.player.getInventory().getStorageContents()) {
+            if (item != null && item.getType() == Material.PAPER && env.resolve(item) == null) spare += item.getAmount();
+        }
+        assertEquals(2, spare);
+    }
+
+    @Test
     void unavailableSoupOutputKeepsTheLadleAndRemainingServingsAndExplainsTheFailure() {
         PotReference pot = preparedSoup();
         env.variables.put("pot.soupServings", 2);

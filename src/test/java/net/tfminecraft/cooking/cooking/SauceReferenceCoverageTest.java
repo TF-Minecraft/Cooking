@@ -78,6 +78,26 @@ class SauceReferenceCoverageTest {
         assertEquals(1, cookedEvents(), "An empty saucepan must not produce a second serving");
     }
 
+    @Test
+    void scoopingWithAStackOfLadlesHoldsTheSauceAndKeepsTheSpareLadles() {
+        SauceReference sauce = new SauceReference(env.furniture, Method.SAUCEPAN);
+        env.player.getInventory().setItemInMainHand(
+                env.stack(env.food("milk", "milk", "Milk"), Material.WHITE_DYE, 1));
+        sauce.interact(env.interaction());
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.PAPER, 2));
+        sauce.interact(env.interaction());
+
+        ItemStack held = env.player.getInventory().getItemInMainHand();
+        assertEquals(1, held.getAmount());
+        assertEquals("sauce", env.resolve(held).getId());
+        int spare = 0;
+        for (ItemStack item : env.player.getInventory().getStorageContents()) {
+            if (item != null && item.getType() == Material.PAPER && env.resolve(item) == null) spare += item.getAmount();
+        }
+        assertEquals(1, spare);
+        assertTrue(sauce.isEmpty());
+    }
+
     private long cookedEvents() {
         return env.server.getPluginManager().getFiredEvents()
                 .filter(DishCookedEvent.class::isInstance).count();

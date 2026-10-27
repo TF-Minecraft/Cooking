@@ -232,6 +232,22 @@ public class MealManagersCoverageTest {
         verify(bowl.active.get("liquid"), never()).applyDisplayData(any()); verify(env.manager).markDirty(bowl.furniture);
     }
 
+    @Test
+    void aStackOfFilledLadlesServesOneAndKeepsTheRest() {
+        ItemStack soups = soup(); soups.setAmount(3); env.hold(soups); plates.interact(bowl.interact());
+        assertEquals(1, bowl.active.get("food_item").getCurrentItem().getAmount());
+        assertEquals(2, env.player.getInventory().getItemInMainHand().getAmount());
+        assertEquals("soup", env.resolve(env.player.getInventory().getItemInMainHand()).getId());
+        assertTrue(env.player.getInventory().contains(Material.STICK, 1));
+
+        env.player.getInventory().clear();
+        plate.place("food_item", env.stack(kitchen.food("steak", "meat"), Material.BEEF, 1));
+        ItemStack sauces = ladle(sauce()); sauces.setAmount(2); env.hold(sauces); plates.interact(plate.interact());
+        assertEquals(1, env.player.getInventory().getItemInMainHand().getAmount());
+        assertEquals("sauce", env.resolve(env.player.getInventory().getItemInMainHand()).getId());
+        assertTrue(env.player.getInventory().contains(Material.STICK, 1));
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"occupied", "missing-slot", "missing-type"})
     void soupCannotOverwriteAnExistingServingOrDisappearIntoAnUnusableBowl(String failure) {

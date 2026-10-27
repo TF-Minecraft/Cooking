@@ -14,6 +14,7 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -29,6 +30,7 @@ import net.tfminecraft.cooking.cooking.SauceReference;
 import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.StationChunks;
+import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
@@ -132,6 +134,8 @@ public class CookingManager implements Listener {
     @EventHandler
     public void empty(PlayerInteractEvent e) {
         if(!e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) return;
+        // One click fires once per hand; the off-hand pass would empty a second filled ladle from a stack.
+        if(e.getHand() != EquipmentSlot.HAND) return;
         Player p = e.getPlayer();
         ItemStack item = p.getInventory().getItemInMainHand();
         if(item == null) return;
@@ -142,7 +146,7 @@ public class CookingManager implements Listener {
             ItemStack empty = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
             if (empty == null || empty.getType().isAir()) return;
             e.setCancelled(true);
-            p.getInventory().setItemInMainHand(empty.clone());
+            HeldStack.useOneKeepStack(p, empty.clone());
         }
     }
     @EventHandler
