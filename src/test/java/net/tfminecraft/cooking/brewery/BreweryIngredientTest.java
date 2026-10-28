@@ -64,6 +64,7 @@ class BreweryIngredientTest {
 
     @BeforeEach void setup() {
         server = MockBukkit.mock();
+        BreweryClasses.loadPotionColor();
         previousPlugin = Cooking.plugin;
         Cooking.plugin = mock(Cooking.class);
         when(Cooking.plugin.getName()).thenReturn("Cooking");
