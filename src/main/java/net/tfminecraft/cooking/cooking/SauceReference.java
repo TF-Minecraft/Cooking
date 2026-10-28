@@ -476,12 +476,18 @@ public class SauceReference extends CookingReference {
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
     }
 
-    /** The brew counts toward the sauce's stars like the water or milk it replaces. */
+    /** The brew counts toward the sauce's stars like the milk it replaces. A bottled brew never spoils, so it is fresh. */
     private static FoodItem brewIngredient(BrewLiquid poured) {
         FoodItem ingredient = FoodParser.parse("sauce(type=sauce;origin=Mixed)").template;
         ingredient.setCategory("alcohol");
         ingredient.setOrigin(poured.name());
         ingredient.setQualityRange(poured.stars(), poured.stars());
+        TagTrack fresh = TrackLoader.getByString("freshness");
+        if (fresh != null) {
+            fresh = new TagTrack(fresh);
+            fresh.setValue(0);
+            ingredient.addOrModifyTrack(fresh);
+        }
         return ingredient;
     }
 

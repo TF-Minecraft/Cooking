@@ -87,7 +87,8 @@ class SauceReferenceBrewTest {
         env.composer.verify(() -> CompositionQualityResolver.compose(any(), argThat(inputs -> {
             FoodItem liquid = inputs.iterator().next();
             return inputs.size() == 3 && "alcohol".equals(liquid.getCategory())
-                    && "Red Wine".equals(liquid.getOrigin()) && liquid.getQualityMin() == 5;
+                    && "Red Wine".equals(liquid.getOrigin()) && liquid.getQualityMin() == 5
+                    && "fresh".equals(liquid.getTagTrack("freshness").getCurrentStep().getId());
         }), any()));
         assertTrue(sauce.isEmpty());
         assertFalse(env.variables.containsKey("sauce.brew"));
