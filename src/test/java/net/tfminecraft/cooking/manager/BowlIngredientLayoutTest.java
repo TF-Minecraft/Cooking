@@ -16,7 +16,7 @@ class BowlIngredientLayoutTest {
         for (int i = 1; i <= 5; i++) {
             placed[i - 1] = BowlIngredientLayout.offsetFor("input_" + i);
             double radius = Math.hypot(placed[i - 1].getxPos(), placed[i - 1].getzPos());
-            assertEquals(BowlIngredientLayout.RADIUS, radius, 0.001);
+            assertEquals(0.06, radius, 0.001);
         }
         for (int i = 0; i < placed.length; i++) {
             for (int j = i + 1; j < placed.length; j++) {
@@ -35,9 +35,9 @@ class BowlIngredientLayoutTest {
         float baseBefore = slotY - slotScale / 2f;
         for (int i = 1; i <= 5; i++) {
             DisplayData data = BowlIngredientLayout.offsetFor("input_" + i);
-            assertEquals(BowlIngredientLayout.SCALE, data.getxScale(), 0.0001);
-            assertEquals(BowlIngredientLayout.SCALE, data.getyScale(), 0.0001);
-            assertEquals(BowlIngredientLayout.SCALE, data.getzScale(), 0.0001);
+            assertEquals(0.7f, data.getxScale(), 0.0001);
+            assertEquals(0.7f, data.getyScale(), 0.0001);
+            assertEquals(0.7f, data.getzScale(), 0.0001);
             float scale = slotScale * data.getyScale();
             assertEquals(baseBefore, slotY + data.getyPos() - scale / 2f, 0.0001);
             assertTrue(scale < slotScale);
