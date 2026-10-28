@@ -7,7 +7,9 @@ import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockito.MockedStatic;
 
 import com.dre.brewery.api.BreweryApi;
@@ -15,7 +17,16 @@ import com.dre.brewery.recipe.BRecipe;
 import com.dre.brewery.recipe.PotionColor;
 
 class BrewLiquidTest {
-    @AfterEach void resetReader() { BrewLiquid.setReader(null); }
+    // Each test gets its own server: ItemStacks need one, and BreweryX's classes load against it.
+    @BeforeEach void startServer() {
+        MockBukkit.mock();
+        BreweryClasses.loadPotionColor();
+    }
+
+    @AfterEach void resetReader() {
+        BrewLiquid.setReader(null);
+        MockBukkit.unmock();
+    }
 
     @Test void breweryQualityRoundsHalfStarsUp() {
         int[] expected = {1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 5};
