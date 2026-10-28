@@ -23,8 +23,24 @@ class BowlIngredientLayoutTest {
                 double apart = Math.hypot(
                         placed[i].getxPos() - placed[j].getxPos(),
                         placed[i].getzPos() - placed[j].getzPos());
-                assertTrue(apart > 0.1, "input slots overlap at the center");
+                assertTrue(apart > 0.06, "input slots overlap at the center");
             }
+        }
+    }
+
+    @Test
+    void shrunkIngredientsStillRestOnTheSoup() {
+        // Bowl slot: scale 0.6, centre 0.06 above the bowl entity. Models sit on their own y=0.
+        float slotScale = 0.6f, slotY = 0.06f;
+        float baseBefore = slotY - slotScale / 2f;
+        for (int i = 1; i <= 5; i++) {
+            DisplayData data = BowlIngredientLayout.offsetFor("input_" + i);
+            assertEquals(BowlIngredientLayout.SCALE, data.getxScale(), 0.0001);
+            assertEquals(BowlIngredientLayout.SCALE, data.getyScale(), 0.0001);
+            assertEquals(BowlIngredientLayout.SCALE, data.getzScale(), 0.0001);
+            float scale = slotScale * data.getyScale();
+            assertEquals(baseBefore, slotY + data.getyPos() - scale / 2f, 0.0001);
+            assertTrue(scale < slotScale);
         }
     }
 
