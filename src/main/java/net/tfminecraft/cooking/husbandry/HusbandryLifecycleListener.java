@@ -256,8 +256,27 @@ public final class HusbandryLifecycleListener implements Listener {
             if (repository == null) {
                 return;
             }
-            repository.upsertAnimals(animals);
-            HusbandrySnapshots.save(repository, snapshots);
+            try {
+                repository.upsertAnimals(animals);
+            } catch (SqliteDatabaseException batch) {
+                // One bad row rolls back the whole batch. Unloaded animals are already evicted,
+                // so fall back to one commit per animal and lose only the rows that still fail.
+                for (HusbandryAnimal animal : animals) {
+                    try {
+                        repository.upsertAnimal(animal);
+                    } catch (SqliteDatabaseException ex) {
+                        Bukkit.getLogger().severe(
+                                "[Cooking] Failed to save husbandry animal " + animal.uuid() + ": " + ex.getMessage());
+                    }
+                }
+            }
+            try {
+                repository.upsertSnapshots(snapshots, System.currentTimeMillis());
+            } catch (SqliteDatabaseException batch) {
+                for (Map.Entry<UUID, byte[]> copy : snapshots.entrySet()) {
+                    HusbandrySnapshots.save(repository, Map.of(copy.getKey(), copy.getValue()));
+                }
+            }
         }
     }
 }

@@ -84,6 +84,26 @@ class HusbandryRuntimeCoverageTest {
         assertNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
     }
 
+    @Test void failedEventBatchFallsBackToOneWritePerAnimalAndSnapshot() {
+        Cow first = f.spawn(Cow.class), second = f.spawn(Cow.class);
+        HusbandryAnimal a = f.record(first), b = f.record(second); f.own(a, f.player); f.own(b, f.player);
+        UnsafeValues unsafe = mock(UnsafeValues.class);
+        when(unsafe.serializeEntity(first, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{1});
+        when(unsafe.serializeEntity(second, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{2});
+        doThrow(new SqliteDatabaseException("batch")).when(f.repository).upsertAnimals(argThat(animals -> animals != null && animals.size() > 1));
+        doThrow(new SqliteDatabaseException("bad row")).when(f.repository).upsertAnimals(
+                argThat(animals -> animals != null && animals.size() == 1 && animals.iterator().next().uuid().equals(a.uuid())));
+        doThrow(new SqliteDatabaseException("batch")).when(f.repository).upsertSnapshots(argThat(copies -> copies != null && copies.size() > 1), anyLong());
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            assertDoesNotThrow(() -> lifecycle.onEntitiesUnload(new EntitiesUnloadEvent(first.getChunk(), List.of(first, second))));
+        }
+        assertNull(f.repository.getAnimal(a.uuid()).orElseThrow().unloadedAt());
+        assertNotNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
+        assertArrayEquals(new byte[]{1}, f.repository.getSnapshot(a.uuid()).orElseThrow().data());
+        assertArrayEquals(new byte[]{2}, f.repository.getSnapshot(b.uuid()).orElseThrow().data());
+    }
+
     @Test void wipePolicyRemovesUnownedAnimalsButKeepsOwnersAndEnrolledMounts() throws Exception {
         f.config.set("remove-unowned", List.of("COW", "HORSE")); f.reload();
         Cow wild = f.spawn(Cow.class), tracked = f.spawn(Cow.class), owned = f.spawn(Cow.class);
