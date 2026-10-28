@@ -63,6 +63,27 @@ class HusbandryRuntimeCoverageTest {
         assertTrue(f.repository.getSnapshot(animal.uuid()).isEmpty());
     }
 
+    @Test void oneEntitiesEventSavesItsAnimalsAndSnapshotsInOneWriteEach() {
+        Cow first = f.spawn(Cow.class), second = f.spawn(Cow.class);
+        HusbandryAnimal a = f.record(first), b = f.record(second); f.own(a, f.player); f.own(b, f.player);
+        UnsafeValues unsafe = mock(UnsafeValues.class);
+        when(unsafe.serializeEntity(first, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{1});
+        when(unsafe.serializeEntity(second, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{2});
+        clearInvocations(f.repository);
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            lifecycle.onEntitiesUnload(new EntitiesUnloadEvent(first.getChunk(), List.of(first, second, f.spawn(ItemDisplay.class))));
+        }
+        verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 2));
+        verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 2), anyLong());
+        assertArrayEquals(new byte[]{2}, f.repository.getSnapshot(b.uuid()).orElseThrow().data());
+        clearInvocations(f.repository);
+        lifecycle.onEntitiesLoad(new EntitiesLoadEvent(first.getChunk(), List.of(first, second)));
+        verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 2));
+        assertNull(f.repository.getAnimal(a.uuid()).orElseThrow().unloadedAt());
+        assertNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
+    }
+
     @Test void wipePolicyRemovesUnownedAnimalsButKeepsOwnersAndEnrolledMounts() throws Exception {
         f.config.set("remove-unowned", List.of("COW", "HORSE")); f.reload();
         Cow wild = f.spawn(Cow.class), tracked = f.spawn(Cow.class), owned = f.spawn(Cow.class);
