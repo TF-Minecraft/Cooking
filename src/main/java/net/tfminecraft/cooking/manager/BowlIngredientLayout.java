@@ -5,9 +5,17 @@ import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 /**
  * Bowl ingredient slots share one centered offset in the furniture definition.
  * Spread input_1..input_5 around the bowl interior when the soup is poured.
+ *
+ * <p>The bowl's 0.6 slot scale lets the larger cut vegetables and steaks reach
+ * through the bowl wall. SCALE shrinks them to 0.42 and the slot drops by
+ * DROP so they still rest on the soup surface. With RADIUS this keeps every
+ * pot ingredient inside the bowl's inner wall in all five slots.
  */
 public final class BowlIngredientLayout {
-    static final float RADIUS = 0.12f;
+    static final float RADIUS = 0.06f;
+    static final float SCALE = 0.7f;
+    /** The bowl slot scale (0.6) times half the shrink, so the model's base stays put. */
+    static final float DROP = 0.6f * (1f - SCALE) / 2f;
     private static final int INPUTS = 5;
 
     private BowlIngredientLayout() {}
@@ -18,7 +26,11 @@ public final class BowlIngredientLayout {
         double angle = -Math.PI / 2d + index * (2d * Math.PI / INPUTS);
         DisplayData data = new DisplayData();
         data.setxPos((float) (Math.cos(angle) * RADIUS));
+        data.setyPos(-DROP);
         data.setzPos((float) (Math.sin(angle) * RADIUS));
+        data.setxScale(SCALE);
+        data.setyScale(SCALE);
+        data.setzScale(SCALE);
         return data;
     }
 

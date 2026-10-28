@@ -228,7 +228,7 @@ public class MealManagersCoverageTest {
         assertEquals(Material.STICK, env.player.getInventory().getItemInMainHand().getType());
         assertEquals(full, bowl.active.get("food_item").getCurrentItem()); assertFalse(bowl.active.containsKey("undeclared"));
         verify(existing, never()).forceModel(any()); assertEquals(Material.CARROT, bowl.active.get("input_1").getCurrentItem().getType());
-        verify(bowl.active.get("input_1")).applyDisplayData(argThat(data -> Math.abs(data.getzPos() + 0.12f) < 0.001));
+        verify(bowl.active.get("input_1")).applyDisplayData(argThat(data -> Math.abs(data.getzPos() + 0.06f) < 0.001));
         verify(bowl.active.get("liquid"), never()).applyDisplayData(any()); verify(env.manager).markDirty(bowl.furniture);
     }
 
@@ -265,7 +265,7 @@ public class MealManagersCoverageTest {
     void bowlIngredientPositionsAreDistinctAndUnsupportedSlotNamesHaveNoOffset() {
         for (int index = 1; index <= 5; index++) {
             var data = BowlIngredientLayout.offsetFor("input_" + index);
-            assertEquals(0.12, Math.hypot(data.getxPos(), data.getzPos()), 0.001); assertEquals(index - 1, BowlIngredientLayout.inputIndex("input_" + index));
+            assertEquals(0.06, Math.hypot(data.getxPos(), data.getzPos()), 0.001); assertEquals(index - 1, BowlIngredientLayout.inputIndex("input_" + index));
         }
         for (String id : new String[] {null, "food_item", "input_0", "input_6", "input_bad"}) assertNull(BowlIngredientLayout.offsetFor(id));
     }
