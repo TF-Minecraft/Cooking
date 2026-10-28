@@ -598,18 +598,18 @@ public class FoodItem {
     // --------------------------------------------------------------
     public double getFinalFood() {
         if (hasCarveState() && carveRemaining > 0) {
-            return applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingFood(this), 0)
-                    + sauceFinal(0);
+            return roundToTenth(applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingFood(this), 0)
+                    + sauceFinal(0));
         }
-        return applyMultipliers(baseFood, 0) + sauceFinal(0);
+        return roundToTenth(applyMultipliers(baseFood, 0) + sauceFinal(0));
     }
 
     public double getFinalNutrition() {
         if (hasCarveState() && carveRemaining > 0) {
-            return applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingNutrition(this), 1)
-                    + sauceFinal(1);
+            return roundToTenth(applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingNutrition(this), 1)
+                    + sauceFinal(1));
         }
-        return applyMultipliers(baseNutrition, 1) + sauceFinal(1);
+        return roundToTenth(applyMultipliers(baseNutrition, 1) + sauceFinal(1));
     }
 
     private double sauceFinal(int type) {
@@ -635,7 +635,12 @@ public class FoodItem {
             }
         }
 
-        return Math.round(result * 10.0) / 10.0;
+        return roundToTenth(result);
+    }
+
+    // Each part is already rounded, but adding a sauce's doubles can still leave 59.599999999999994.
+    private static double roundToTenth(double value) {
+        return Math.round(value * 10.0) / 10.0;
     }
 
 

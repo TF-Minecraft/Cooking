@@ -218,8 +218,16 @@ class FoodItemCoverageTest {
         copy.removeTrack("freshness"); assertFalse(food.sameTags(copy));
         assertEquals(10, food.getFinalFood()); assertEquals(2.8, food.getFinalNutrition());
         FoodItem sauce = food("sauce"); sauce.setQualityRange(1,1); sauce.setBaseFood(2); sauce.setBaseNutrition(5);
-        food.setSauce(sauce); assertEquals(12, food.getFinalFood()); assertEquals(4.2, food.getFinalNutrition(), .0001);
+        food.setSauce(sauce); assertEquals(12, food.getFinalFood()); assertEquals(4.2, food.getFinalNutrition());
         food.setSauceName(""); assertFalse(food.hasSauceName());
+    }
+
+    @Test void sauceTotalsAreRoundedToOneDecimal() {
+        FoodItem food = food("bread"); food.setQualityRange(1,1);
+        food.setBaseFood(28.4);
+        FoodItem sauce = food("sauce"); sauce.setQualityRange(1,1); sauce.setBaseFood(31.2);
+        food.setSauce(sauce);
+        assertEquals("59.6", String.valueOf(food.getFinalFood()));
     }
 
     @Test void modelLookupUsesTheOriginAndFallsBackWhenOverrideIsMissing() {
