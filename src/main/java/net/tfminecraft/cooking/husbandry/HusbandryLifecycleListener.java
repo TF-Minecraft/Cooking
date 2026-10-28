@@ -25,16 +25,12 @@ public final class HusbandryLifecycleListener implements Listener {
 
     @EventHandler
     public void onEntitiesLoad(EntitiesLoadEvent event) {
-        for (Entity entity : event.getEntities()) {
-            handleLoad(entity);
-        }
+        load(event.getEntities());
     }
 
     @EventHandler
     public void onEntitiesUnload(EntitiesUnloadEvent event) {
-        for (Entity entity : event.getEntities()) {
-            handleUnload(entity);
-        }
+        unload(event.getEntities());
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -107,9 +103,7 @@ public final class HusbandryLifecycleListener implements Listener {
 
     public static void resumeLoadedWorlds() {
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntities()) {
-                handleLoad(entity);
-            }
+            load(world.getEntities());
         }
     }
 
@@ -146,6 +140,37 @@ public final class HusbandryLifecycleListener implements Listener {
     }
 
     static void handleLoad(Entity entity) {
+        load(List.of(entity));
+    }
+
+    static void handleUnload(Entity entity) {
+        unload(List.of(entity));
+    }
+
+    /** Saves every animal of one entities event in a single transaction instead of one per animal. */
+    private static void load(Iterable<? extends Entity> entities) {
+        Writes writes = new Writes();
+        try {
+            for (Entity entity : entities) {
+                load(entity, writes);
+            }
+        } finally {
+            writes.flush();
+        }
+    }
+
+    private static void unload(Iterable<? extends Entity> entities) {
+        Writes writes = new Writes();
+        try {
+            for (Entity entity : entities) {
+                unload(entity, writes);
+            }
+        } finally {
+            writes.flush();
+        }
+    }
+
+    private static void load(Entity entity, Writes writes) {
         if (!(entity instanceof LivingEntity living)) {
             return;
         }
@@ -186,11 +211,11 @@ public final class HusbandryLifecycleListener implements Listener {
         animal.setUnloadedAt(null);
         animal.setLoadedVisitStart(now);
         HusbandryEntities.putLoaded(animal);
-        repository.upsertAnimal(animal);
+        writes.animal(repository, animal);
         HusbandryStateDisplay.sync(living, animal);
     }
 
-    static void handleUnload(Entity entity) {
+    private static void unload(Entity entity, Writes writes) {
         if (!(entity instanceof LivingEntity)) {
             return;
         }
@@ -207,11 +232,50 @@ public final class HusbandryLifecycleListener implements Listener {
         HusbandryAnimal animal = stored.get();
         HusbandryLocation.remember(animal, entity);
         animal.setUnloadedAt(System.currentTimeMillis());
-        repository.upsertAnimal(animal);
+        writes.animal(repository, animal);
         if (HusbandrySnapshots.shouldCapture(animal)) {
             byte[] copy = HusbandrySnapshots.capture(entity, true);
             if (copy != null) {
-                HusbandrySnapshots.save(repository, Map.of(uuid, copy));
+                writes.snapshots.put(uuid, copy);
+            }
+        }
+    }
+
+    /** Rows queued by one load or unload pass; animals are written before their snapshots, as before. */
+    private static final class Writes {
+        private final List<HusbandryAnimal> animals = new ArrayList<>();
+        private final Map<UUID, byte[]> snapshots = new HashMap<>();
+        private HusbandryRepository repository;
+
+        void animal(HusbandryRepository target, HusbandryAnimal animal) {
+            repository = target;
+            animals.add(animal);
+        }
+
+        void flush() {
+            if (repository == null) {
+                return;
+            }
+            try {
+                repository.upsertAnimals(animals);
+            } catch (SqliteDatabaseException batch) {
+                // One bad row rolls back the whole batch. Unloaded animals are already evicted,
+                // so fall back to one commit per animal and lose only the rows that still fail.
+                for (HusbandryAnimal animal : animals) {
+                    try {
+                        repository.upsertAnimal(animal);
+                    } catch (SqliteDatabaseException ex) {
+                        Bukkit.getLogger().severe(
+                                "[Cooking] Failed to save husbandry animal " + animal.uuid() + ": " + ex.getMessage());
+                    }
+                }
+            }
+            try {
+                repository.upsertSnapshots(snapshots, System.currentTimeMillis());
+            } catch (SqliteDatabaseException batch) {
+                for (Map.Entry<UUID, byte[]> copy : snapshots.entrySet()) {
+                    HusbandrySnapshots.save(repository, Map.of(copy.getKey(), copy.getValue()));
+                }
             }
         }
     }
