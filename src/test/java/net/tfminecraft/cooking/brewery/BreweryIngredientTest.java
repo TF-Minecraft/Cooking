@@ -238,6 +238,17 @@ class BreweryIngredientTest {
         bridge.close();bridge.close();
     }
 
+    @Test void registrationLetsTheSaucepanReadBrewsUntilClosed() {
+        ItemStack potion = new ItemStack(Material.POTION);
+        try (MockedStatic<BreweryApi> api = mockStatic(BreweryApi.class)) {
+            assertNull(BrewLiquid.from(potion));
+            api.verify(() -> BreweryApi.getBrew(potion), times(1));
+            cleanup.run();
+            assertNull(BrewLiquid.from(potion));
+            api.verify(() -> BreweryApi.getBrew(potion), times(1));
+        }
+    }
+
     @Test void failedListenerRegistrationRemovesTheGate() {
         JavaPlugin owner = mock(JavaPlugin.class, RETURNS_DEEP_STUBS);
         var manager = owner.getServer().getPluginManager();
