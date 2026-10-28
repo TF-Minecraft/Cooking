@@ -28,6 +28,7 @@ import net.tfminecraft.tlibs.TLibs;
 
 import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
+import net.tfminecraft.cooking.brewery.BrewLiquid;
 import net.tfminecraft.cooking.cache.ItemCache;
 
 import net.tfminecraft.cooking.cup.BucketItems;
@@ -79,8 +80,10 @@ public class SauceReference extends CookingReference {
 
     private static final String VAR_COLOURS = "sauce.colours";
     private static final String VAR_LIQUID = "sauce.liquid";
+    private static final String VAR_BREW = "sauce.brew";
 
     private FoodItem liquidSource;
+    private BrewLiquid brew;
 
     public SauceReference(Furniture f, Method m) {
 
@@ -244,7 +247,8 @@ public class SauceReference extends CookingReference {
 
         for (String c : colours) {
 
-            if (c.equalsIgnoreCase("ffffff")) {
+            // A white brew (vodka) is not milk.
+            if (brew == null && c.equalsIgnoreCase("ffffff")) {
 
                 hasMilk = true;
 
@@ -299,6 +303,13 @@ public class SauceReference extends CookingReference {
         cookedTrack.setValue(1);
 
         sauce.addOrModifyTrack(cookedTrack);
+
+        TagTrack reduced = brew == null ? null : TrackLoader.getByString("reduced");
+        if (reduced != null) {
+            reduced = new TagTrack(reduced);
+            reduced.setValue(0);
+            sauce.addOrModifyTrack(reduced);
+        }
 
 
 
@@ -372,6 +383,11 @@ public class SauceReference extends CookingReference {
 
         }
 
+        BrewLiquid pouredBrew = secondaries.containsKey("liquid") ? null : BrewLiquid.from(item);
+        if (pouredBrew != null) {
+            pourBrew(p, pouredBrew);
+            return;
+        }
         if (!secondaries.containsKey("liquid") && isWrongSaucepanWater(item)) {
 
             p.sendMessage("Use a cup of water to fill the saucepan.");
@@ -439,6 +455,47 @@ public class SauceReference extends CookingReference {
 
     
 
+    /** A finished alcoholic brew replaces the water or milk, so both add-in slots stay free. */
+    private void pourBrew(Player p, BrewLiquid poured) {
+        if (!poured.alcoholic()) {
+            p.sendMessage("§cOnly alcoholic brews can go in the saucepan.");
+            return;
+        }
+        if (f.getType() == null || f.getType().getSlot("liquid") == null) return;
+        brew = poured;
+        liquidSource = brewIngredient(poured);
+        saveLiquid(null);
+        f.getVariables().put(VAR_BREW, poured.stars() + ":" + poured.name());
+        secondaries.put("liquid", -1);
+        if (poured.colour() != null) addColour(poured.colour());
+        saveColours();
+        HeldStack.useOneKeepStack(p, new ItemStack(Material.GLASS_BOTTLE));
+        p.swingMainHand();
+        updateModel();
+        danger = 0;
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
+    }
+
+    /** The brew counts toward the sauce's stars like the water or milk it replaces. */
+    private static FoodItem brewIngredient(BrewLiquid poured) {
+        FoodItem ingredient = FoodParser.parse("sauce(type=sauce;origin=Mixed)").template;
+        ingredient.setCategory("alcohol");
+        ingredient.setOrigin(poured.name());
+        ingredient.setQualityRange(poured.stars(), poured.stars());
+        return ingredient;
+    }
+
+    /** The brew leads the sauce's name, e.g. "Red Wine Sauce". */
+    @Override
+    public List<String> getIngredients() {
+        List<String> names = super.getIngredients();
+        if (brew == null || brew.name().isEmpty()) return names;
+        List<String> withBrew = new ArrayList<>();
+        withBrew.add(brew.name());
+        withBrew.addAll(names);
+        return withBrew;
+    }
+
     public void updateModel() {
 
         String path = getLiquidItemPath();
@@ -452,10 +509,12 @@ public class SauceReference extends CookingReference {
     @Override
     public void clear() {
         liquidSource = null;
+        brew = null;
         super.clear();
         if (f == null) return;
         f.getVariables().remove(VAR_COLOURS);
         f.getVariables().remove(VAR_LIQUID);
+        f.getVariables().remove(VAR_BREW);
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
     }
 
@@ -472,6 +531,8 @@ public class SauceReference extends CookingReference {
         secondaries.put("liquid", -1);
         ItemStack liquid = PotReference.decodeStack(stringVariable(VAR_LIQUID));
         liquidSource = liquid == null ? null : FoodItem.fromItem(liquid);
+        brew = restoreBrew(stringVariable(VAR_BREW));
+        if (brew != null) liquidSource = brewIngredient(brew);
         restoreColours();
     }
 
@@ -495,6 +556,17 @@ public class SauceReference extends CookingReference {
         }
         for (String slotId : slots.keySet()) {
             f.getActiveSlot(slotId).ifPresent(placed -> addColour(ItemCache.getColour(placed.getCurrentItem())));
+        }
+    }
+
+    /** Saved as "stars:name". Names may contain colons, the star count never does. */
+    private static BrewLiquid restoreBrew(String saved) {
+        int split = saved == null ? -1 : saved.indexOf(':');
+        if (split <= 0) return null;
+        try {
+            return new BrewLiquid(saved.substring(split + 1), Integer.parseInt(saved.substring(0, split)), null, true);
+        } catch (NumberFormatException invalid) {
+            return null;
         }
     }
 

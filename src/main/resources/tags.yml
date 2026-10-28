@@ -211,3 +211,11 @@ rising:
     name: "#e6c98aRisen"
     value: 900
     stars: 0
+
+# A BreweryX brew poured into the saucepan as its liquid.
+reduced:
+  reduced:
+    name: "#a8455aReduced"
+    value: 0
+    nutrition-mult: 1.10
+    food-mult: 1.10

@@ -28,6 +28,7 @@ public final class BreweryIngredientListener implements Listener {
         Runnable cleanup = () -> {
             HandlerList.unregisterAll(listener);
             BCauldronRecipe.acceptedCustom.removeIf(item -> item == listener.gate);
+            BrewLiquid.setReader(null);
         };
         try {
             plugin.getServer().getPluginManager().registerEvents(listener, plugin);
@@ -35,6 +36,7 @@ public final class BreweryIngredientListener implements Listener {
             cleanup.run();
             throw exception;
         }
+        BrewLiquid.setReader(BrewLiquidReader::read);
         return cleanup;
     }
 
