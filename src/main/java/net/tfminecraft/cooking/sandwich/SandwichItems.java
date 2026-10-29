@@ -11,6 +11,7 @@ import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionContext;
+import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -40,6 +41,7 @@ public final class SandwichItems {
         FoodItem sandwich = parsed.template;
         CompositionResult composed = CompositionQualityResolver.compose(player, layers, CompositionContext.SANDWICH);
         CompositionApplier.apply(sandwich, composed);
+        CompositionFreshnessApplier.keepOwnAgeing(sandwich);
         applyTotals(sandwich, layers);
         boolean marked = false;
         for (FoodItem food : layers) {

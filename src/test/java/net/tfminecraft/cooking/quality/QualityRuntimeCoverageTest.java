@@ -59,6 +59,18 @@ class QualityRuntimeCoverageTest {
         assertTrue(empty.getMains().isEmpty()); assertTrue(empty.getExtras().isEmpty()); assertTrue(empty.getNeutral().isEmpty());
     }
 
+    @Test void dishesKeepOnlyTheAgeingTheirTypeDoes() {
+        FoodItem plain=food("plain","meal",1); plain.addOrModifyTrack(track("cheese_age",true,0));
+        CompositionFreshnessApplier.keepOwnAgeing(plain); assertTrue(plain.hasTagTrack("cheese_age"));
+        MemoryConfiguration config=new MemoryConfiguration(); config.set("age.freshness",1);
+        FoodItem pizza=new FoodItem("pizza_slice",config);
+        pizza.addOrModifyTrack(track("freshness",true,0)); pizza.addOrModifyTrack(track("cheese_age",true,0));
+        pizza.addOrModifyTrack(track("cooked",false,1));
+        CompositionFreshnessApplier.keepOwnAgeing(pizza);
+        assertEquals(java.util.Set.of("freshness"),pizza.getAgeingTracks());
+        assertTrue(pizza.hasTagTrack("freshness")); assertFalse(pizza.hasTagTrack("cheese_age")); assertTrue(pizza.hasTagTrack("cooked"));
+    }
+
     @Test void extrasUseQualityGapsCraftBonusesAndAgePenalties() {
         assertEquals(3,CompositionQualityResolver.applyExtras(3,null)); assertEquals(3,CompositionQualityResolver.applyExtras(3,List.of()));
         FoodItem high=food("high","salt",4), low=food("low","salt",1), same=food("same","salt",3);

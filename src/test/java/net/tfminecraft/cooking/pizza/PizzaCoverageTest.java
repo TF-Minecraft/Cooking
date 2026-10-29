@@ -78,6 +78,8 @@ class PizzaCoverageTest {
                 names:
                   salt: ""
                 thickness: 0.05
+                models:
+                  - ia.spice_{origin}
               plain: 3
             """;
 
@@ -103,6 +105,8 @@ class PizzaCoverageTest {
         when(env.api.getCreator().getItemFromPath(anyString())).thenAnswer(inv -> {
             String ref = inv.getArgument(0);
             modelRefs.add(ref);
+            // The second topping's layout (_t1) is missing, so it falls back to the plain model.
+            if (ref.contains("_t1")) return new ItemStack(Material.DIRT);
             return new ItemStack(ref.startsWith("ia.sauce") ? Material.RED_DYE : Material.STICK);
         });
         env.builder.when(() -> ItemBuilder.buildComposedWithQuality(any(), anyInt())).thenAnswer(inv -> {
@@ -346,7 +350,10 @@ class PizzaCoverageTest {
 
         click(paste("Carrot"));
         verify(env.player, times(2)).sendMessage("§7This pizza already has its sauce.");
+        // The second topping looks for its own layout first.
         click(spice("Basil"));
+        assertEquals(List.of("ia.spice_basil_t1", "ia.spice_basil"), modelRefs.subList(modelRefs.size() - 2, modelRefs.size()));
+        assertEquals(Material.STICK, layer(4).getType());
         assertEquals(1.5f / 16, lift(4), 1e-6);
         click(spice("Basil"));
         verify(env.player).sendMessage("§7There's no room for more toppings.");
