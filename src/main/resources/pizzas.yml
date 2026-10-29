@@ -1,0 +1,123 @@
+# Pizzas, built on a pizza peel and baked in the oven:
+#   1. Place a pizza peel and right-click it with a piece of dough.
+#   2. Right-click with a sauce to spread it straight on the dough (optional).
+#   3. Right-click with toppings to lay them on it (an empty hand takes the top one back off).
+#   4. Sneak and right-click with an empty hand to carry the peel, and put it in a lit oven like a baking tray.
+#   5. Once it's baked, right-click the peel with an empty hand to take a slice; the last slice leaves the peel empty.
+# A slice's food is its crust's (the output type's food in types.yml, in place of the dough's) plus its share of what
+# the other layers hold, its nutrition their average (weighted by food), and its quality, freshness and variety come
+# from all of them (composition.yml context PIZZA). It takes the bake (cooked or burnt) as its cooked tag. The toppings
+# name it: "Cheese, Tomato and Basil Pizza Slice" (naming.yml fillers max). Every slice of a pizza is the same, so
+# they stack.
+#
+# The peel needs slots pizza_1, pizza_2, ... (InteractibleFurniture), one per layer, at the furniture's centre with
+# scale 1 and interactible: false. Each layer model is drawn lying on the peel, in its coordinates; Cooking lifts each
+# layer by the thickness of those below it. The peel also needs carry: true to go in the oven.
+
+# Furniture ids pizzas are built on.
+furniture:
+  - pizza_peel
+
+# Toppings on a pizza, at most (and no more than the peel's pizza slots allow after the dough and sauce).
+max-toppings: 6
+
+# One slice of the finished pizza (types.yml). Its food and nutrition are its crust's.
+output: meal(type=pizza_slice;origin=Mixed)
+
+# Slices a baked pizza is cut into. While some are taken, each layer shows its model with _left3 (slices left) added
+# when that exists. 1 takes the pizza off whole (then make output a whole pizza).
+slices: 4
+
+# Seconds in a lit oven until the pizza is cooked, and until it burns (counted from when it went in).
+bake:
+  cook-seconds: 20
+  burn-seconds: 60
+
+# Layers, matched by types.yml type, written like sandwiches.yml's:
+#   name         the topping's part of the pizza's name; {origin} is the food's origin (Pineapple)
+#   names        a name per origin instead (goat: Goat Cheese)
+#   thickness    how high the layer lies, in model pixels (1/16 block)
+#   models       its look on the peel: a model, or a tag and a model used while the food has that tag. The pizza's
+#                bake counts as a tag too (raw, cooked, burnt). The first that exists is used, so later lines are
+#                fallbacks. {origin} is the origin in lower case with _ for spaces (melon_slice).
+# The dough every pizza starts with.
+base:
+  types:
+    - dough
+  thickness: 1.0
+  models:
+    - rotten ia.tfmc_cooking:pizza_base_rotten
+    - burnt ia.tfmc_cooking:pizza_base_burnt
+    - cooked ia.tfmc_cooking:pizza_base_cooked
+    - ia.tfmc_cooking:pizza_base_raw
+
+# One sauce, spread straight on the dough before any topping. It doesn't name the pizza.
+sauce:
+  types:
+    - paste
+  thickness: 0.2
+  models:
+    - burnt ia.tfmc_cooking:pizza_sauce_burnt
+    - ia.tfmc_cooking:pizza_sauce_{origin}
+    - ia.tfmc_cooking:pizza_sauce_tomato
+
+# The first topping that takes a food wins.
+toppings:
+  cheese:
+    types:
+      - cheese
+    name: Cheese
+    names:
+      goat: Goat Cheese
+    thickness: 0.3
+    models:
+      - burnt ia.tfmc_cooking:pizza_cheese_burnt
+      - cooked ia.tfmc_cooking:pizza_cheese_{origin}_melted
+      - cooked ia.tfmc_cooking:pizza_cheese_melted
+      - ia.tfmc_cooking:pizza_cheese_{origin}
+      - ia.tfmc_cooking:pizza_cheese
+  vegetable:
+    types:
+      - vegetable_cut
+      - vegetable_cut_2
+      - vegetable_chopped
+      - vegetable_chopped_2
+      - garnish_chopped
+    name: "{origin}"
+    thickness: 0.05
+    models:
+      - rotten ia.tfmc_cooking:pizza_topping_{origin}_rotten
+      - burnt ia.tfmc_cooking:pizza_topping_{origin}_burnt
+      - ia.tfmc_cooking:pizza_topping_{origin}
+  fruit:
+    types:
+      - fruit_1
+      - fruit_2
+    name: "{origin}"
+    names:
+      melon slice: Melon
+    thickness: 0.05
+    models:
+      - rotten ia.tfmc_cooking:pizza_topping_{origin}_rotten
+      - burnt ia.tfmc_cooking:pizza_topping_{origin}_burnt
+      - ia.tfmc_cooking:pizza_topping_{origin}
+  sausage:
+    types:
+      - sausage
+    name: Sausage
+    thickness: 0.05
+    models:
+      - rotten ia.tfmc_cooking:pizza_topping_sausage_rotten
+      - burnt ia.tfmc_cooking:pizza_topping_sausage_burnt
+      - ia.tfmc_cooking:pizza_topping_sausage
+  spice:
+    types:
+      - spice_1
+      - seasoning_1
+    name: "{origin}"
+    names:
+      salt: ""
+    thickness: 0.05
+    models:
+      - burnt ia.tfmc_cooking:pizza_topping_{origin}_burnt
+      - ia.tfmc_cooking:pizza_topping_{origin}

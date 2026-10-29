@@ -9,6 +9,7 @@ Cooking makes food an interactive part of everyday life. Players grow and gather
 - **Working kitchens** — fry, boil, prepare sauces and soups, and bake with cookware, heat sources, and fuelled ovens. Leaving food cooking too long can burn it.
 - **Food preparation** — milling stones, mixing bowls, butter churns, sausage makers, and baking trays provide different ways to transform ingredients.
 - **Sandwiches** — lay a slice of bread on a cutting board, add spreads, cheese and vegetables, close it with another slice and pick it up. Its fillings name it, and its food, quality and freshness come from its layers (`sandwiches.yml`).
+- **Pizzas** — place a pizza peel, put dough on it, spread a paste and add cheese, vegetables, fruit, sausage and spices, then carry the peel into a lit oven to bake. A baked pizza is taken off a slice at a time. Its toppings name it, and its food, quality and freshness come from its layers (`pizzas.yml`).
 - **Serving and sharing** — plate dishes, ladle soup into bowls, and carve foods into portions for the table.
 - **Quality and freshness** — ingredient quality and composition influence finished dishes, while aging and food tags carry preparation history through the kitchen.
 - **Farming and husbandry** — crop fertility and harvest quality sit alongside animal care, breeding, genetics, and produce collection.
