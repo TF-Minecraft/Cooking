@@ -62,6 +62,8 @@ import net.tfminecraft.cooking.manager.TagManager;
 import net.tfminecraft.cooking.baking.BakingTrayAging;
 import net.tfminecraft.cooking.baking.BakingTrayHandler;
 import net.tfminecraft.cooking.baking.BakingTrayLoader;
+import net.tfminecraft.cooking.sandwich.SandwichConfig;
+import net.tfminecraft.cooking.sandwich.SandwichHandler;
 import net.tfminecraft.cooking.milling.MillingRecipeLoader;
 import net.tfminecraft.cooking.trough.TroughAging;
 import net.tfminecraft.cooking.trough.TroughHandler;
@@ -131,6 +133,8 @@ public class Cooking extends JavaPlugin {
     private final BakingTrayLoader bakingTrayLoader = new BakingTrayLoader();
     private final MillingRecipeLoader millingRecipeLoader = new MillingRecipeLoader();
     private final BakingTrayHandler bakingTrayHandler = new BakingTrayHandler();
+    private final SandwichConfig sandwichConfig = new SandwichConfig();
+    private final SandwichHandler sandwichHandler = new SandwichHandler();
     private final MillingStoneHandler millingStoneHandler = new MillingStoneHandler();
     private final TroughHandler troughHandler = new TroughHandler();
     private final TroughAging troughAging = new TroughAging();
@@ -186,6 +190,7 @@ public class Cooking extends JavaPlugin {
             butterChurnHandler.resumeLoadedChurns();
             liquidContainerHandler.resumeLoadedContainers();
             meatHookHandler.resumeLoadedHooks();
+            sandwichHandler.resumeLoaded();
             warnIfCharacterIdentityMissing(getLogger());
             SaturationGuard.start();
             NutritionDrainTask.start();
@@ -252,6 +257,7 @@ public class Cooking extends JavaPlugin {
         modelLoader.load(new File(getDataFolder(), "models.yml"));
         foodLoader.load(new File(getDataFolder(), "types.yml"));
         bakingTrayLoader.load(new File(getDataFolder(), "baking-trays.yml"));
+        sandwichConfig.load(new File(getDataFolder(), "sandwiches.yml"));
         millingRecipeLoader.load(new File(getDataFolder(), "milling-recipes.yml"));
         stationLoader.load(new File(getDataFolder(), "crafting-stations.yml"));
         trackLoader.load(new File(getDataFolder(), "tags.yml"));
@@ -315,6 +321,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(meatHookHandler, this);
         getServer().getPluginManager().registerEvents(sausageMakerHandler, this);
         getServer().getPluginManager().registerEvents(bakingTrayHandler, this);
+        getServer().getPluginManager().registerEvents(sandwichHandler, this);
         getServer().getPluginManager().registerEvents(millingStoneHandler, this);
         getServer().getPluginManager().registerEvents(troughHandler, this);
         getServer().getPluginManager().registerEvents(ovenLifecycleHandler, this);
@@ -408,6 +415,7 @@ public class Cooking extends JavaPlugin {
                 "types.yml",
                 "crafting-stations.yml",
                 "baking-trays.yml",
+                "sandwiches.yml",
                 "milling-recipes.yml",
                 "cookware.yml",
                 "tags.yml",

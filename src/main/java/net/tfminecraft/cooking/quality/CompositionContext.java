@@ -9,6 +9,7 @@ public enum CompositionContext {
     CHURN(true),
     FRYING_PAN(true),
     SAUSAGE_MAKER(true),
+    SANDWICH(true),
     MILLING(false),
     BAKING(false);
 

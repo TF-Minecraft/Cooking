@@ -21,6 +21,8 @@ import net.tfminecraft.cooking.fishing.CustomFishingBridge;
 import net.tfminecraft.cooking.fishing.CustomFishingCatalog;
 import net.tfminecraft.cooking.fishing.LegacyFishScan;
 import net.tfminecraft.cooking.hook.MeatHookHandler;
+import net.tfminecraft.cooking.sandwich.SandwichConfig;
+import net.tfminecraft.cooking.sandwich.SandwichHandler;
 import net.tfminecraft.cooking.husbandry.*;
 import net.tfminecraft.cooking.item.CookingPathHandler;
 import net.tfminecraft.cooking.liquid.*;
@@ -79,7 +81,8 @@ class CookingLifecycleTest {
                 MeatHookHandler.class, SausageMakerHandler.class, BakingTrayLoader.class,
                 MillingRecipeLoader.class, BakingTrayHandler.class, MillingStoneHandler.class,
                 TroughHandler.class, TroughAging.class, BakingTrayAging.class, OvenCavityManager.class,
-                OvenBurnManager.class, OvenLifecycleHandler.class, OvenHandler.class, CraftingManager.class)) {
+                OvenBurnManager.class, OvenLifecycleHandler.class, OvenHandler.class, CraftingManager.class,
+                SandwichConfig.class, SandwichHandler.class)) {
             constructions.put(type, mockConstruction(type));
         }
         items = mock(ItemAPI.class);
@@ -119,7 +122,7 @@ class CookingLifecycleTest {
         for (String name : List.of("models.yml", "types.yml", "crafting-stations.yml", "baking-trays.yml",
                 "milling-recipes.yml", "cookware.yml", "tags.yml", "naming.yml", "config.yml", "conversions.yml",
                 "carve-sequences.yml", "quality.yml", "composition.yml", "permission_effects.yml", "farming.yml",
-                "crops.yml", "husbandry.yml", "custom-fishing.yml")) {
+                "crops.yml", "husbandry.yml", "custom-fishing.yml", "sandwiches.yml")) {
             Path resource = plugin.getDataFolder().toPath().resolve(name);
             assertTrue(Files.isRegularFile(resource), name);
             assertFalse(Files.readString(resource).isBlank(), name);
@@ -129,6 +132,7 @@ class CookingLifecycleTest {
         assertConfigLoaded(plugin, ModelLoader.class, "models.yml");
         assertConfigLoaded(plugin, FoodLoader.class, "types.yml");
         assertConfigLoaded(plugin, BakingTrayLoader.class, "baking-trays.yml");
+        assertConfigLoaded(plugin, SandwichConfig.class, "sandwiches.yml");
         assertConfigLoaded(plugin, MillingRecipeLoader.class, "milling-recipes.yml");
         assertConfigLoaded(plugin, CraftingStationLoader.class, "crafting-stations.yml");
         assertConfigLoaded(plugin, TrackLoader.class, "tags.yml");
@@ -198,6 +202,7 @@ class CookingLifecycleTest {
         verify(built(ButterChurnHandler.class)).resumeLoadedChurns();
         verify(built(LiquidContainerHandler.class)).resumeLoadedContainers();
         verify(built(MeatHookHandler.class)).resumeLoadedHooks();
+        verify(built(SandwichHandler.class)).resumeLoaded();
         saturation.verify(SaturationGuard::start);
         nutrition.verify(NutritionDrainTask::start);
         husbandry.verify(HusbandryLifecycleListener::resumeLoadedWorlds);
