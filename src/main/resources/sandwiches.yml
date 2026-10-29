@@ -60,6 +60,20 @@ layers:
     models:
       - ia.tfmc_cooking:sandwich_paste_{origin}
       - ia.tfmc_cooking:sandwich_paste_tomato
+  catsup:
+    types:
+      - catsup
+    name: Catsup
+    thickness: 0.3
+    models:
+      - ia.tfmc_cooking:sandwich_catsup
+  mustard:
+    types:
+      - mustard
+    name: Mustard
+    thickness: 0.3
+    models:
+      - ia.tfmc_cooking:sandwich_mustard
   butter:
     types:
       - butter

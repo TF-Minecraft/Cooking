@@ -1,0 +1,58 @@
+# Condiments: vinegar, sap and syrup, and what the saucepan bottles.
+# Cooking oil is pressed from olives in the cheese press (crafting-stations.yml, a recipe with fill: false).
+
+# Wine or cider poured from its bottle into a liquid container sours into vinegar. Each bottle is one level of the
+# container and starts the clock again; once soured, an empty glass bottle draws one level of vinegar.
+vinegar:
+  # A brew whose name contains the key makes that vinegar (Red Wine -> Wine Vinegar).
+  brews:
+    wine: Wine
+    cider: Cider
+    cidre: Cider
+  minutes: 60
+  # {origin} becomes the vinegar's origin above. The vinegar keeps the brew's stars as its quality.
+  output: vinegar(type=vinegar;origin={origin};tags=freshness.0)
+  # The container's level while the wine sours, and once it is vinegar.
+  models:
+    souring: ia.tfmc_cooking:wine_block
+    vinegar: ia.tfmc_cooking:vinegar_block
+
+# Right-clicking one of these logs with an empty glass bottle collects sap. A tapped log gives sap again after the
+# cooldown (kept per log, across restarts).
+sap:
+  logs:
+    - OAK_LOG
+    - BIRCH_LOG
+    - DARK_OAK_LOG
+  cooldown-minutes: 20
+  output: sap(type=tree_sap;origin=Tree;tags=freshness.0)
+
+saucepan:
+  # Bottled foods the saucepan takes as its liquid, like a cup of water (you keep the empty bottle).
+  liquids:
+    - c.vinegar
+    - c.sap
+  # An empty glass bottle on a heated saucepan that holds exactly this liquid and these ingredients, once it has
+  # boiled boil-seconds since the last thing went in, fills with the output and empties the saucepan. Ingredients
+  # that aren't seasonings, sweeteners or spices (tomato paste) go in only for a recipe that needs them.
+  # Paths are Cooking food paths: c.<category>(type=...;origin=...).
+  bottles:
+    catsup:
+      liquid: c.vinegar
+      ingredients:
+        - c.paste(type=paste;origin=Tomato)
+        - c.sweetener
+      boil-seconds: 30
+      output: condiment(type=catsup;origin=Tomato;tags=freshness.0)
+    mustard:
+      liquid: c.vinegar
+      ingredients:
+        - c.spice(origin=Mustard)
+        - c.salt
+      boil-seconds: 30
+      output: condiment(type=mustard;origin=Mustard;tags=freshness.0)
+    maple_syrup:
+      liquid: c.sap
+      ingredients: []
+      boil-seconds: 60
+      output: sweetener(type=maple_syrup;origin=Maple Syrup;tags=freshness.0)

@@ -23,6 +23,7 @@ import net.tfminecraft.cooking.fishing.LegacyFishScan;
 import net.tfminecraft.cooking.hook.MeatHookHandler;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.cooking.pizza.PizzaHandler;
+import net.tfminecraft.cooking.condiment.CondimentConfig;
 import net.tfminecraft.cooking.sandwich.SandwichConfig;
 import net.tfminecraft.cooking.sandwich.SandwichHandler;
 import net.tfminecraft.cooking.husbandry.*;
@@ -84,7 +85,8 @@ class CookingLifecycleTest {
                 MillingRecipeLoader.class, BakingTrayHandler.class, MillingStoneHandler.class,
                 TroughHandler.class, TroughAging.class, BakingTrayAging.class, OvenCavityManager.class,
                 OvenBurnManager.class, OvenLifecycleHandler.class, OvenHandler.class, CraftingManager.class,
-                SandwichConfig.class, SandwichHandler.class, PizzaConfig.class, PizzaHandler.class)) {
+                SandwichConfig.class, SandwichHandler.class, PizzaConfig.class, PizzaHandler.class,
+                CondimentConfig.class)) {
             constructions.put(type, mockConstruction(type));
         }
         items = mock(ItemAPI.class);
@@ -124,7 +126,8 @@ class CookingLifecycleTest {
         for (String name : List.of("models.yml", "types.yml", "crafting-stations.yml", "baking-trays.yml",
                 "milling-recipes.yml", "cookware.yml", "tags.yml", "naming.yml", "config.yml", "conversions.yml",
                 "carve-sequences.yml", "quality.yml", "composition.yml", "permission_effects.yml", "farming.yml",
-                "crops.yml", "husbandry.yml", "custom-fishing.yml", "sandwiches.yml", "pizzas.yml")) {
+                "crops.yml", "husbandry.yml", "custom-fishing.yml", "sandwiches.yml", "pizzas.yml",
+                "condiments.yml")) {
             Path resource = plugin.getDataFolder().toPath().resolve(name);
             assertTrue(Files.isRegularFile(resource), name);
             assertFalse(Files.readString(resource).isBlank(), name);
@@ -136,6 +139,7 @@ class CookingLifecycleTest {
         assertConfigLoaded(plugin, BakingTrayLoader.class, "baking-trays.yml");
         assertConfigLoaded(plugin, SandwichConfig.class, "sandwiches.yml");
         assertConfigLoaded(plugin, PizzaConfig.class, "pizzas.yml");
+        assertConfigLoaded(plugin, CondimentConfig.class, "condiments.yml");
         assertConfigLoaded(plugin, MillingRecipeLoader.class, "milling-recipes.yml");
         assertConfigLoaded(plugin, CraftingStationLoader.class, "crafting-stations.yml");
         assertConfigLoaded(plugin, TrackLoader.class, "tags.yml");

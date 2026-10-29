@@ -627,6 +627,8 @@ class CookingReferencesTest {
         final MockedStatic<ItemCache> cache;
         final MockedStatic<IngredientConverter> converter;
         final MockedStatic<CompositionQualityResolver> composer;
+        final MockedStatic<FoodParser> parser;
+        final MockedStatic<ItemBuilder> builder;
         final NamespacedKey foodKey = NamespacedKey.fromString("test:reference_food");
         final String oldFallback = ItemCache.liquidFallback;
         final String oldPotDisplay = ItemCache.potLiquidDisplay;
@@ -701,7 +703,8 @@ class CookingReferencesTest {
             composer = scoped(mockStatic(CompositionQualityResolver.class));
             composer.when(() -> CompositionQualityResolver.compose(any(), any(), any())).thenReturn(
                     new CompositionResult(60, 72, Map.of(), List.of(), List.of(), List.of(), null));
-            scoped(mockStatic(FoodParser.class)).when(() -> FoodParser.parse(anyString())).thenAnswer(inv -> {
+            parser = scoped(mockStatic(FoodParser.class));
+            parser.when(() -> FoodParser.parse(anyString())).thenAnswer(inv -> {
                 String text = inv.getArgument(0);
                 String kind = text.startsWith("soup") ? "soup" : "sauce";
                 FoodParser.Result result = new FoodParser.Result();
@@ -709,7 +712,8 @@ class CookingReferencesTest {
                 result.template.setBaseFood(8);
                 return result;
             });
-            scoped(mockStatic(ItemBuilder.class)).when(() -> ItemBuilder.buildSingleWithQuality(any(), any(), anyInt())).thenAnswer(inv -> {
+            builder = scoped(mockStatic(ItemBuilder.class));
+            builder.when(() -> ItemBuilder.buildSingleWithQuality(any(), any(), anyInt())).thenAnswer(inv -> {
                 lastBuilt = inv.getArgument(0); lastQuality = inv.getArgument(2);
                 return stack(lastBuilt, Material.PAPER, 1);
             });

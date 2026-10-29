@@ -298,8 +298,9 @@ public class CraftingStation {
             slots.remove(slotId);
         }
         for (ItemStack remaining : remainingInputs) {
-            if (pours()) continue; // poured inputs already gave their container back
-            f.getLoc().getWorld().dropItem(f.getLoc(), showsFill() ? asHeld(remaining) : remaining)
+            boolean poured = showsFill() && isFillInput(remaining);
+            if (pours() && poured) continue; // poured inputs already gave their container back
+            f.getLoc().getWorld().dropItem(f.getLoc(), poured ? asHeld(remaining) : remaining)
                     .setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
         }
         currentRecipe = null;
@@ -315,7 +316,7 @@ public class CraftingStation {
             if (placed == null) placed = output;
             slot.forceModel(placed);
             onBoard = true;
-            if (showsFill()) slot.applyDisplayData(centred(def.getId()));
+            if (showsFill() && recipe.fills()) slot.applyDisplayData(centred(def.getId()));
             else if (displayData != null) slot.applyDisplayData(displayData);
 
             // Attempt to match new currentRecipe based on the output item
@@ -539,7 +540,7 @@ public class CraftingStation {
 
     private boolean isFillInput(ItemStack item) {
         for (CraftingRecipe cr : recipes) {
-            if (cr.canAdd(item)) return true;
+            if (cr.fills() && cr.canAdd(item)) return true;
         }
         return false;
     }

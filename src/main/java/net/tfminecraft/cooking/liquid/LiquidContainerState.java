@@ -15,6 +15,11 @@ public final class LiquidContainerState {
 
     public static final String TYPE_WATER = "water";
     public static final String TYPE_MILK = "milk";
+    /** Wine or cider souring into vinegar (condiments.yml). */
+    public static final String TYPE_WINE = "wine";
+    public static final String VAR_VINEGAR_ORIGIN = "liquid.vinegarOrigin";
+    public static final String VAR_VINEGAR_QUALITY = "liquid.vinegarQuality";
+    public static final String VAR_SOURED_AT = "liquid.souredAt";
 
     private LiquidContainerState() {}
 
@@ -148,7 +153,35 @@ public final class LiquidContainerState {
         return 0;
     }
 
+    /** Starts the souring clock again: wine poured in now turns everything in the container to vinegar later. */
+    public static void setSouring(Furniture furniture, String origin, int quality, long souredAt) {
+        furniture.getVariables().putIfAbsent(VAR_VINEGAR_ORIGIN, origin);
+        furniture.getVariables().putIfAbsent(VAR_VINEGAR_QUALITY, quality);
+        furniture.getVariables().put(VAR_SOURED_AT, souredAt);
+    }
+
+    /** The vinegar the souring wine makes (Wine, Cider), or null. */
+    public static String getVinegarOrigin(Furniture furniture) {
+        return furniture.getVariables().get(VAR_VINEGAR_ORIGIN) instanceof String origin ? origin : null;
+    }
+
+    public static int getVinegarQuality(Furniture furniture) {
+        return furniture.getVariables().get(VAR_VINEGAR_QUALITY) instanceof Number quality ? quality.intValue() : 1;
+    }
+
+    /** When the wine is vinegar (epoch milliseconds). */
+    public static long getSouredAt(Furniture furniture) {
+        return furniture.getVariables().get(VAR_SOURED_AT) instanceof Number at ? at.longValue() : 0L;
+    }
+
+    public static boolean isSoured(Furniture furniture, long now) {
+        return now >= getSouredAt(furniture);
+    }
+
     public static void clear(Furniture furniture) {
+        furniture.getVariables().remove(VAR_VINEGAR_ORIGIN);
+        furniture.getVariables().remove(VAR_VINEGAR_QUALITY);
+        furniture.getVariables().remove(VAR_SOURED_AT);
         furniture.getVariables().remove(VAR_TYPE);
         furniture.getVariables().remove(VAR_BLOCKS);
         furniture.getVariables().remove(VAR_MILK_QUALITY);
