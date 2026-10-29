@@ -869,7 +869,9 @@ public class CraftingStationCoverageTest {
             doAnswer(inv -> { active.remove(inv.getArgument(0)); return null; }).when(furniture).removeActiveSlot(anyString());
             for (String id : List.of("decoration", "input_1", "input_2", "input_3", "input_4", "input_5")) define(id);
             placed.put(furniture.getEntityId(), furniture);
-            scoped(mockStatic(HeatSources.class)).when(() -> HeatSources.stationHasHeat(any())).thenAnswer(inv -> heated);
+            MockedStatic<HeatSources> heat = scoped(mockStatic(HeatSources.class));
+            heat.when(() -> HeatSources.stationHasHeat(any())).thenAnswer(inv -> heated);
+            heat.when(() -> HeatSources.consumerHasHeat(any())).thenAnswer(inv -> heated);
             scoped(mockStatic(FurnitureCache.class)).when(() -> FurnitureCache.isFirePit(any())).thenAnswer(inv -> firePit);
             foodCodec = scoped(mockStatic(FoodItem.class, CALLS_REAL_METHODS));
             foodCodec.when(() -> FoodItem.fromItem(any())).thenAnswer(inv -> resolve(inv.getArgument(0)));

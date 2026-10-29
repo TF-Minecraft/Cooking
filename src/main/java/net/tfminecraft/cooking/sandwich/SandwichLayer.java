@@ -1,5 +1,6 @@
 package net.tfminecraft.cooking.sandwich;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -14,7 +15,10 @@ import org.bukkit.inventory.ItemStack;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemRef;
 
-/** One kind of sandwich layer from sandwiches.yml: the foods it takes, how it lies on the board and the name it adds. */
+/**
+ * One kind of sandwich layer from sandwiches.yml: the foods it takes, how it lies on the board and the name it adds.
+ * Pizzas (pizzas.yml) describe their layers the same way.
+ */
 public final class SandwichLayer {
     private final String id;
     private final Set<String> types = new HashSet<>();
@@ -75,15 +79,35 @@ public final class SandwichLayer {
      * {origin} becomes the origin in lower case with _ for spaces (melon_slice). Null when none exists.
      */
     public ItemStack model(FoodItem food, ItemStack source) {
-        List<String> tags = food.getCurrentTagIds();
+        return model(food, source, List.of());
+    }
+
+    /** As {@link #model(FoodItem, ItemStack)}, with extra tags that count as the food's own (a pizza's bake). */
+    public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags) {
+        return model(food, source, extraTags, "");
+    }
+
+    /**
+     * As {@link #model(FoodItem, ItemStack, List)}, trying each model with a suffix first (a cut pizza's _left3) and
+     * then as it is.
+     */
+    public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags, String suffix) {
+        List<String> tags = new ArrayList<>(food.getCurrentTagIds());
+        tags.addAll(extraTags);
         String origin = food.getOrigin() == null ? "none" : food.getOrigin().toLowerCase(Locale.ROOT).replace(' ', '_');
         for (String entry : models) {
             String[] parts = entry.trim().split("\\s+", 2);
             if (parts.length == 2 && !tags.contains(parts[0])) continue;
-            ItemStack shown = ItemRef.apply(parts[parts.length - 1].replace("{origin}", origin), source);
-            // TLibs hands out dirt for an ItemsAdder item that doesn't exist.
-            if (shown != null && !shown.getType().isAir() && shown.getType() != Material.DIRT) return shown;
+            String path = parts[parts.length - 1].replace("{origin}", origin);
+            ItemStack shown = suffix.isEmpty() ? null : existing(ItemRef.apply(path + suffix, source));
+            if (shown == null) shown = existing(ItemRef.apply(path, source));
+            if (shown != null) return shown;
         }
         return null;
+    }
+
+    // TLibs hands out dirt for an ItemsAdder item that doesn't exist.
+    private static ItemStack existing(ItemStack shown) {
+        return shown != null && !shown.getType().isAir() && shown.getType() != Material.DIRT ? shown : null;
     }
 }

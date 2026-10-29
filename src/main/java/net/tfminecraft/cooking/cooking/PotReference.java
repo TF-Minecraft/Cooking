@@ -549,7 +549,7 @@ public class PotReference extends CookingReference {
 
     // Preserve the existing serialized item format so previously saved graves remain readable.
     @SuppressWarnings("deprecation")
-    static String encodeStack(ItemStack stack) {
+    public static String encodeStack(ItemStack stack) {
         if (stack == null) return null;
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -564,7 +564,7 @@ public class PotReference extends CookingReference {
 
     // Preserve the existing serialized item format so previously saved graves remain readable.
     @SuppressWarnings("deprecation")
-    static ItemStack decodeStack(String payload) {
+    public static ItemStack decodeStack(String payload) {
         if (payload == null || payload.isBlank()) return null;
         try {
             byte[] bytes = Base64.getDecoder().decode(payload);

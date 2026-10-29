@@ -6,6 +6,7 @@ import org.bukkit.event.Listener;
 
 import net.tfminecraft.cooking.baking.BakingTrayRegistry;
 import net.tfminecraft.cooking.heat.HeatSources;
+import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotFurnitureAddEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.SlotType;
@@ -23,11 +24,11 @@ public final class OvenCavityHandler implements Listener {
         }
 
         Furniture nested = event.getNested();
-        if (nested == null || BakingTrayRegistry.isTray(nested)) {
+        if (nested == null || BakingTrayRegistry.isTray(nested) || PizzaConfig.isPeel(nested)) {
             return;
         }
 
         event.setCancelled(true);
-        event.getPlayer().sendMessage("§cOnly baking trays can go in the oven.");
+        event.getPlayer().sendMessage("§cOnly baking trays and pizza peels can go in the oven.");
     }
 }

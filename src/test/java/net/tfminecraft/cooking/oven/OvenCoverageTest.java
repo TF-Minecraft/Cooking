@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -21,6 +23,7 @@ import org.bukkit.inventory.meta.Damageable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import net.tfminecraft.cooking.baking.BakingTrayCoverageTest.Bakery;
 import net.tfminecraft.cooking.baking.BakingTrayState;
@@ -28,6 +31,8 @@ import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.pizza.PizzaConfig;
+import net.tfminecraft.cooking.pizza.PizzaPeel;
 import net.tfminecraft.cooking.sausagemaker.SausageMakerCoverageTest.Station;
 import net.tfminecraft.cooking.sausagemaker.SausageMakerCoverageTest.Workshop;
 import net.tfminecraft.cooking.utils.ItemUpdater;
@@ -241,10 +246,32 @@ class OvenCoverageTest {
         handler.onFurnitureAdd(allowed); assertFalse(allowed.isCancelled());
         var empty = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, null); handler.onFurnitureAdd(empty); assertFalse(empty.isCancelled());
         var wrong = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, oven.furniture); handler.onFurnitureAdd(wrong); assertTrue(wrong.isCancelled());
-        assertTrue(env.messages.contains("§cOnly baking trays can go in the oven."));
+        assertTrue(env.messages.contains("§cOnly baking trays and pizza peels can go in the oven."));
         var other = new FurnitureSlotFurnitureAddEvent(env.player, oven.furniture, slot, bakery.tray.furniture); handler.onFurnitureAdd(other); assertFalse(other.isCancelled());
         when(slot.getSlotType()).thenReturn(SlotType.ITEM);
         var itemSlot = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, oven.furniture); handler.onFurnitureAdd(itemSlot); assertFalse(itemSlot.isCancelled());
+    }
+
+    @Test
+    void cavitiesTakePizzaPeelsAndBakeTheirPizzas(@TempDir Path directory) throws Exception {
+        Path config = directory.resolve("pizzas.yml");
+        Files.writeString(config, "furniture: [pizza_peel]\nbake:\n  cook-seconds: 1\n  burn-seconds: 2\nbase:\n  types: [dough]\n");
+        new PizzaConfig().load(config.toFile());
+        try {
+            Station peel = bakery.station("pizza_peel"); peel.define("pizza_1");
+            var slot = cavity.define("tray"); when(slot.getSlotType()).thenReturn(SlotType.FURNITURE);
+            var allowed = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, peel.furniture);
+            new OvenCavityHandler().onFurnitureAdd(allowed); assertFalse(allowed.isCancelled());
+
+            peel.place("pizza_1", env.stack(bakery.food("dough", null), Material.WHEAT, 1));
+            bakery.nest(cavity, "peel", peel.furniture);
+            new OvenCavityManager().start(); env.server.getScheduler().performTicks(20);
+            assertEquals(1, peel.variables.get("pizza.elapsed"));
+            assertEquals(PizzaPeel.COOKED, PizzaPeel.baked(peel.furniture));
+            verify(env.manager).markDirty(peel.furniture);
+        } finally {
+            new PizzaConfig().load(directory.resolve("missing.yml").toFile());
+        }
     }
 
     @Test
