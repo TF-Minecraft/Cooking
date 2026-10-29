@@ -616,6 +616,36 @@ public class CraftingStationCoverageTest {
         verify(cheese).setCurrentItem(argThat(item -> item != null && item.getType() == Material.STONE));
     }
 
+    @Test
+    void rightClickingTheTopWithAnEmptyHandPressesInsteadOfATool() {
+        MemoryConfiguration config = env.config(1, false, "none");
+        config.set("press-height", 0.85);
+        CraftingStation press = new CraftingStation(env.furniture, new CraftingStation("board", config));
+        env.add(press, "input_1", env.raw(1));
+        var low = new FurnitureInteractEvent(env.player, env.furniture, null, new Vector(1, 64.5, 1));
+        press.interact(low);
+        assertFalse(low.isCancelled());
+        var nowhere = new FurnitureInteractEvent(env.player, env.furniture, null, null);
+        press.interact(nowhere);
+        assertFalse(nowhere.isCancelled());
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+        var holding = new FurnitureInteractEvent(env.player, env.furniture, null, new Vector(1, 64.95, 1));
+        press.interact(holding);
+        assertFalse(holding.isCancelled());
+        env.builder.verifyNoInteractions();
+
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        var handle = new FurnitureInteractEvent(env.player, env.furniture, null, new Vector(1, 64.95, 1));
+        press.interact(handle);
+        assertTrue(handle.isCancelled(), "The handle neither takes items out nor picks the press up");
+        assertEquals("cut", env.resolve(press.getSlots().values().iterator().next()).getId());
+
+        CraftingStation board = env.station(1, false);
+        var plain = new FurnitureInteractEvent(env.player, env.furniture, null, new Vector(1, 64.95, 1));
+        board.interact(plain);
+        assertFalse(plain.isCancelled());
+    }
+
     public static final class Environment implements AutoCloseable {
         public final ServerMock server;
         final Cooking previousPlugin;

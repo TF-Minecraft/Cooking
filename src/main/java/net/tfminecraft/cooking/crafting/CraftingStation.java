@@ -51,6 +51,8 @@ public class CraftingStation {
     private List<String> fillModels = new ArrayList<>();
     /** Item handed back for each input poured in (an empty cup); poured inputs stay in the furniture. */
     private String pourReturn = "none";
+    /** Right-clicking the furniture this high or higher (blocks above its base) with an empty hand crafts; -1 = off. */
+    private double pressHeight = -1;
 
     public CraftingStation(String key, ConfigurationSection config) {
         this.id = key;
@@ -60,6 +62,7 @@ public class CraftingStation {
         this.tool = config.getString("tool", "none");
         this.fillModels = config.getStringList("fill-models");
         this.pourReturn = config.getString("pour-return", "none");
+        this.pressHeight = config.getDouble("press-height", -1);
 
         if(config.isConfigurationSection("recipes")) {
             for (String recipeKey : config.getConfigurationSection("recipes").getKeys(false)) {
@@ -81,6 +84,7 @@ public class CraftingStation {
         this.recipes = new ArrayList<>(station.recipes);
         this.fillModels = station.fillModels;
         this.pourReturn = station.pourReturn;
+        this.pressHeight = station.pressHeight;
     }
 
     public Furniture getFurniture() {
@@ -506,7 +510,14 @@ public class CraftingStation {
         }
     }
 
+    /** A right-click with an empty hand on the top of the furniture (a press's handle) crafts, instead of a tool. */
     public void interact(FurnitureInteractEvent e) {
-
+        if (pressHeight < 0 || e.getClickPoint() == null) return;
+        Player p = e.getPlayer();
+        if (!p.getInventory().getItemInMainHand().getType().isAir()) return;
+        if (e.getClickPoint().getY() - f.getLoc().getBlockY() < pressHeight) return;
+        // The handle never takes items out or picks the furniture up.
+        e.setCancelled(true);
+        craft(p);
     }
 }

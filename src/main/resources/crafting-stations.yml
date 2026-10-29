@@ -3,6 +3,8 @@
 #     furniture (milk poured into a mould) instead of the items themselves; the level is centred on the furniture.
 #   pour-return: <item>  with fill-models, hands this back for each input poured in (an empty cup). Poured inputs
 #     can't be taken back out and spill when the furniture breaks. Keep max-slots a multiple of the recipe ratio.
+#   press-height: <blocks>  right-clicking the furniture at least this high above its base with an empty hand
+#     crafts (a press's handle), instead of hitting it with the tool.
 cutting_board:
   furniture: cutting_board
   single-origin: true
