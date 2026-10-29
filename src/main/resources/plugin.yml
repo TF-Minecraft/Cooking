@@ -10,7 +10,7 @@ softdepend: [RPCharacters, MMOCore, MMOItems, CustomCrops, SimpleFactions, Custo
 commands:
   cooking:
     description: Cooking admin/debug commands
-    usage: /cooking reload | /cooking builditem <string> | /cooking preview <target> ...
+    usage: /cooking reload | /cooking builditem [player] <string> | /cooking preview <target> ...
     permission: cooking.admin
   animals:
     description: List the animals you own and where they were last seen

@@ -361,6 +361,28 @@ class CommandManagerCoverageTest {
         run("builditem", "carrot", "quality=3");
         builder.verify(() -> ItemBuilder.buildFromString(player, "carrot quality=3", null));
         assertEquals(List.of("§aGenerated item(s) from string!"), messages());
+
+        PlayerMock target = server.addPlayer("Target");
+        run("builditem", "Target", "carrot", "quality=3");
+        builder.verify(() -> ItemBuilder.buildFromString(target, "carrot quality=3", null));
+        assertEquals(List.of("§aGenerated item(s) from string for Target!"), messages());
+        run("builditem", "Target");
+        builder.verify(() -> ItemBuilder.buildFromString(player, "Target", null));
+        messages();
+    }
+
+    @Test void theConsoleBuildsItemsForANamedOnlinePlayer() {
+        MockedStatic<ItemBuilder> builder = staticMock(ItemBuilder.class);
+        CommandSender console = mock(CommandSender.class);
+        run(console, "builditem", "Admin", "fruit(type=fruit_2;origin=Melon", "Slice)");
+        builder.verify(() -> ItemBuilder.buildFromString(player, "fruit(type=fruit_2;origin=Melon Slice)", null));
+        verify(console).sendMessage("§aGenerated item(s) from string for Admin!");
+        run(console, "builditem", "carrot");
+        run(console, "builditem", "Nobody", "carrot");
+        verify(console, times(2)).sendMessage("§cUsage: cooking builditem <player> <itemString> (the player must be online)");
+        run("builditem", "Admin");
+        builder.verify(() -> ItemBuilder.buildFromString(player, "Admin", null));
+        builder.verifyNoMoreInteractions();
     }
 
     @Test void nameTestsValidateParsingAndPassOnlyTheOptionalColourAsAnExtra() {

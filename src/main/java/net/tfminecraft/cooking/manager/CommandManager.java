@@ -73,6 +73,9 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         if (args.length > 0 && args[0].equalsIgnoreCase("husbandry")) {
             return handleHusbandry(sender, args);
         }
+        if (args.length > 0 && args[0].equalsIgnoreCase("builditem")) {
+            return handleBuildItem(sender, args);
+        }
 
         if (!(sender instanceof Player)) {
             sender.sendMessage("§cOnly players can use this command.");
@@ -84,10 +87,6 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             sendUsage(player);
             return true;
-        }
-
-        if (args[0].equalsIgnoreCase("builditem")) {
-            return handleBuildItem(player, args);
         }
 
         if (args[0].equalsIgnoreCase("preview")) {
@@ -216,7 +215,7 @@ public class CommandManager implements CommandExecutor, TabCompleter {
     private void sendUsage(Player player) {
         player.sendMessage("§e/cooking reload");
         player.sendMessage("§e/cooking food <player> <value>");
-        player.sendMessage("§e/cooking builditem <string>");
+        player.sendMessage("§e/cooking builditem [player] <string>");
         player.sendMessage("§e/cooking preview mixing_bowl <flour|water|yeast|dough|all|clear>");
         player.sendMessage("§e/cooking heat");
         player.sendMessage("§e/cooking nametest <foodString> [#colour]");
@@ -552,21 +551,31 @@ public class CommandManager implements CommandExecutor, TabCompleter {
         return true;
     }
 
-    private boolean handleBuildItem(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage("§cUsage: /cooking builditem <itemString>");
+    /** /cooking builditem [player] <itemString>: the console names who gets it, a player gets it unless they name someone. */
+    private boolean handleBuildItem(CommandSender sender, String[] args) {
+        Player target = args.length >= 3 ? Bukkit.getPlayerExact(args[1]) : null;
+        int from = target != null ? 2 : 1;
+        if (target == null && sender instanceof Player self) {
+            target = self;
+        }
+        if (target == null || args.length <= from) {
+            sender.sendMessage(sender instanceof Player
+                    ? "§cUsage: /cooking builditem [player] <itemString>"
+                    : "§cUsage: cooking builditem <player> <itemString> (the player must be online)");
             return true;
         }
 
         StringBuilder builder = new StringBuilder();
-        for (int i = 1; i < args.length; i++) {
-            if (i > 1) builder.append(" ");
+        for (int i = from; i < args.length; i++) {
+            if (i > from) builder.append(" ");
             builder.append(args[i]);
         }
         String itemString = builder.toString();
-        ItemBuilder.buildFromString(player, itemString, null);
+        ItemBuilder.buildFromString(target, itemString, null);
 
-        player.sendMessage("§aGenerated item(s) from string!");
+        sender.sendMessage(target == sender
+                ? "§aGenerated item(s) from string!"
+                : "§aGenerated item(s) from string for " + target.getName() + "!");
         return true;
     }
 
