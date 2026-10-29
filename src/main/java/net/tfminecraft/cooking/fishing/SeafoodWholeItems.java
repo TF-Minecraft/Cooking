@@ -2,8 +2,9 @@ package net.tfminecraft.cooking.fishing;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+
+import io.papermc.paper.persistence.PersistentDataContainerView;
 
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
@@ -54,7 +55,7 @@ public final class SeafoodWholeItems {
      * True for a whole fish built by an older version on the caught CustomFishing item itself, so
      * it still carries that item's per-catch data.
      */
-    static boolean carriesCatchData(PersistentDataContainer data) {
+    static boolean carriesCatchData(PersistentDataContainerView data) {
         return CustomFishingCatalog.WHOLE_TYPE.equals(data.get(Keys.FOOD_ID, PersistentDataType.STRING))
                 && data.has(Keys.CUSTOM_FISHING_ID, PersistentDataType.STRING)
                 && !data.has(Keys.CLEAN_CATCH, PersistentDataType.BYTE);

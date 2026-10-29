@@ -17,13 +17,13 @@ public class TagManager implements ItemScanHandler {
 
     private static final int OFF_HAND_SLOT = 40;
 
+    // Runs on every scanned slot: read the key through the stack's data view instead of copying its whole meta.
     @Override
     public boolean matches(ItemStack stack) {
-        if (stack == null || stack.getType() == Material.AIR || !stack.hasItemMeta()) {
+        if (stack == null || stack.getType() == Material.AIR) {
             return false;
         }
-        ItemMeta meta = stack.getItemMeta();
-        return meta != null && meta.getPersistentDataContainer().has(Keys.FOOD_ID, PersistentDataType.STRING);
+        return stack.getPersistentDataContainer().has(Keys.FOOD_ID, PersistentDataType.STRING);
     }
 
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.

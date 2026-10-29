@@ -12,8 +12,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class ItemUpdater {
+
+    // Same pattern String.replaceAll("§.", "") compiled on every lore line.
+    private static final Pattern COLOUR_CODE = Pattern.compile("§.");
 
     /** Ages the FoodItem. Returns true if any TagStep changed (including nested sauce). */
     public static boolean applyAging(FoodItem fi, long deltaSeconds) {
@@ -160,7 +164,7 @@ public class ItemUpdater {
             if (line == null) {
                 continue;
             }
-            String stripped = line.replaceAll("§.", "");
+            String stripped = COLOUR_CODE.matcher(line).replaceAll("");
             if (stripped.contains("Nutrition")) {
                 nutrition = true;
             }

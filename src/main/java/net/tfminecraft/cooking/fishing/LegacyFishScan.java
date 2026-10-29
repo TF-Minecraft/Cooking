@@ -5,8 +5,9 @@ import org.bukkit.Tag;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+
+import io.papermc.paper.persistence.PersistentDataContainerView;
 
 import net.tfminecraft.cooking.manager.TagManager;
 import net.tfminecraft.cooking.utils.Keys;
@@ -20,7 +21,8 @@ public final class LegacyFishScan implements ItemScanHandler {
         if (stack == null || !Tag.ITEMS_FISHES.isTagged(stack.getType())) {
             return false;
         }
-        PersistentDataContainer data = stack.getItemMeta().getPersistentDataContainer();
+        // Runs on every scanned fish: read through the stack's data view instead of copying its whole meta.
+        PersistentDataContainerView data = stack.getPersistentDataContainer();
         return isFood(data) ? SeafoodWholeItems.carriesCatchData(data) : stack.getType() == Material.COD;
     }
 
@@ -44,7 +46,7 @@ public final class LegacyFishScan implements ItemScanHandler {
         }
     }
 
-    private static boolean isFood(PersistentDataContainer data) {
+    private static boolean isFood(PersistentDataContainerView data) {
         return data.has(Keys.FOOD_ID, PersistentDataType.STRING);
     }
 }
