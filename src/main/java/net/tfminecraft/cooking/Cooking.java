@@ -89,6 +89,8 @@ import net.tfminecraft.cooking.oven.OvenCavityHandler;
 import net.tfminecraft.cooking.oven.OvenCavityManager;
 import net.tfminecraft.cooking.oven.OvenHandler;
 import net.tfminecraft.cooking.oven.OvenLifecycleHandler;
+import net.tfminecraft.cooking.utils.ItemRef;
+import net.tfminecraft.cooking.utils.ItemsAdderReloadHook;
 import net.tfminecraft.tlibs.itemscan.ItemScanService;
 import net.tfminecraft.tlibs.character.Characters;
 
@@ -225,6 +227,7 @@ public class Cooking extends JavaPlugin {
     @Override
     public void onDisable() {
         if (incompatibleCharacterApi) return;
+        ItemRef.setCaching(false);
         breweryBridge.close();
         SaturationGuard.stop();
         NutritionDrainTask.stop();
@@ -265,6 +268,7 @@ public class Cooking extends JavaPlugin {
     }
 
     public void reloadAll() {
+        ItemRef.clearCache();
         loadConfigs();
         HusbandryLifecycleListener.applyStatsRevision();
         craftingManager.rebuildStations();
@@ -326,6 +330,7 @@ public class Cooking extends JavaPlugin {
         CropCustomCropsBridge.tryRegister(this);
         getServer().getPluginManager().registerEvents(new CustomFishingBridge(), this);
         CustomFishingBridge.tryRegister(this);
+        ItemsAdderReloadHook.registerIfPresent(this);
         if (husbandryEnabled) {
             getServer().getPluginManager().registerEvents(new HusbandryLifecycleListener(), this);
             getServer().getPluginManager().registerEvents(new HusbandryCareListener(), this);

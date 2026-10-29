@@ -141,7 +141,8 @@ public class FishingRuntimeCoverageTest {
         ItemStack external=mock(ItemStack.class); when(external.getType()).thenReturn(Material.COD); when(external.hasItemMeta()).thenReturn(true);
         assertNull(LegacyFishConversion.convert(null,external));
         ItemMeta meta=mock(ItemMeta.class); when(external.getItemMeta()).thenReturn(meta);
-        when(meta.getPersistentDataContainer()).thenReturn(new ItemStack(Material.COD).getItemMeta().getPersistentDataContainer());
+        var externalData=new ItemStack(Material.COD).getItemMeta().getPersistentDataContainer();
+        when(meta.getPersistentDataContainer()).thenReturn(externalData); when(external.getPersistentDataContainer()).thenReturn(externalData);
             assertNull(LegacyFishConversion.convert(null,external));
             models.when(()->LegacyModelData.has(meta)).thenReturn(true); models.when(()->LegacyModelData.get(meta)).thenReturn(17);
             when(external.getAmount()).thenReturn(7);
