@@ -1,10 +1,16 @@
 # Optional per station:
-#   fill-models: [model for 1 input, model for 2, ...]  shows the recipe inputs as one level rising in the
-#     furniture (milk poured into a mould) instead of the items themselves; the level is centred on the furniture.
+#   fill-models: [layer for the 1st input, the 2nd, ...]  shows the recipe inputs as one level rising in the
+#     furniture (milk poured into a mould) instead of the items themselves: each input draws its own layer, centred
+#     on the furniture, and the layers stack. Inputs past the end of the list reuse the last layer.
+#     {origin} in a model is replaced by the input's origin in lower case with _ for spaces (melon_slice), so
+#     each fruit can show its own pile.
 #   pour-return: <item>  with fill-models, hands this back for each input poured in (an empty cup). Poured inputs
 #     can't be taken back out and spill when the furniture breaks. Keep max-slots a multiple of the recipe ratio.
 #   press-height: <blocks>  right-clicking the furniture at least this high above its base with an empty hand
 #     crafts (a press's handle), instead of hitting it with the tool.
+# Optional per recipe:
+#   keep-output-age: true  the output keeps the age tags of its output line instead of averaging the
+#     ingredients' age (a new cheese starts fresh however old its milk was).
 cutting_board:
   furniture: cutting_board
   single-origin: true

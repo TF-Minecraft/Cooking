@@ -14,6 +14,8 @@ public class CraftingRecipe {
     private String output;
     private int ratio;
     private boolean processed;
+    /** The output keeps the age its output line gives it instead of averaging the ingredients' age. */
+    private boolean keepOutputAge;
 
     public CraftingRecipe(String id, ConfigurationSection config) {
         this.id = id;
@@ -21,6 +23,7 @@ public class CraftingRecipe {
         this.output = config.getString("output", "none");
         this.ratio = config.getInt("ratio", 1);
         this.processed = config.getBoolean("processed", false);
+        this.keepOutputAge = config.getBoolean("keep-output-age", false);
     }
 
     public boolean canAdd(ItemStack item) {
@@ -44,5 +47,8 @@ public class CraftingRecipe {
     }
     public boolean isProcessed() {
         return processed;
+    }
+    public boolean keepsOutputAge() {
+        return keepOutputAge;
     }
 }

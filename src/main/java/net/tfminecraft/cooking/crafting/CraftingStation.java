@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.crafting;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ import net.tfminecraft.cooking.fishing.SeafoodCutting;
 import net.tfminecraft.cooking.fishing.SeafoodPortions;
 import net.tfminecraft.cooking.fishing.SeafoodYield;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
@@ -209,7 +211,7 @@ public class CraftingStation {
     public void removeItem(FurnitureSlotItemTakeEvent e) {
         if (pours() && isFillInput(e.getItem())) {
             e.setCancelled(true);
-            e.getPlayer().sendMessage("§7Poured milk can't go back into the cup. Add more and press it with the masher.");
+            e.getPlayer().sendMessage("§7What's poured in can't go back into its container. Add more and press the handle.");
             return;
         }
         slots.remove(e.getSlot().getId());
@@ -231,7 +233,9 @@ public class CraftingStation {
         if(slots.isEmpty()) return;
         int ratio = currentRecipe.getRatio();
         if (ratio <= 0) return;
-        int available = slots.values().stream().mapToInt(ItemStack::getAmount).sum();
+        // A finished item still in the station (a jar of jam, a cheese) is not an ingredient.
+        CraftingRecipe recipe = currentRecipe;
+        int available = slots.values().stream().filter(recipe::canAdd).mapToInt(ItemStack::getAmount).sum();
         if(available < ratio) return;
         if ("cut_seafood".equals(currentRecipe.getId())) {
             craftSeafood(p);
@@ -244,7 +248,11 @@ public class CraftingStation {
         int outputAmount = available / ratio;
         int used = outputAmount * ratio;
         List<ItemStack> remainingInputs = new ArrayList<>();
-        for (ItemStack source : slots.values()) {
+        List<String> usedSlots = new ArrayList<>();
+        for (Map.Entry<String, ItemStack> entry : slots.entrySet()) {
+            ItemStack source = entry.getValue();
+            if (!recipe.canAdd(source)) continue;
+            usedSlots.add(entry.getKey());
             int take = Math.min(used, source.getAmount());
             if (take > 0) {
                 FoodItem fi = FoodItem.fromItem(source);
@@ -275,7 +283,9 @@ public class CraftingStation {
         }
 
         CompositionResult composed = CompositionQualityResolver.compose(p, consumedInputs, CompositionContext.CUTTING_BOARD);
+        Map<String, Integer> ownAge = currentRecipe.keepsOutputAge() ? ageOf(item) : null;
         CompositionApplier.apply(item, composed);
+        if (ownAge != null) restoreAge(item, ownAge);
         ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
         if (output == null || output.getType().isAir()) return;
         output.setAmount(outputAmount);
@@ -283,16 +293,16 @@ public class CraftingStation {
         // Prepare the complete result before taking any ingredient from the board.
         var modelData = item.getModelData();
         var displayData = modelData == null ? null : modelData.getDisplayData(f.getId());
-        for (String slotId : slots.keySet()) {
+        for (String slotId : usedSlots) {
             f.getActiveSlot(slotId).ifPresent(PlacedSlot::clearModel);
             f.removeActiveSlot(slotId);
+            slots.remove(slotId);
         }
         for (ItemStack remaining : remainingInputs) {
             if (pours()) continue; // poured inputs already gave their container back
             f.getLoc().getWorld().dropItem(f.getLoc(), showsFill() ? asHeld(remaining) : remaining)
                     .setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
         }
-        slots.clear();
         currentRecipe = null;
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
 
@@ -437,6 +447,24 @@ public class CraftingStation {
         }
     }
 
+    private static Map<String, Integer> ageOf(FoodItem item) {
+        Map<String, Integer> age = new HashMap<>();
+        for (TagTrack track : item.getTagTracks()) {
+            if (track.isAgeable()) age.put(track.getId(), track.getValue());
+        }
+        return age;
+    }
+
+    /** Undoes the ingredients' age: a fresh cheese doesn't inherit how old its milk was. */
+    private static void restoreAge(FoodItem item, Map<String, Integer> ownAge) {
+        for (TagTrack track : new ArrayList<>(item.getTagTracks())) {
+            if (!track.isAgeable()) continue;
+            Integer value = ownAge.get(track.getId());
+            if (value == null) item.removeTrack(track.getId());
+            else track.setValue(value);
+        }
+    }
+
     /** True when the station shows its recipe inputs as one fill level, like milk poured into a mould. */
     public boolean showsFill() {
         return !fillModels.isEmpty();
@@ -449,23 +477,35 @@ public class CraftingStation {
         return false;
     }
 
-    /** Every input shows the model for the current level, centred on the furniture; identical copies overlap exactly. */
+    /**
+     * The n-th input (by slot id) shows the n-th fill model, centred on the furniture, so the layers stack into one
+     * rising level. Each input draws its own layer: identical copies in the same place would flicker against each other.
+     */
     private void refreshFill() {
-        int inputs = (int) slots.values().stream().filter(this::isFillInput).count();
-        if (!showsFill() || inputs == 0) return;
-        String model = fillModels.get(Math.min(inputs, fillModels.size()) - 1);
-        for (Map.Entry<String, ItemStack> entry : slots.entrySet()) {
-            if (!isFillInput(entry.getValue())) continue;
+        if (!showsFill()) return;
+        List<String> inputs = slots.entrySet().stream().filter(e -> isFillInput(e.getValue()))
+                .map(Map.Entry::getKey).sorted().collect(Collectors.toList());
+        for (int n = 0; n < inputs.size(); n++) {
+            String slotId = inputs.get(n);
+            ItemStack input = slots.get(slotId);
+            String model = fillModels.get(Math.min(n, fillModels.size() - 1));
             // The fill keeps the input's food data, so it still crafts and can be taken back out.
-            ItemStack shown = ItemRef.apply(model, entry.getValue());
+            ItemStack shown = ItemRef.apply(forOrigin(model, input), input);
             if (shown == null) continue;
-            entry.setValue(shown);
-            String slotId = entry.getKey();
+            slots.put(slotId, shown);
             f.getActiveSlot(slotId).ifPresent(slot -> {
                 slot.setCurrentItem(shown);
                 slot.applyDisplayData(centred(slotId));
             });
         }
+    }
+
+    /** Fills a {origin} placeholder with the input's origin (Melon Slice becomes melon_slice), so each fruit gets its own fill. */
+    private static String forOrigin(String model, ItemStack item) {
+        if (!model.contains("{origin}")) return model;
+        FoodItem fi = FoodItem.fromItem(item);
+        String origin = fi == null || fi.getOrigin() == null ? "none" : fi.getOrigin();
+        return model.replace("{origin}", origin.toLowerCase(Locale.ROOT).replace(' ', '_'));
     }
 
     /** Moves a slot's display back to the furniture's centre, so fill and output models line up with the furniture model. */
