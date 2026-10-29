@@ -520,6 +520,27 @@ public class CraftingStationCoverageTest {
     }
 
     @Test
+    void fillModelsCanNameTheInputsOriginSoEachFruitGetsItsOwnPile() {
+        MemoryConfiguration config = env.config(2, true, "tool:knife");
+        config.set("fill-models", List.of("pile_{origin}_1", "pile_{origin}_2"));
+        config.set("recipes.cut.inputs", List.of("food:raw", "v.stone"));
+        for (String id : List.of("input_1", "input_2", "input_3")) {
+            when(env.definitions.get(id).getOffset()).thenReturn(new Vector());
+            when(env.definitions.get(id).getDisplayPosition()).thenReturn(new Vector());
+        }
+        CraftingStation station = new CraftingStation(env.furniture, new CraftingStation("juicer", config));
+        station.addItem(env.addEvent("input_1", env.stack(env.food("raw", "Melon Slice"), Material.MELON_SLICE, 1)));
+        verify(env.api.getCreator()).getItemFromPath("pile_melon_slice_1");
+
+        CraftingStation unnamed = new CraftingStation(env.furniture, new CraftingStation("juicer", config));
+        unnamed.addItem(env.addEvent("input_1", env.stack(env.food("raw", null), Material.MELON_SLICE, 1)));
+        verify(env.api.getCreator()).getItemFromPath("pile_none_1");
+        CraftingStation stone = new CraftingStation(env.furniture, new CraftingStation("juicer", config));
+        stone.addItem(env.addEvent("input_2", new ItemStack(Material.STONE)));
+        verify(env.api.getCreator(), times(2)).getItemFromPath("pile_none_1");
+    }
+
+    @Test
     void fillStationRebuildsItsLevelAndShowsThePressedResultInItsFurnitureModel() {
         CraftingStation empty = fillStation(List.of("fill_1"));
         empty.rebuildFromFurniture();
@@ -644,6 +665,53 @@ public class CraftingStationCoverageTest {
         var plain = new FurnitureInteractEvent(env.player, env.furniture, null, new Vector(1, 64.95, 1));
         board.interact(plain);
         assertFalse(plain.isCancelled());
+    }
+
+    @Test
+    void aFinishedItemLeftInTheStationIsNotUsedAsAnIngredient() {
+        CraftingStation station = env.station(2, false);
+        ItemStack jam = env.stack(env.food("jam", "Beef"), Material.PAPER, 1);
+        PlacedSlot jar = env.add(station, "input_1", jam);
+        env.add(station, "input_2", env.raw(1));
+        station.craft();
+        assertSame(jam, station.getSlots().get("input_1"), "One ingredient and a finished jar don't make a batch");
+        assertEquals(2, station.getSlots().size());
+
+        env.add(station, "input_3", env.raw(1));
+        station.craft();
+        assertSame(jam, station.getSlots().get("input_1"), "The jar stays where it is");
+        verify(jar, never()).clearModel();
+        assertEquals(2, station.getSlots().size());
+        assertTrue(station.getSlots().values().stream().anyMatch(i -> "cut".equals(env.resolve(i).getId())));
+        env.composer.verify(() -> CompositionQualityResolver.compose(isNull(), argThat(inputs -> inputs.size() == 2), eq(CompositionContext.CUTTING_BOARD)));
+    }
+
+    @Test
+    void keepOutputAgeStartsTheOutputFreshInsteadOfAveragingTheIngredientsAge() {
+        env.composer.when(() -> CompositionQualityResolver.compose(any(), any(), any())).thenReturn(
+                new CompositionResult(60, 72, Map.of("freshness", 90000, "warmth", 40), List.of(), List.of(), List.of(), null));
+        env.parser.when(() -> FoodParser.parse(anyString())).thenAnswer(inv -> {
+            FoodItem cheese = env.food(inv.getArgument(0), "Cow");
+            TagTrack fresh = new TagTrack(TrackLoader.getByString("freshness"));
+            fresh.setValue(0);
+            cheese.addOrModifyTrack(fresh);
+            FoodParser.Result result = new FoodParser.Result(); result.template = cheese;
+            return result;
+        });
+        MemoryConfiguration config = env.config(1, false, "none");
+        config.set("recipes.cut.keep-output-age", true);
+        CraftingStation press = new CraftingStation(env.furniture, new CraftingStation("board", config));
+        assertTrue(new CraftingRecipe("cut", config.getConfigurationSection("recipes.cut")).keepsOutputAge());
+        env.add(press, "input_1", env.raw(1));
+        press.craft(env.player);
+        assertEquals(0, env.lastBuilt.getTagTrack("freshness").getValue(), "The output keeps its own age");
+        assertNull(env.lastBuilt.getTagTrack("warmth"), "An age only the ingredients had is dropped");
+
+        env.active.clear();
+        CraftingStation board = env.station(1, false);
+        env.add(board, "input_1", env.raw(1));
+        board.craft(env.player);
+        assertEquals(90000, env.lastBuilt.getTagTrack("freshness").getValue(), "Without the option the age is averaged in");
     }
 
     public static final class Environment implements AutoCloseable {
