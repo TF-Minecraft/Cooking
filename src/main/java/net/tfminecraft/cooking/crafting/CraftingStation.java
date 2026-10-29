@@ -1,6 +1,7 @@
 package net.tfminecraft.cooking.crafting;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +17,7 @@ import org.bukkit.util.Vector;
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
 import net.tfminecraft.cooking.events.DishCookedEvent;
+import net.tfminecraft.cooking.item.model.ModelData;
 import net.tfminecraft.cooking.fishing.SeafoodCutting;
 import net.tfminecraft.cooking.fishing.SeafoodPortions;
 import net.tfminecraft.cooking.fishing.SeafoodYield;
@@ -27,6 +29,7 @@ import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemRef;
 import net.tfminecraft.cooking.utils.ItemUpdater;
@@ -218,10 +221,17 @@ public class CraftingStation {
         if(slots.isEmpty()) {
             currentRecipe = null;
         }
-        if (showsFill()) {
-            e.setItem(asHeld(e.getItem()));
-            refreshFill();
+        // What comes out looks as it does in hand, not as it was drawn in the furniture (slices on the board).
+        ItemStack held = asHeld(e.getItem());
+        if (e.getPlayer() != null && FoodItem.fromItem(held) != null) {
+            // Food goes in like a pickup, onto a stack of the same food made at another time, not only onto exact copies.
+            ItemStack rest = InventoryAdder.addItem(e.getPlayer(), held);
+            if (rest != null) e.getPlayer().getWorld().dropItem(e.getPlayer().getLocation(), rest);
+            held = held.clone();
+            held.setAmount(0);
         }
+        e.setItem(held);
+        if (showsFill()) refreshFill();
     }
 
     public void craft() {
@@ -239,6 +249,10 @@ public class CraftingStation {
         if(available < ratio) return;
         if ("cut_seafood".equals(currentRecipe.getId())) {
             craftSeafood(p);
+            return;
+        }
+        if (recipe.inherits()) {
+            cutInPlace(p, recipe);
             return;
         }
 
@@ -269,26 +283,11 @@ public class CraftingStation {
             }
         }
 
-        String data = currentRecipe.getOutput();
-        if(isSingleOrigin() && origin != null && !origin.equalsIgnoreCase("none")) {
-            data = data.replace("{origin}", origin);
-        }
-
-        FoodParser.Result parsed = FoodParser.parse(data);
-        if (parsed == null || parsed.template == null) return;
-        FoodItem item = parsed.template;
-
-        if(currentRecipe.isProcessed()) {
-            item.addOrModifyTrack(TrackLoader.getByString("processed"));
-        }
-
-        CompositionResult composed = CompositionQualityResolver.compose(p, consumedInputs, CompositionContext.CUTTING_BOARD);
-        Map<String, Integer> ownAge = currentRecipe.keepsOutputAge() ? ageOf(item) : null;
-        CompositionApplier.apply(item, composed);
-        if (ownAge != null) restoreAge(item, ownAge);
-        ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
-        if (output == null || output.getType().isAir()) return;
-        output.setAmount(outputAmount);
+        Built built = build(p, recipe, consumedInputs, origin);
+        if (built == null) return;
+        FoodItem item = built.food();
+        ItemStack output = built.stack();
+        output.setAmount(outputAmount * recipe.getYield());
 
         // Prepare the complete result before taking any ingredient from the board.
         var modelData = item.getModelData();
@@ -311,8 +310,8 @@ public class CraftingStation {
             if(f.hasActiveSlot(def.getId())) continue;
             if(!def.getId().contains("input")) continue;
             PlacedSlot slot = f.getOrCreatePlacedSlot(def.getId());
-            // A fill station shows the result in its furniture model (a cheese in the mould).
-            ItemStack placed = showsFill() ? ItemUpdater.applyItemUpdate(output.clone(), item, f.getId()) : output;
+            // The result shows its model for this furniture, if it has one (a cheese in the mould).
+            ItemStack placed = ItemUpdater.applyItemUpdate(output.clone(), item, f.getId());
             if (placed == null) placed = output;
             slot.forceModel(placed);
             onBoard = true;
@@ -344,6 +343,65 @@ public class CraftingStation {
         if(p != null) {
             org.bukkit.Bukkit.getPluginManager().callEvent(
                     new net.tfminecraft.cooking.events.DishCookedEvent(p, output, "craft"));
+        }
+    }
+
+    private record Built(FoodItem food, ItemStack stack) {}
+
+    /** The recipe's output made from these inputs, or null when its output line doesn't make an item. */
+    private Built build(Player p, CraftingRecipe recipe, List<FoodItem> inputs, String origin) {
+        String data = recipe.getOutput();
+        if(isSingleOrigin() && origin != null && !origin.equalsIgnoreCase("none")) {
+            data = data.replace("{origin}", origin);
+        }
+
+        FoodParser.Result parsed = FoodParser.parse(data);
+        if (parsed == null || parsed.template == null) return null;
+        FoodItem item = parsed.template;
+
+        if(recipe.isProcessed()) {
+            item.addOrModifyTrack(TrackLoader.getByString("processed"));
+        }
+
+        CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.CUTTING_BOARD);
+        Map<String, Integer> ownAge = recipe.keepsOutputAge() ? ageOf(item) : null;
+        CompositionApplier.apply(item, composed);
+        if (ownAge != null) restoreAge(item, ownAge);
+        if (recipe.inherits() && !inputs.isEmpty()) inherit(item, inputs.get(0));
+        ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
+        if (output == null || output.getType().isAir()) return null;
+        return new Built(item, output);
+    }
+
+    /**
+     * An inheriting recipe cuts each input where it lies: a loaf's slices take its slot and stay what that loaf was,
+     * so two different loaves can share the board.
+     */
+    private void cutInPlace(Player p, CraftingRecipe recipe) {
+        List<ItemStack> outputs = new ArrayList<>();
+        for (String slotId : new ArrayList<>(slots.keySet())) {
+            ItemStack source = slots.get(slotId);
+            FoodItem input = recipe.canAdd(source) ? FoodItem.fromItem(source) : null;
+            if (input == null) continue;
+            Built built = build(p, recipe, Collections.nCopies(source.getAmount(), input), input.getOrigin());
+            if (built == null) continue;
+            built.stack().setAmount(source.getAmount() * recipe.getYield());
+            ItemStack placed = ItemUpdater.applyItemUpdate(built.stack().clone(), built.food(), f.getId());
+            ItemStack shown = placed == null ? built.stack() : placed;
+            slots.put(slotId, shown);
+            ModelData model = built.food().getModelData();
+            f.getActiveSlot(slotId).ifPresent(slot -> {
+                slot.setCurrentItem(shown);
+                if (model != null) slot.applyDisplayData(model.getDisplayData(f.getId()));
+            });
+            outputs.add(built.stack());
+        }
+        if (outputs.isEmpty()) return;
+        currentRecipe = null;
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
+        if (p == null) return;
+        for (ItemStack output : outputs) {
+            org.bukkit.Bukkit.getPluginManager().callEvent(new DishCookedEvent(p, output, "craft"));
         }
     }
 
@@ -429,7 +487,7 @@ public class CraftingStation {
 
     public void remove(FurnitureBreakEvent e) {
         pressOrBreak(e);
-        if (!e.isCancelled()) releaseFill();
+        if (!e.isCancelled()) release();
     }
 
     private void pressOrBreak(FurnitureBreakEvent e) {
@@ -444,6 +502,15 @@ public class CraftingStation {
             if(slots.isEmpty()) return;
             e.setCancelled(true);
             craft(p);
+        }
+    }
+
+    /** A slice of Sweet Banana Bread stays Sweet Banana: origin, fillers and every tag the output line doesn't set. */
+    private static void inherit(FoodItem output, FoodItem input) {
+        if (output.getOrigin() == null || output.getOrigin().isBlank()) output.setOrigin(input.getOrigin());
+        for (String ingredient : input.getIngredients()) output.addIngredient(ingredient);
+        for (TagTrack track : input.getTagTracks()) {
+            if (!output.hasTagTrack(track.getId())) output.addOrModifyTrack(track);
         }
     }
 
@@ -528,9 +595,8 @@ public class CraftingStation {
         return held == null ? item : held;
     }
 
-    /** A broken fill station drops what was put in it, not the fill models. */
-    private void releaseFill() {
-        if (!showsFill()) return;
+    /** A broken station drops what was put in it, looking as it does in hand, not its fill or furniture models. */
+    private void release() {
         for (Map.Entry<String, ItemStack> entry : slots.entrySet()) {
             // Poured inputs spill; their containers were handed back when they went in.
             ItemStack held = pours() && isFillInput(entry.getValue()) ? null : asHeld(entry.getValue());

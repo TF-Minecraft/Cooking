@@ -27,8 +27,10 @@ import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Pattern;
 
 public class ItemBuilder {
+    private static final Pattern NAME_TOKENS = Pattern.compile("\\{(prefixes|fillers|ingredients|colour)}");
 
     public static List<ItemStack> build(FoodItem template, boolean unique, ItemStack base) {
         List<ItemStack> list = new ArrayList<>();
@@ -97,6 +99,10 @@ public class ItemBuilder {
                 displayName = displayName.replace("{inherit}", StringFormatter.getName(base));
             } else if (displayName.contains("{inherit}")) {
                 displayName = displayName.replace("{inherit}", WordUtils.capitalize(origin != null ? origin : "unknown"));
+            }
+            // Names like "{prefixes}{fillers}Bread" are filled from the food's tags and ingredients (Sweet Banana Bread).
+            if (displayName.equals(item.getName()) && NAME_TOKENS.matcher(displayName).find()) {
+                displayName = NameComposer.compose(item, Map.of());
             }
         }
         

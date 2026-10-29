@@ -70,6 +70,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
@@ -97,6 +98,8 @@ public class CraftingStationCoverageTest {
         assertEquals("none", defaults.getOutput());
         assertEquals(1, defaults.getRatio());
         assertFalse(defaults.isProcessed());
+        assertEquals(1, defaults.getYield());
+        assertFalse(defaults.inherits());
         assertFalse(defaults.canAdd(new ItemStack(Material.STONE)));
         MemoryConfiguration config = env.config(2, true, "tool:knife");
         CraftingStation template = new CraftingStation("board", config);
@@ -684,6 +687,71 @@ public class CraftingStationCoverageTest {
         assertEquals(2, station.getSlots().size());
         assertTrue(station.getSlots().values().stream().anyMatch(i -> "cut".equals(env.resolve(i).getId())));
         env.composer.verify(() -> CompositionQualityResolver.compose(isNull(), argThat(inputs -> inputs.size() == 2), eq(CompositionContext.CUTTING_BOARD)));
+    }
+
+    @Test
+    void anInheritingRecipeCutsEachLoafWhereItLiesAndItsSlicesStayWhatThatLoafWas() {
+        env.parser.when(() -> FoodParser.parse(anyString())).thenAnswer(inv -> {
+            FoodParser.Result result = new FoodParser.Result(); result.template = env.food(inv.getArgument(0), "");
+            return result;
+        });
+        MemoryConfiguration config = env.config(1, false, "tool:knife");
+        config.set("recipes.cut.yield", 4);
+        config.set("recipes.cut.inherit", true);
+        config.set("recipes.cut.output", "slice");
+        CraftingRecipe recipe = new CraftingRecipe("cut", config.getConfigurationSection("recipes.cut"));
+        assertEquals(4, recipe.getYield());
+        assertTrue(recipe.inherits());
+        CraftingStation board = new CraftingStation(env.furniture, new CraftingStation("board", config));
+
+        FoodItem banana = env.food("raw", "Wheat");
+        banana.addIngredient("Banana");
+        banana.addOrModifyTrack(TrackLoader.getByString("processed"));
+        FoodItem plain = env.food("raw", "Wheat");
+        env.add(board, "input_1", env.stack(banana, Material.BREAD, 1));
+        assertTrue(board.canAddItem(env.stack(plain, Material.BREAD, 1)), "Two loaves fit end to end");
+        PlacedSlot second = env.add(board, "input_2", env.stack(plain, Material.BREAD, 2));
+        ItemStack stone = new ItemStack(Material.STONE);
+        board.add(stone, "input_3");
+
+        board.craft(env.player);
+        FoodItem first = env.resolve(board.getSlots().get("input_1"));
+        assertEquals("slice", first.getId());
+        assertEquals("Wheat", first.getOrigin());
+        assertEquals(List.of("Banana"), first.getIngredients(), "The banana loaf's slices stay banana");
+        assertNotNull(first.getTagTrack("processed"), "Sweet, Cooked and the like carry over");
+        assertEquals(4, board.getSlots().get("input_1").getAmount());
+        assertTrue(env.resolve(board.getSlots().get("input_2")).getIngredients().isEmpty(), "The plain loaf stays plain");
+        assertEquals(8, board.getSlots().get("input_2").getAmount(), "Each loaf gives four");
+        verify(second).setCurrentItem(argThat(item -> "slice".equals(env.resolve(item).getId())));
+        assertSame(stone, board.getSlots().get("input_3"), "Anything else on the board stays");
+        assertTrue(env.dropped.isEmpty());
+        assertFalse(board.hasRecipe());
+        assertEquals(2, env.server.getPluginManager().getFiredEvents().filter(e -> e instanceof DishCookedEvent).count());
+
+        env.builder.when(() -> ItemBuilder.buildSingleWithQuality(any(), any(), anyInt())).thenReturn(null);
+        CraftingStation failed = new CraftingStation(env.furniture, new CraftingStation("board", config));
+        ItemStack loaf = env.stack(plain, Material.BREAD, 1);
+        env.add(failed, "input_1", loaf);
+        failed.craft();
+        assertSame(loaf, failed.getSlots().get("input_1"), "A loaf that can't be cut stays whole");
+    }
+
+    @Test
+    void foodTakenFromAStationGoesOntoTheSameFoodInTheInventoryLikeAPickup() {
+        CraftingStation station = env.station(1, false);
+        ItemStack raw = env.raw(2);
+        env.add(station, "input_1", raw);
+        when(env.player.getLocation()).thenReturn(new Location(env.world, 0, 64, 0));
+        try (MockedStatic<InventoryAdder> adder = mockStatic(InventoryAdder.class)) {
+            adder.when(() -> InventoryAdder.addItem(any(), any())).thenReturn(new ItemStack(Material.BEEF));
+            FurnitureSlotItemTakeEvent take = env.takeEvent("input_1", raw);
+            station.removeItem(take);
+            adder.verify(() -> InventoryAdder.addItem(eq(env.player), argThat(i -> "raw".equals(env.resolve(i).getId()))));
+            assertTrue(take.getItem().getAmount() == 0 || take.getItem().getType().isAir(),
+                    "The furniture has nothing left to hand over, so it can't make a second stack");
+            assertEquals(List.of(Material.BEEF), env.dropped.stream().map(ItemStack::getType).toList(), "A full inventory drops the rest");
+        }
     }
 
     @Test
