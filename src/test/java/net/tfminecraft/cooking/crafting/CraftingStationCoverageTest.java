@@ -623,6 +623,27 @@ public class CraftingStationCoverageTest {
     }
 
     @Test
+    void anInputWithItsOwnModelForTheFurnitureShowsIt() {
+        CraftingStation station = env.station(1, false);
+        MemoryConfiguration models = new MemoryConfiguration();
+        models.set("plain.gui.item", "v.beef");
+        models.set("plain.display.item", "v.beef");
+        models.set("plain.display.furniture", List.of("board v.bone"));
+        FoodItem crushed = env.food("raw", "Olive");
+        crushed.setModel(new net.tfminecraft.cooking.item.model.FoodModel("olive", models));
+        ItemStack olive = env.stack(crushed, Material.BEEF, 1);
+        FurnitureSlotItemAddEvent add = env.addEvent("input_1", olive);
+        station.addItem(add);
+        assertNotSame(olive, add.getItem());
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), same(crushed), eq("board")));
+
+        ItemStack plain = env.raw(1);
+        FurnitureSlotItemAddEvent other = env.addEvent("input_2", plain);
+        station.addItem(other);
+        assertSame(plain, other.getItem());
+    }
+
+    @Test
     void aRecipeThatDoesNotFillKeepsItsInputsAsThemselvesOnAPouringStation() {
         MemoryConfiguration config = env.config(2, true, "tool:knife");
         config.set("fill-models", List.of("fill_1", "fill_2"));

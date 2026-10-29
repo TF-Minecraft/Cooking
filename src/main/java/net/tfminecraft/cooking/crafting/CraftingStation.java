@@ -206,7 +206,13 @@ public class CraftingStation {
                 CarvableRoastUtils.readCarveState(fi, item);
                 e.setDisplayData(CarvableRoastUtils.getStageModelData(fi).getDisplayData(e.getFurniture().getId()));
             } else {
-                e.setDisplayData(fi.getModelData().getDisplayData(e.getFurniture().getId()));
+                String furnitureId = e.getFurniture().getId();
+                // An input with its own model for this furniture shows it (olives crushed in the cheese press).
+                if (fi.getModelData().hasFurnitureModel(furnitureId)) {
+                    ItemStack shown = ItemUpdater.applyItemUpdate(item.clone(), fi, furnitureId);
+                    if (shown != null) e.setItem(shown);
+                }
+                e.setDisplayData(fi.getModelData().getDisplayData(furnitureId));
             }
         }
     }
