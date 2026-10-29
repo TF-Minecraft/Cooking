@@ -456,6 +456,166 @@ public class CraftingStationCoverageTest {
     }
 
     /** Real food and inventory values, with external furniture, item codecs and plugin services scoped per test. */
+    CraftingStation fillStation(List<String> models) {
+        MemoryConfiguration config = env.config(2, true, "tool:knife");
+        config.set("fill-models", models);
+        for (String id : List.of("input_1", "input_2", "input_3")) {
+            when(env.definitions.get(id).getOffset()).thenReturn(new Vector(0.1, 0, 0.2));
+            when(env.definitions.get(id).getDisplayPosition()).thenReturn(new Vector(0, -0.2, 0));
+        }
+        return new CraftingStation(env.furniture, new CraftingStation("board", config));
+    }
+
+    @Test
+    void fillStationShowsItsInputsAsOneRisingLevelCentredOnTheFurniture() {
+        assertFalse(env.station(1, false).showsFill());
+        CraftingStation station = fillStation(List.of("fill_1", "fill_2"));
+        assertTrue(station.showsFill());
+        FurnitureSlotItemAddEvent first = env.addEvent("input_1", env.raw(1));
+        station.addItem(first);
+        assertEquals(Material.STICK, first.getItem().getType());
+        assertEquals("raw", env.resolve(first.getItem()).getId(), "The fill keeps the cup's food data");
+        assertEquals(-0.1f, first.getDisplayData().getxPos(), 1e-6);
+        assertEquals(0.2f, first.getDisplayData().getyPos(), 1e-6);
+        assertEquals(-0.2f, first.getDisplayData().getzPos(), 1e-6);
+        PlacedSlot firstSlot = env.place("input_1", first.getItem());
+        verify(env.api.getCreator()).getItemFromPath("fill_1");
+        FurnitureSlotItemAddEvent second = env.addEvent("input_2", env.raw(1));
+        station.addItem(second);
+        verify(firstSlot).setCurrentItem(argThat(item -> item.getType() == Material.STICK));
+        verify(firstSlot).applyDisplayData(any());
+        verify(env.api.getCreator(), atLeastOnce()).getItemFromPath("fill_2");
+        env.place("input_2", second.getItem());
+        station.addItem(env.addEvent("input_3", env.raw(1)));
+        verify(env.api.getCreator(), atLeast(3)).getItemFromPath("fill_2");
+
+        FurnitureSlotItemTakeEvent take = env.takeEvent("input_2", second.getItem());
+        station.removeItem(take);
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), any(), isNull()));
+        assertEquals("raw", env.resolve(take.getItem()).getId());
+        FurnitureSlotItemTakeEvent stone = env.takeEvent("input_3", new ItemStack(Material.STONE));
+        station.removeItem(stone);
+        assertEquals(Material.STONE, stone.getItem().getType());
+    }
+
+    @Test
+    void fillStationKeepsTheInputWhenItsFillModelIsMissingAndCentresUnknownSlots() {
+        when(env.api.getCreator().getItemFromPath("missing")).thenReturn(null);
+        CraftingStation missing = fillStation(List.of("missing"));
+        ItemStack cup = env.raw(1);
+        FurnitureSlotItemAddEvent add = env.addEvent("input_1", cup);
+        missing.addItem(add);
+        assertSame(cup, add.getItem());
+
+        CraftingStation station = fillStation(List.of("fill_1"));
+        PlacedSlot ghost = env.place("ghost", env.raw(1));
+        station.add(ghost.getCurrentItem(), "ghost");
+        station.addItem(env.addEvent("input_1", env.raw(1)));
+        verify(ghost).applyDisplayData(argThat(data -> data.getxPos() == 0 && data.getyPos() == 0));
+        // Something that is not a recipe input (a pressed result) keeps its own look.
+        ItemStack stone = new ItemStack(Material.STONE);
+        station.add(stone, "input_2");
+        station.addItem(env.addEvent("input_3", env.raw(1)));
+        assertSame(stone, station.getSlots().get("input_2"));
+    }
+
+    @Test
+    void fillStationRebuildsItsLevelAndShowsThePressedResultInItsFurnitureModel() {
+        CraftingStation empty = fillStation(List.of("fill_1"));
+        empty.rebuildFromFurniture();
+        verify(env.api.getCreator(), never()).getItemFromPath("fill_1");
+
+        CraftingStation station = fillStation(List.of("fill_1", "fill_2"));
+        for (int n = 1; n <= 3; n++) env.place("input_" + n, env.raw(1));
+        station.rebuildFromFurniture();
+        verify(env.active.get("input_1")).applyDisplayData(any());
+        station.craft(env.player);
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), any(), eq("board")));
+        assertEquals(1, env.dropped.size(), "The unused cup comes back");
+        assertEquals("raw", env.resolve(env.dropped.get(0)).getId());
+        PlacedSlot output = env.active.values().iterator().next();
+        verify(output).forceModel(any());
+        verify(output, atLeastOnce()).applyDisplayData(argThat(data -> data.getyPos() > 0.19f));
+        assertEquals("cut", env.resolve(station.getSlots().values().iterator().next()).getId());
+    }
+
+    @Test
+    void breakingAFillStationDropsWhatWasPutInNotTheFill() {
+        CraftingStation station = fillStation(List.of("fill_1"));
+        FurnitureSlotItemAddEvent add = env.addEvent("input_1", env.raw(1));
+        station.addItem(add);
+        PlacedSlot slot = env.place("input_1", add.getItem());
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.STICK));
+        var broken = new FurnitureBreakEvent(env.furniture, env.player);
+        station.remove(broken);
+        assertFalse(broken.isCancelled());
+        verify(slot, atLeast(1)).setCurrentItem(any());
+        assertEquals("raw", env.resolve(slot.getCurrentItem()).getId());
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), any(), isNull()));
+
+        env.add(station, "input_2", env.raw(1));
+        env.player.getInventory().setItemInMainHand(new ItemStack(Material.IRON_SWORD));
+        var pressed = new FurnitureBreakEvent(env.furniture, env.player);
+        station.remove(pressed);
+        assertTrue(pressed.isCancelled());
+    }
+
+    CraftingStation pouringStation(String container) {
+        MemoryConfiguration config = env.config(2, true, "tool:knife");
+        config.set("fill-models", List.of("fill_1", "fill_2"));
+        config.set("pour-return", container);
+        for (String id : List.of("input_1", "input_2", "input_3")) {
+            when(env.definitions.get(id).getOffset()).thenReturn(new Vector());
+            when(env.definitions.get(id).getDisplayPosition()).thenReturn(new Vector());
+        }
+        return new CraftingStation(env.furniture, new CraftingStation("board", config));
+    }
+
+    @Test
+    void pouringHandsTheContainerBackAndKeepsThePouredInputInTheFurniture() {
+        CraftingStation station = pouringStation("empty_cup");
+        var inventory = env.player.getInventory();
+        FurnitureSlotItemAddEvent pour = env.addEvent("input_1", env.raw(1));
+        station.addItem(pour);
+        verify(env.api.getCreator()).getItemFromPath("empty_cup");
+        assertTrue(inventory.contains(Material.STICK), "The empty cup comes back");
+        env.place("input_1", pour.getItem());
+
+        FurnitureSlotItemTakeEvent take = env.takeEvent("input_1", pour.getItem());
+        station.removeItem(take);
+        assertTrue(take.isCancelled());
+        verify(env.player).sendMessage(contains("can't go back"));
+        assertTrue(station.getSlots().containsKey("input_1"));
+
+        for (int n = 0; n < inventory.getSize(); n++) inventory.setItem(n, new ItemStack(Material.DIRT, 64));
+        station.addItem(env.addEvent("input_2", env.raw(1)));
+        assertTrue(env.dropped.stream().anyMatch(item -> item.getType() == Material.STICK), "A full inventory drops the cup");
+
+        when(env.api.getCreator().getItemFromPath("missing")).thenReturn(null);
+        CraftingStation missing = pouringStation("missing");
+        int drops = env.dropped.size();
+        missing.addItem(env.addEvent("input_3", env.raw(1)));
+        assertEquals(drops, env.dropped.size());
+    }
+
+    @Test
+    void pouredLeftoversAreNotHandedOutAgainAndBreakingSpillsThePouredInputs() {
+        CraftingStation station = pouringStation("empty_cup");
+        for (int n = 1; n <= 3; n++) env.place("input_" + n, env.raw(1));
+        station.rebuildFromFurniture();
+        station.craft(env.player);
+        assertTrue(env.dropped.isEmpty(), "The odd poured input is not dropped as a full cup");
+
+        CraftingStation spilled = pouringStation("empty_cup");
+        env.active.clear();
+        PlacedSlot milk = env.place("input_1", env.raw(1));
+        PlacedSlot cheese = env.place("input_2", new ItemStack(Material.STONE));
+        spilled.rebuildFromFurniture();
+        spilled.remove(new FurnitureBreakEvent(env.furniture, null));
+        verify(milk).setCurrentItem(isNull());
+        verify(cheese).setCurrentItem(argThat(item -> item != null && item.getType() == Material.STONE));
+    }
+
     public static final class Environment implements AutoCloseable {
         public final ServerMock server;
         final Cooking previousPlugin;

@@ -26,6 +26,8 @@ import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
+import net.tfminecraft.cooking.utils.ItemRef;
+import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
@@ -33,6 +35,7 @@ import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 import net.tfminecraft.interactiblefurniture.furniture.SlotDefinition;
+import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 public class CraftingStation {
     private Furniture f;
@@ -44,6 +47,10 @@ public class CraftingStation {
     private CraftingRecipe currentRecipe;
     private List<CraftingRecipe> recipes = new ArrayList<>();
     private HashMap<String, ItemStack> slots = new HashMap<>();
+    /** Models for 1, 2, ... recipe inputs; when set, the inputs show as one level rising in the furniture. */
+    private List<String> fillModels = new ArrayList<>();
+    /** Item handed back for each input poured in (an empty cup); poured inputs stay in the furniture. */
+    private String pourReturn = "none";
 
     public CraftingStation(String key, ConfigurationSection config) {
         this.id = key;
@@ -51,6 +58,8 @@ public class CraftingStation {
         this.singleOrigin = config.getBoolean("single-origin", false);
         this.maxSlots = config.getInt("max-slots", 0);
         this.tool = config.getString("tool", "none");
+        this.fillModels = config.getStringList("fill-models");
+        this.pourReturn = config.getString("pour-return", "none");
 
         if(config.isConfigurationSection("recipes")) {
             for (String recipeKey : config.getConfigurationSection("recipes").getKeys(false)) {
@@ -70,6 +79,8 @@ public class CraftingStation {
         this.currentRecipe = station.currentRecipe;
         this.slots = new HashMap<>(station.slots);
         this.recipes = new ArrayList<>(station.recipes);
+        this.fillModels = station.fillModels;
+        this.pourReturn = station.pourReturn;
     }
 
     public Furniture getFurniture() {
@@ -162,6 +173,7 @@ public class CraftingStation {
                 }
             });
         }
+        refreshFill();
     }
 
     public void addItem(FurnitureSlotItemAddEvent e) {
@@ -171,6 +183,14 @@ public class CraftingStation {
             return;
         }
         add(item, e.getSlot().getId());
+        if (showsFill() && isFillInput(item)) {
+            refreshFill();
+            String slotId = e.getSlot().getId();
+            e.setItem(slots.get(slotId));
+            e.setDisplayData(centred(slotId));
+            if (pours()) giveBack(e.getPlayer());
+            return;
+        }
         FoodItem fi = FoodItem.fromItem(item);
         if(fi != null) {
             if (fi.getCarveSequenceId() != null) {
@@ -183,9 +203,18 @@ public class CraftingStation {
     }
 
     public void removeItem(FurnitureSlotItemTakeEvent e) {
+        if (pours() && isFillInput(e.getItem())) {
+            e.setCancelled(true);
+            e.getPlayer().sendMessage("§7Poured milk can't go back into the cup. Add more and press it with the masher.");
+            return;
+        }
         slots.remove(e.getSlot().getId());
         if(slots.isEmpty()) {
             currentRecipe = null;
+        }
+        if (showsFill()) {
+            e.setItem(asHeld(e.getItem()));
+            refreshFill();
         }
     }
 
@@ -255,7 +284,8 @@ public class CraftingStation {
             f.removeActiveSlot(slotId);
         }
         for (ItemStack remaining : remainingInputs) {
-            f.getLoc().getWorld().dropItem(f.getLoc(), remaining)
+            if (pours()) continue; // poured inputs already gave their container back
+            f.getLoc().getWorld().dropItem(f.getLoc(), showsFill() ? asHeld(remaining) : remaining)
                     .setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
         }
         slots.clear();
@@ -267,9 +297,13 @@ public class CraftingStation {
             if(f.hasActiveSlot(def.getId())) continue;
             if(!def.getId().contains("input")) continue;
             PlacedSlot slot = f.getOrCreatePlacedSlot(def.getId());
-            slot.forceModel(output);
+            // A fill station shows the result in its furniture model (a cheese in the mould).
+            ItemStack placed = showsFill() ? ItemUpdater.applyItemUpdate(output.clone(), item, f.getId()) : output;
+            if (placed == null) placed = output;
+            slot.forceModel(placed);
             onBoard = true;
-            if (displayData != null) slot.applyDisplayData(displayData);
+            if (showsFill()) slot.applyDisplayData(centred(def.getId()));
+            else if (displayData != null) slot.applyDisplayData(displayData);
 
             // Attempt to match new currentRecipe based on the output item
             CraftingRecipe newRecipe = null;
@@ -279,7 +313,7 @@ public class CraftingStation {
                     break;
                 }
             }
-            slots.put(def.getId(), output);
+            slots.put(def.getId(), placed);
 
             // Assign new recipe or clear it
             currentRecipe = newRecipe;
@@ -380,6 +414,11 @@ public class CraftingStation {
     }
 
     public void remove(FurnitureBreakEvent e) {
+        pressOrBreak(e);
+        if (!e.isCancelled()) releaseFill();
+    }
+
+    private void pressOrBreak(FurnitureBreakEvent e) {
         if(!e.hasPlayer()) return;
 
         Player p = e.getPlayer();
@@ -391,6 +430,79 @@ public class CraftingStation {
             if(slots.isEmpty()) return;
             e.setCancelled(true);
             craft(p);
+        }
+    }
+
+    /** True when the station shows its recipe inputs as one fill level, like milk poured into a mould. */
+    public boolean showsFill() {
+        return !fillModels.isEmpty();
+    }
+
+    private boolean isFillInput(ItemStack item) {
+        for (CraftingRecipe cr : recipes) {
+            if (cr.canAdd(item)) return true;
+        }
+        return false;
+    }
+
+    /** Every input shows the model for the current level, centred on the furniture; identical copies overlap exactly. */
+    private void refreshFill() {
+        int inputs = (int) slots.values().stream().filter(this::isFillInput).count();
+        if (!showsFill() || inputs == 0) return;
+        String model = fillModels.get(Math.min(inputs, fillModels.size()) - 1);
+        for (Map.Entry<String, ItemStack> entry : slots.entrySet()) {
+            if (!isFillInput(entry.getValue())) continue;
+            // The fill keeps the input's food data, so it still crafts and can be taken back out.
+            ItemStack shown = ItemRef.apply(model, entry.getValue());
+            if (shown == null) continue;
+            entry.setValue(shown);
+            String slotId = entry.getKey();
+            f.getActiveSlot(slotId).ifPresent(slot -> {
+                slot.setCurrentItem(shown);
+                slot.applyDisplayData(centred(slotId));
+            });
+        }
+    }
+
+    /** Moves a slot's display back to the furniture's centre, so fill and output models line up with the furniture model. */
+    private DisplayData centred(String slotId) {
+        DisplayData data = new DisplayData();
+        SlotDefinition def = f.getType().getSlot(slotId);
+        if (def == null) return data;
+        Vector at = def.getOffset().add(def.getDisplayPosition());
+        data.setxPos((float) -at.getX());
+        data.setyPos((float) -at.getY());
+        data.setzPos((float) -at.getZ());
+        return data;
+    }
+
+    /** The look an item has outside the furniture (a cup of milk, a cheese), keeping its food data. */
+    private ItemStack asHeld(ItemStack item) {
+        FoodItem fi = FoodItem.fromItem(item);
+        if (fi == null) return item;
+        ItemStack held = ItemUpdater.applyItemUpdate(item, fi, null);
+        return held == null ? item : held;
+    }
+
+    /** A broken fill station drops what was put in it, not the fill models. */
+    private void releaseFill() {
+        if (!showsFill()) return;
+        for (Map.Entry<String, ItemStack> entry : slots.entrySet()) {
+            // Poured inputs spill; their containers were handed back when they went in.
+            ItemStack held = pours() && isFillInput(entry.getValue()) ? null : asHeld(entry.getValue());
+            f.getActiveSlot(entry.getKey()).ifPresent(slot -> slot.setCurrentItem(held));
+        }
+    }
+
+    private boolean pours() {
+        return showsFill() && !pourReturn.equalsIgnoreCase("none");
+    }
+
+    private void giveBack(Player p) {
+        ItemStack container = TLibs.getItemAPI().getCreator().getItemFromPath(pourReturn);
+        if (container == null) return;
+        for (ItemStack rest : p.getInventory().addItem(container).values()) {
+            p.getWorld().dropItem(p.getLocation(), rest);
         }
     }
 
