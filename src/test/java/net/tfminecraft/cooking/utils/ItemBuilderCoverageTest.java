@@ -92,6 +92,16 @@ class ItemBuilderCoverageTest {
         assertEquals("Rye",base.getItemMeta().getDisplayName());
     }
 
+    @Test void composedNamesAreFilledInFromTheFoodsIngredientsWhenBuiltFromAPlainTemplate() {
+        FoodItem bread=food("bread","{prefixes}{fillers}Bread");
+        bread.addIngredient("Banana");
+        String name=ItemBuilder.buildSingleWithQuality(bread,2).getItemMeta().getDisplayName();
+        assertFalse(name.contains("{"),name);
+        assertTrue(name.contains("Banana") && name.endsWith("Bread"),name);
+        FoodItem plain=food("bread","{prefixes}{fillers}Bread");
+        assertEquals("Bread",ItemBuilder.buildSingleWithQuality(plain,2).getItemMeta().getDisplayName());
+    }
+
     @Test void displayOverridesDoNotDependOnTheServerLocale() {
         FoodItem template=food("bread","Bread"); template.setOrigin("fish");
         template.getOverrides().put("FISH",new OverrideData("Fish pie",null,null));

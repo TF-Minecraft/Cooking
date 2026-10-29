@@ -16,6 +16,10 @@ public class CraftingRecipe {
     private boolean processed;
     /** The output keeps the age its output line gives it instead of averaging the ingredients' age. */
     private boolean keepOutputAge;
+    /** Outputs per recipe unit (a loaf gives 4 slices). */
+    private int yield;
+    /** The output is the input cut differently: it keeps the input's origin, fillers and tags. One input at a time. */
+    private boolean inherit;
 
     public CraftingRecipe(String id, ConfigurationSection config) {
         this.id = id;
@@ -24,6 +28,8 @@ public class CraftingRecipe {
         this.ratio = config.getInt("ratio", 1);
         this.processed = config.getBoolean("processed", false);
         this.keepOutputAge = config.getBoolean("keep-output-age", false);
+        this.yield = Math.max(1, config.getInt("yield", 1));
+        this.inherit = config.getBoolean("inherit", false);
     }
 
     public boolean canAdd(ItemStack item) {
@@ -50,5 +56,11 @@ public class CraftingRecipe {
     }
     public boolean keepsOutputAge() {
         return keepOutputAge;
+    }
+    public int getYield() {
+        return yield;
+    }
+    public boolean inherits() {
+        return inherit;
     }
 }
