@@ -1,0 +1,92 @@
+# Sandwiches, built on a board:
+#   1. Right-click an empty board with a slice of bread.
+#   2. Right-click with fillings to lay them on it (an empty hand takes the top one back off).
+#   3. Right-click with another slice of bread to close it.
+#   4. Right-click the closed sandwich to pick it up.
+# The sandwich's food is what its layers hold between them, its nutrition their average (weighted by food), and its
+# quality, freshness and variety come from all of them (composition.yml context SANDWICH). Its fillings name it:
+# "Cheese, Tomato and Strawberry Jam Sandwich" (naming.yml fillers max).
+#
+# The furniture needs slots sandwich_1, sandwich_2, ... (InteractibleFurniture), one per layer, at the furniture's
+# centre with scale 1 and interactible: false. Each layer model is drawn lying on the furniture, in its coordinates;
+# Cooking lifts each layer by the thickness of those below it.
+
+# Furniture ids sandwiches are built on.
+furniture:
+  - cutting_board
+
+# Fillings between the two slices, at most (and no more than the furniture's sandwich slots allow).
+max-fillings: 6
+
+# The finished sandwich (types.yml). Food and nutrition are replaced by its layers'.
+output: meal(type=sandwich;origin=Mixed)
+
+# What can go in a sandwich, matched by types.yml type; the first layer that takes a food wins.
+#   bread: true    a slice that starts and closes the sandwich (it doesn't name it)
+#   name           the filling's part of the sandwich's name; {origin} is the food's origin (Strawberry)
+#   names          a name per origin instead (goat: Goat Cheese)
+#   sandwich-origin  a sandwich with this layer takes this origin (the first such layer wins), so types.yml
+#                  overrides can give it its own look and name (a jam sandwich)
+#   thickness      how high the layer lies, in model pixels (1/16 block)
+#   models         its look on the board: a model, or a tag and a model used while the food has that tag (rotten).
+#                  The first that exists is used, so later lines are fallbacks. {origin} is the origin in lower case
+#                  with _ for spaces (melon_slice). With none, the layer shows as it does in hand.
+layers:
+  bread:
+    types:
+      - bread_slice
+    bread: true
+    thickness: 0.8
+    models:
+      - rotten ia.tfmc_cooking:sandwich_bread_rotten
+      - burnt ia.tfmc_cooking:sandwich_bread_burnt
+      - ia.tfmc_cooking:sandwich_bread_cooked
+  jam:
+    types:
+      - jam
+    name: "{origin} Jam"
+    names:
+      melon slice: Melon Jam
+    sandwich-origin: Jam
+    thickness: 0.3
+    models:
+      - ia.tfmc_cooking:sandwich_jam_{origin}
+      - ia.tfmc_cooking:sandwich_jam_strawberry
+  paste:
+    types:
+      - paste
+    name: "{origin} Paste"
+    thickness: 0.3
+    models:
+      - ia.tfmc_cooking:sandwich_paste_{origin}
+      - ia.tfmc_cooking:sandwich_paste_tomato
+  butter:
+    types:
+      - butter
+    name: Butter
+    thickness: 0.2
+    models:
+      - ia.tfmc_cooking:sandwich_butter
+  cheese:
+    types:
+      - cheese
+    name: Cheese
+    names:
+      goat: Goat Cheese
+    thickness: 0.5
+    models:
+      - ia.tfmc_cooking:sandwich_cheese_{origin}
+      - ia.tfmc_cooking:sandwich_cheese
+  vegetable:
+    types:
+      - vegetable_cut
+      - vegetable_cut_2
+      - vegetable_chopped
+      - vegetable_chopped_2
+      - garnish_chopped
+    name: "{origin}"
+    thickness: 0.3
+    models:
+      - rotten ia.tfmc_cooking:sandwich_vegetable_{origin}_rotten
+      - ia.tfmc_cooking:sandwich_vegetable_{origin}
+      - ia.tfmc_cooking:sandwich_vegetable_lettuce
