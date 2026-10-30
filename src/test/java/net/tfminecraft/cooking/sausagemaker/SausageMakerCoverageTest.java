@@ -58,6 +58,7 @@ import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.testsupport.TestCharacters;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
+import net.tfminecraft.cooking.testsupport.FurnitureChunkLookup;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -622,6 +623,7 @@ public class SausageMakerCoverageTest {
             });
             InteractibleFurniture plugin = mock(InteractibleFurniture.class);
             when(plugin.getFurnitureManager()).thenReturn(manager);
+            FurnitureChunkLookup.answer(manager);
             scoped(mockStatic(InteractibleFurniture.class)).when(InteractibleFurniture::getInstance).thenReturn(plugin);
             cache = scoped(mockStatic(ItemCache.class));
             cache.when(() -> ItemCache.getMixingModel("flour")).thenReturn("model.flour");
