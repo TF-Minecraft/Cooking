@@ -7,9 +7,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
-import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.FurnitureCache;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
@@ -33,11 +33,8 @@ public final class OvenLifecycleHandler implements Listener {
     @EventHandler
     public void onChunkUnload(ChunkUnloadEvent event) {
         Chunk chunk = event.getChunk();
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!FurnitureCache.isOvenBottom(furniture)) {
-                continue;
-            }
-            if (furniture.getLoc().getChunk().equals(chunk)) {
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
+            if (FurnitureCache.isOvenBottom(furniture)) {
                 burnManager.stopBurning(furniture.getEntityId());
             }
         }
@@ -55,11 +52,8 @@ public final class OvenLifecycleHandler implements Listener {
     }
 
     private void resumeOvensInChunk(Chunk chunk) {
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!FurnitureCache.isOvenBottom(furniture)) {
-                continue;
-            }
-            if (furniture.getLoc().getChunk().equals(chunk)) {
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
+            if (FurnitureCache.isOvenBottom(furniture)) {
                 burnManager.resume(furniture);
             }
         }

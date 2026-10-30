@@ -29,6 +29,7 @@ import net.tfminecraft.cooking.cup.MilkBucketSnapshot;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.QualityUtils;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurniturePlaceEvent;
@@ -361,10 +362,7 @@ public final class ButterChurnHandler implements Listener {
     }
 
     private void resumeChurnsInChunk(Chunk chunk) {
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!furniture.getLoc().getChunk().equals(chunk)) {
-                continue;
-            }
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
             resumeChurn(furniture);
         }
     }

@@ -73,6 +73,7 @@ import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.testsupport.FurnitureChunkLookup;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -893,6 +894,7 @@ public class CraftingStationCoverageTest {
             InteractibleFurniture plugin = mock(InteractibleFurniture.class, RETURNS_DEEP_STUBS);
             scoped(mockStatic(InteractibleFurniture.class)).when(InteractibleFurniture::getInstance).thenReturn(plugin);
             when(plugin.getFurnitureManager().getPlacedFurniture()).thenReturn(placed);
+            FurnitureChunkLookup.answer(plugin.getFurnitureManager());
             scoped(mockStatic(Bukkit.class, CALLS_REAL_METHODS)).when(() -> Bukkit.getEntity(any(UUID.class)))
                     .thenAnswer(inv -> entities.get(inv.getArgument(0)));
             carve = scoped(mockStatic(CarvableRoastUtils.class));
