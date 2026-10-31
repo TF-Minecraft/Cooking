@@ -15,13 +15,23 @@ import org.junit.jupiter.api.io.TempDir;
 class HusbandryLocatorTest {
 
     @Test
-    void onlyACompleteScanOfTheAnimalsWorldConfirmsAGhost() {
-        assertTrue(HusbandryLocator.isConfirmedGhost(true, "TFMC_Map", List.of("TFMC_Map", "TFMC_Map_nether")));
-        assertTrue(HusbandryLocator.isConfirmedGhost(true, null, List.of("TFMC_Map")));
-        assertTrue(HusbandryLocator.isConfirmedGhost(true, "  ", List.of("TFMC_Map")));
-        assertFalse(HusbandryLocator.isConfirmedGhost(false, "TFMC_Map", List.of("TFMC_Map")));
-        assertFalse(HusbandryLocator.isConfirmedGhost(true, "other", List.of("TFMC_Map")));
-        assertFalse(HusbandryLocator.isConfirmedGhost(true, "TFMC_Map", null));
+    void onlyAnAnimalLastSeenInAScannedWorldCanBeAGhost() {
+        assertTrue(HusbandryLocator.inScannedWorld("TFMC_Map", List.of("TFMC_Map", "TFMC_Map_nether")));
+        assertTrue(HusbandryLocator.inScannedWorld(null, List.of("TFMC_Map")));
+        assertTrue(HusbandryLocator.inScannedWorld("  ", List.of("TFMC_Map")));
+        assertFalse(HusbandryLocator.inScannedWorld("other", List.of("TFMC_Map")));
+        assertFalse(HusbandryLocator.inScannedWorld("TFMC_Map", null));
+    }
+
+    @Test
+    void theUnreadableLogNamesTheFirstProblemsAndCountsTheRest() {
+        assertEquals("[Cooking] Animal scan could not read 1 file or chunk: playerdata/a.dat: truncated",
+                HusbandryLocator.unreadableLog(List.of("playerdata/a.dat: truncated")));
+        List<String> many = java.util.stream.IntStream.range(0, HusbandryLocator.LOGGED_PROBLEMS + 3)
+                .mapToObj(i -> "p" + i).toList();
+        String line = HusbandryLocator.unreadableLog(many);
+        assertTrue(line.startsWith("[Cooking] Animal scan could not read 13 files or chunks: p0; p1;"), line);
+        assertTrue(line.endsWith("; p9; and 3 more"), line);
     }
 
     @Test
