@@ -210,6 +210,24 @@ class DishBonusTest {
     }
 
     @Test
+    void crispNeedsEverythingWithAFreshnessStillFresh() throws Exception {
+        List<DishBonus> bonuses = bonuses("""
+                bonuses:
+                  crisp:
+                    track: crisp
+                    fresh: true
+                """);
+        FoodItem fresh = food("jam", "jam", "Plum");
+        fresh.addOrModifyTrack(new TagTrack(TrackLoader.getByString("freshness")));
+        assertEquals("crisp", step(dish(List.of(fresh, food("spice", "salt", "Salt")), bonuses), "crisp"));
+        FoodItem stale = food("jam", "jam", "Plum");
+        TagTrack age = new TagTrack(TrackLoader.getByString("freshness"));
+        age.forceSetValue((int) age.getSteps().get(1).getRequiredValue());
+        stale.addOrModifyTrack(age);
+        assertNull(step(dish(List.of(fresh, stale), bonuses), "crisp"));
+    }
+
+    @Test
     void aBonusTakesItsNamedStepAndSkipsTracksThatDoNotExistOrHaveNoSteps() throws Exception {
         TrackLoader.oList.add(new TagTrack("empty", false, List.of()));
         List<DishBonus> bonuses = bonuses("""

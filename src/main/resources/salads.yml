@@ -1,0 +1,113 @@
+# Salads, tossed in a placed bowl:
+#   1. Right-click an empty bowl with ingredients to lay them in it (input_1, input_2, ... of the bowl furniture).
+#   2. Right-click with a dressing or seasoning to add it (it doesn't show). Sneak with an empty hand to take back
+#      what went in last.
+#   3. Right-click with an empty hand to toss the salad. It stays in the bowl and is eaten from it with another
+#      empty-hand right-click; it can't be taken out.
+# The salad's food is what everything in it holds between them, its nutrition their average (weighted by food), and its
+# quality, freshness and variety come from all of them (composition.yml context SALAD). Its ingredients name it:
+# "Tomato, Olive and Cheese Salad" (naming.yml fillers max). Cut veg and meat keep their cooking, so raw cut veg
+# keeps its raw penalty and fried meat its bonus.
+
+# Furniture ids salads are tossed in.
+furniture:
+  - bowl
+
+# Ingredients in a salad, at least and at most (no more than the bowl's input slots).
+min-ingredients: 2
+max-ingredients: 5
+
+# Dressings and seasonings in a salad, at most. Each origin goes in once.
+max-extras: 3
+
+# The finished salad (types.yml). Its food and nutrition are replaced by what's in it.
+output: meal(type=salad;origin=Mixed)
+
+# What shows in the bowl and names the salad, matched by types.yml type; the first that takes a food wins.
+#   name   the ingredient's part of the salad's name; {origin} is the food's origin (Tomato)
+#   names  a name per origin instead (goat: Goat Cheese)
+ingredients:
+  vegetable:
+    types:
+      - vegetable_chopped
+      - vegetable_chopped_2
+      - garnish_chopped
+      - vegetable_cut
+      - vegetable_cut_2
+    name: "{origin}"
+  fruit:
+    types:
+      - fruit_1
+      - fruit_2
+    name: "{origin}"
+    names:
+      melon slice: Melon
+  cheese:
+    types:
+      - cheese
+    name: Cheese
+    names:
+      goat: Goat Cheese
+  meat:
+    types:
+      - meat_red_meat
+      - meat_poultry
+      - meat_poultry_leg
+      - meat_pork
+      - sausage
+    name: "{origin}"
+
+# What goes in unseen and doesn't name the salad.
+#   once            only one food of this extra per salad (one dressing)
+#   returns-bottle  the player keeps the empty glass bottle
+extras:
+  dressing:
+    types:
+      - cooking_oil
+      - vinegar
+    once: true
+    returns-bottle: true
+  seasoning:
+    types:
+      - seasoning_1
+      - spice_1
+
+# The kind of salad its ingredients make; the first that matches wins. The salad takes the kind as its origin, so
+# types.yml overrides give each kind its own look.
+#   layers      every one of these ingredients (ids above)
+#   only        nothing but these ingredients
+#   origins     every one of these origins
+#   any-origin  at least one of these origins
+#   mostly      at least half the ingredients are this origin
+kinds:
+  Fruit:
+    only: [fruit]
+  Greek:
+    layers: [cheese]
+    origins: [Olive]
+    any-origin: [Tomato, Cucumber]
+  Carrot:
+    mostly: Carrot
+  Mixed: {}
+
+# Tags a salad earns from what's in it, written like sandwiches.yml's bonuses. count: fillings counts the ingredients,
+# count: seasonings the different salts and peppers; fresh: true needs everything in it still Fresh.
+bonuses:
+  size:
+    track: dish_size
+    count: fillings
+    steps:
+      3: hearty
+      5: loaded
+  dressed:
+    track: dressed
+    layers: [dressing]
+  seasoning:
+    track: seasoning
+    count: seasonings
+    steps:
+      1: seasoned
+      2: well_seasoned
+  crisp:
+    track: crisp
+    fresh: true

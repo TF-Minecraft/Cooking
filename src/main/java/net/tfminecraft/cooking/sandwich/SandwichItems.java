@@ -61,7 +61,7 @@ public final class SandwichItems {
      * Food is what the layers hold between them. Nutrition is their average, weighted by how much each one feeds, as
      * eating them one after another would give.
      */
-    static void applyTotals(FoodItem sandwich, List<FoodItem> layers) {
+    public static void applyTotals(FoodItem sandwich, List<FoodItem> layers) {
         double food = 0;
         double nutrition = 0;
         for (FoodItem layer : layers) {

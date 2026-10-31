@@ -11,6 +11,7 @@ public enum CompositionContext {
     SAUSAGE_MAKER(true),
     SANDWICH(true),
     PIZZA(true),
+    SALAD(true),
     MILLING(false),
     BAKING(false);
 

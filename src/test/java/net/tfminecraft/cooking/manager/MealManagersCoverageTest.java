@@ -262,6 +262,23 @@ public class MealManagersCoverageTest {
     }
 
     @Test
+    void soupWaitsForASaladBeingMadeInTheBowl() throws Exception {
+        java.io.File salads = java.nio.file.Files.createTempFile("salads", ".yml").toFile();
+        java.nio.file.Files.writeString(salads.toPath(), "furniture: [bowl]\n");
+        new net.tfminecraft.cooking.salad.SaladConfig().load(salads);
+        try {
+            bowl.place("input_1", new ItemStack(Material.CARROT));
+            ItemStack full = env.hold(soup()); plates.interact(bowl.interact());
+            assertEquals(full, env.player.getInventory().getItemInMainHand());
+            assertFalse(bowl.active.containsKey("food_item"));
+            verify(env.player).sendMessage("§7There's a salad in this bowl; toss it or take it out first.");
+        } finally {
+            new net.tfminecraft.cooking.salad.SaladConfig().load(new java.io.File(salads.getParentFile(), "missing-salads.yml"));
+            salads.delete();
+        }
+    }
+
+    @Test
     void bowlIngredientPositionsAreDistinctAndUnsupportedSlotNamesHaveNoOffset() {
         for (int index = 1; index <= 5; index++) {
             var data = BowlIngredientLayout.offsetFor("input_" + index);

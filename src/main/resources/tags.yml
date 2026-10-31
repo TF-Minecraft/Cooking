@@ -266,3 +266,17 @@ sweet_and_savoury:
     value: 0
     food-mult: 1.10
     nutrition-mult: 1.10
+
+# Salad bonuses (salads.yml bonuses).
+dressed:
+  dressed:
+    name: "#b5c46aDressed"
+    value: 0
+    food-mult: 1.15
+    nutrition-mult: 1.15
+
+crisp:
+  crisp:
+    name: "#8fd16aCrisp"
+    value: 0
+    nutrition-mult: 1.10
