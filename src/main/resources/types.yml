@@ -4,7 +4,7 @@
 roast:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -63,7 +63,7 @@ roast:
 meat_poultry:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -86,7 +86,7 @@ meat_poultry:
 meat_poultry_leg:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5{inherit} Leg"
   overrides:
     CHICKEN:
@@ -104,7 +104,7 @@ meat_poultry_leg:
 meat_red_meat:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5Steak"
   overrides:
     BEEF:
@@ -130,7 +130,7 @@ meat_red_meat:
 meat_pork:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5Pork"
   model: meat_pork
   food: 20
@@ -144,7 +144,7 @@ meat_pork:
 sausage:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5Sausage"
   model: sausage
   food: 20
@@ -158,7 +158,7 @@ sausage:
 sausage_chain:
   age:
     warmth: 450
-    freshness: 4
+    freshness: 7
   name: "#d9baa5Sausage Chain"
   model: sausage_chain
   food: 20
@@ -410,7 +410,7 @@ garnish_chopped:
 bread:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 14
   name: "#d9c4a5{prefixes}{fillers}Bread"
   model: bread
   food: 26
