@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.bukkit.Sound;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.enums.Method;
@@ -90,8 +91,20 @@ public class CookingReference {
     }
 
     protected void applySlotUpdate(String slot, FoodItem item) {
+        applySlotUpdate(slot, item, null);
+    }
+
+    /** Redraws a slot's piece for its food; a non-null name renames it, for a piece that has become another food. */
+    // Keep the existing legacy text representation of item names.
+    @SuppressWarnings("deprecation")
+    protected void applySlotUpdate(String slot, FoodItem item, String displayName) {
         if (!f.hasActiveSlot(slot)) return;
         ItemStack stack = f.getActiveSlot(slot).get().getCurrentItem();
+        if (displayName != null && stack != null && stack.hasItemMeta()) {
+            ItemMeta meta = stack.getItemMeta();
+            meta.setDisplayName(displayName);
+            stack.setItemMeta(meta);
+        }
         stack = ItemUpdater.applyItemUpdate(stack, item, f.getId());
         if (stack == null) return;
         f.getActiveSlot(slot).get().forceModel(stack);
@@ -196,6 +209,7 @@ public class CookingReference {
             e.setCancelled(true);
             return;
         }
+        CookingOutput.startRaw(fi, method);
         if(!fi.hasTag(Tag.RAW)) {
             e.setCancelled(true);
             return;

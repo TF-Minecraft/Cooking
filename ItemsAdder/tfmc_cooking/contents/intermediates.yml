@@ -203,3 +203,31 @@ items:
       material: PAPER
       generate: false
       model_path: item/intermediate/tomato_sauce
+
+  grilled_mushroom_burnt:
+    display_name: "Grilled Mushroom Burnt"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/grilled_mushroom_burnt
+
+  grilled_mushroom_rotten:
+    display_name: "Grilled Mushroom Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/grilled_mushroom_rotten
+
+  popcorn_burnt:
+    display_name: "Popcorn Burnt"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/popcorn_burnt
+
+  popcorn_rotten:
+    display_name: "Popcorn Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/popcorn_rotten

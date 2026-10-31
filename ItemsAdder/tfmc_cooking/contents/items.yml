@@ -1626,3 +1626,17 @@ items:
       material: TROPICAL_FISH
       generate: false
       model_path: item/ingredients/poultry/poultry_roast_filet_rotten
+
+  brown_mushroom_rotten:
+    display_name: "Brown Mushroom Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/vanilla/brown_mushroom_rotten
+
+  red_mushroom_rotten:
+    display_name: "Red Mushroom Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/vanilla/red_mushroom_rotten

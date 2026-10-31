@@ -203,7 +203,7 @@ public class FoodItem {
 
         for (TagTrack t : other.tags.values())
             this.tags.put(t.getId(), new TagTrack(t));
-        if(this.canBeCooked() && !hasTagTrack("cooked")) addOrModifyTrack(TrackLoader.getByString("cooked"));
+        if(cookData.cooksInPlace() && !hasTagTrack("cooked")) addOrModifyTrack(TrackLoader.getByString("cooked"));
     }
 
 

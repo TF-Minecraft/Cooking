@@ -1882,6 +1882,11 @@ corn_cut:
       item: ia.tfmc_cooking:cut_corn_rotten
 
 corn_chopped:
+  # Lying flat in the frying pan, like the popcorn it pops into (types.yml vegetable_chopped_2 output).
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
   raw:
     weight: 1
     tags:
@@ -3598,3 +3603,115 @@ egg:
         z: 3
       position:
         y: 0.05
+
+# Pan foods: vanilla mushrooms, grilled mushrooms and popcorn (types.yml mushroom, grilled_mushroom, popcorn).
+# Their items are flat, so in furniture they're turned to lie down (rotation x 90), as chopped corn is in the pan.
+brown_mushroom:
+  fresh:
+    weight: 1
+    gui:
+      item: v.brown_mushroom
+    display:
+      item: v.brown_mushroom
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 2
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:brown_mushroom_rotten
+    display:
+      item: ia.tfmc_cooking:brown_mushroom_rotten
+    display-data:
+      rotation:
+        x: 90
+
+red_mushroom:
+  fresh:
+    weight: 1
+    gui:
+      item: v.red_mushroom
+    display:
+      item: v.red_mushroom
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 2
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:red_mushroom_rotten
+    display:
+      item: ia.tfmc_cooking:red_mushroom_rotten
+    display-data:
+      rotation:
+        x: 90
+
+grilled_mushroom:
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:grilled_mushroom
+    display:
+      item: ia.tfmc_cooking:grilled_mushroom
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
+    display:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:grilled_mushroom_rotten
+    display:
+      item: ia.tfmc_cooking:grilled_mushroom_rotten
+    display-data:
+      rotation:
+        x: 90
+
+popcorn:
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:popcorn
+    display:
+      item: ia.tfmc_cooking:popcorn
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:popcorn_burnt
+    display:
+      item: ia.tfmc_cooking:popcorn_burnt
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:popcorn_rotten
+    display:
+      item: ia.tfmc_cooking:popcorn_rotten
+    display-data:
+      rotation:
+        x: 90

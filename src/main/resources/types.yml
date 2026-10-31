@@ -298,7 +298,7 @@ vegetable_chopped:
     warmth: 450
     freshness: 4
 
-###Veggies — chopped garnish CustomCrops
+###Veggies — chopped garnish CustomCrops (chopped corn pops into popcorn in the frying pan)
 vegetable_chopped_2:
   name: "#5dad58{inherit} (Chopped)"
   valuable: true
@@ -316,6 +316,17 @@ vegetable_chopped_2:
   model: tomato_chopped
   food: 11
   nutrition: 7.5
+  # output: the food (a food string) the piece turns into once it's done, here popcorn. It keeps the piece's stars,
+  # freshness, lineage and ingredients, and its origin when the string names none, and goes on cooking by the same
+  # clock, so it burns as popcorn. A type whose only options have an output isn't raw until it's in the pan, so
+  # chopped tomatoes keep their values. The pan's slot whitelist (InteractibleFurniture) lets only corn in:
+  # c.garnish(type=vegetable_chopped_2;origin=Corn).
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
+      output: snack(type=popcorn;origin=Corn)
   age:
     warmth: 450
     freshness: 4
@@ -657,3 +668,50 @@ egg:
     freshness:
       stale: "#c3db81Stale"
       rotten: "#8B7355Rotten"
+
+###Mushrooms — vanilla brown and red mushrooms (conversions.yml), grilled in the frying pan into grilled mushrooms.
+# Like a vanilla vegetable, with no cut step: one mushroom is one piece.
+mushroom:
+  name: "#b08b6a{inherit}"
+  overrides:
+    BROWN MUSHROOM:
+      model: brown_mushroom
+    RED MUSHROOM:
+      model: red_mushroom
+  model: brown_mushroom
+  food: 6
+  nutrition: 4.5
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 12
+      burn: 25
+      output: vegetable(type=grilled_mushroom)
+  age:
+    warmth: 450
+    freshness: 7
+
+###Grilled mushroom: what a mushroom becomes in the frying pan; keeps its origin (Brown or Red Mushroom).
+grilled_mushroom:
+  name: "#a0785aGrilled Mushroom"
+  model: grilled_mushroom
+  food: 6
+  nutrition: 4.5
+  age:
+    warmth: 450
+    freshness: 7
+
+###Popcorn: chopped corn popped in the frying pan (vegetable_chopped_2 output). Burnt, it stays popcorn.
+# A light snack, a little less filling than the chopped corn it came from; dry, it keeps three times as long.
+popcorn:
+  name: "#f3e3a6Popcorn"
+  model: popcorn
+  food: 10
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 12
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Mouldy"

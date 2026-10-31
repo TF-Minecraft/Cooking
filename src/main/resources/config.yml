@@ -180,6 +180,7 @@ dictionary:
   sauce: "#997950Sauce"
   garnish: "#0b5394Garnish"
   liquid: "#3d85c6Liquid"
+  snack: "#e8c56bSnack"
 
 sauce-dict:
     - ffffff ia.tfmc_cooking:milk|ia.tfmc_cooking:milk_plated

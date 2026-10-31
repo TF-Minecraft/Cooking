@@ -85,27 +85,8 @@ public class ItemBuilder {
 
         item.setAmount(1);
 
-        String origin = item.getOrigin();
-        String displayName = displayNameOverride != null ? displayNameOverride : item.getName();
+        String displayName = displayNameOverride != null ? displayNameOverride : displayName(item, base);
 
-        if (displayNameOverride == null) {
-            if (origin != null) {
-                OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
-                if (od != null) {
-                    if (od.getName() != null) displayName = od.getName();
-                }
-            }
-            if (displayName.contains("{inherit}") && base != null) {
-                displayName = displayName.replace("{inherit}", StringFormatter.getName(base));
-            } else if (displayName.contains("{inherit}")) {
-                displayName = displayName.replace("{inherit}", WordUtils.capitalize(origin != null ? origin : "unknown"));
-            }
-            // Names like "{prefixes}{fillers}Bread" are filled from the food's tags and ingredients (Sweet Banana Bread).
-            if (displayName.equals(item.getName()) && NAME_TOKENS.matcher(displayName).find()) {
-                displayName = NameComposer.compose(item, Map.of());
-            }
-        }
-        
         if (item.getModel() == null) {
             if (base == null || base.getType().isAir()) return null;
             item.setModel(new FoodModel(base));
@@ -128,6 +109,36 @@ public class ItemBuilder {
         }
 
         return stack;
+    }
+
+    /** The name a new stack of this food gets; see {@link #displayName(FoodItem, ItemStack)}. */
+    public static String displayName(FoodItem item) {
+        return displayName(item, null);
+    }
+
+    /**
+     * The name a new stack of this food gets: its origin's override name, else its type's, with {inherit} filled from
+     * the base item's name or else the origin, and name tokens filled from its tags and ingredients.
+     */
+    private static String displayName(FoodItem item, ItemStack base) {
+        String origin = item.getOrigin();
+        String displayName = item.getName();
+        if (origin != null) {
+            OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
+            if (od != null) {
+                if (od.getName() != null) displayName = od.getName();
+            }
+        }
+        if (displayName.contains("{inherit}") && base != null) {
+            displayName = displayName.replace("{inherit}", StringFormatter.getName(base));
+        } else if (displayName.contains("{inherit}")) {
+            displayName = displayName.replace("{inherit}", WordUtils.capitalize(origin != null ? origin : "unknown"));
+        }
+        // Names like "{prefixes}{fillers}Bread" are filled from the food's tags and ingredients (Sweet Banana Bread).
+        if (displayName.equals(item.getName()) && NAME_TOKENS.matcher(displayName).find()) {
+            displayName = NameComposer.compose(item, Map.of());
+        }
+        return displayName;
     }
 
     static boolean writesAgeClock(FoodItem item) {

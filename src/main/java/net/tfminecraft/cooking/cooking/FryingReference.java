@@ -20,6 +20,7 @@ import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.IngredientConverter;
+import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
 import net.tfminecraft.cooking.utils.WarmthUtils;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -67,22 +68,35 @@ public class FryingReference extends CookingReference {
 
     private void handleCookingSlots() {
         for (Map.Entry<String, FoodItem> entry : slots.entrySet()) {
-            String slot = entry.getKey();
             FoodItem item = entry.getValue();
             if (!item.canBeCooked()) continue;
             if (!item.getCookData().tick()) continue;
-            applySlotUpdate(slot, item);
+            showCookStep(entry);
         }
     }
 
     private void burnAllSlots() {
         for (Map.Entry<String, FoodItem> entry : slots.entrySet()) {
-            String slot = entry.getKey();
             FoodItem item = entry.getValue();
             if (!item.canBeCooked()) continue;
             item.getCookData().setCurrentTime(item.getCookData().getParameters().get(method).getBurnTime());
-            super.applySlotUpdate(slot, item);
+            showCookStep(entry);
         }
+    }
+
+    /**
+     * Shows a piece's new cook step. A piece whose pan option names an output becomes that food here (chopped corn
+     * pops into Popcorn), taking the output's name.
+     */
+    private void showCookStep(Map.Entry<String, FoodItem> entry) {
+        FoodItem item = entry.getValue();
+        FoodItem turned = CookingOutput.turn(item, method);
+        if (turned == item) {
+            applySlotUpdate(entry.getKey(), item);
+            return;
+        }
+        entry.setValue(turned);
+        applySlotUpdate(entry.getKey(), turned, ItemBuilder.displayName(turned));
     }
 
     @Override
@@ -207,7 +221,8 @@ public class FryingReference extends CookingReference {
             e.setCancelled(true);
             return;
         }
-        if (data.getCurrentTime() < 5) {
+        // A piece that hasn't turned into its output yet comes back as it went in, and leaves the butter.
+        if (CookingOutput.restoreInput(fi, method) || data.getCurrentTime() < 5) {
             ItemStack returned = ItemUpdater.applyItemUpdate(item, fi, null);
             if (returned != null) {
                 e.setItem(returned);

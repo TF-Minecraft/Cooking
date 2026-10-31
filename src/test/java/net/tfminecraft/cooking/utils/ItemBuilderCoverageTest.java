@@ -92,6 +92,14 @@ class ItemBuilderCoverageTest {
         assertEquals("Rye",base.getItemMeta().getDisplayName());
     }
 
+    @Test void aFoodsDisplayNameIsTheOneANewStackOfItGets() {
+        FoodItem grilled=food("grilled_mushroom","Grilled {inherit}"); grilled.setOrigin("brown mushroom");
+        assertEquals("Grilled Brown Mushroom",ItemBuilder.displayName(grilled));
+        grilled.getOverrides().put("BROWN MUSHROOM",new OverrideData("Grilled Cap",null,null));
+        assertEquals("Grilled Cap",ItemBuilder.displayName(grilled));
+        assertEquals(ItemBuilder.displayName(grilled),ItemBuilder.buildSingleWithQuality(grilled,2).getItemMeta().getDisplayName());
+    }
+
     @Test void composedNamesAreFilledInFromTheFoodsIngredientsWhenBuiltFromAPlainTemplate() {
         FoodItem bread=food("bread","{prefixes}{fillers}Bread");
         bread.addIngredient("Banana");
