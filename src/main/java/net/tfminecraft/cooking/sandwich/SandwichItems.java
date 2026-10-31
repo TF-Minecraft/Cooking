@@ -41,6 +41,7 @@ public final class SandwichItems {
         CompositionResult composed = CompositionQualityResolver.compose(player, layers, CompositionContext.SANDWICH);
         CompositionApplier.apply(sandwich, composed);
         applyTotals(sandwich, layers);
+        DishBonus.apply(sandwich, layers, SandwichConfig::layerFor, layer -> !layer.isBread(), SandwichConfig.bonuses());
         boolean marked = false;
         for (FoodItem food : layers) {
             SandwichLayer layer = SandwichConfig.layerFor(food);
