@@ -14,6 +14,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.salad.SaladKind;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 
@@ -24,8 +25,9 @@ public final class SandwichItems {
 
     /**
      * The sandwich these layers make, bottom slice first: quality, freshness and variety come from all of them, and
-     * the fillings name it (Cheese and Tomato Sandwich). The first layer with a sandwich-origin sets its origin, so a
-     * jam sandwich looks like one. Null when sandwiches.yml's output makes no item.
+     * the fillings name it (Cheese and Tomato Sandwich). Its origin, which picks its look and name through types.yml
+     * overrides, is the first kind its fillings make (a Hamburger), or else the first layer's sandwich-origin (a jam
+     * sandwich), or else the output's. Null when sandwiches.yml's output makes no item.
      */
     public static ItemStack build(Player player, List<ItemStack> stacks) {
         List<FoodItem> layers = new ArrayList<>();
@@ -44,16 +46,22 @@ public final class SandwichItems {
         CompositionFreshnessApplier.keepOwnAgeing(sandwich);
         applyTotals(sandwich, layers);
         DishBonus.apply(sandwich, layers, SandwichConfig::layerFor, layer -> !layer.isBread(), SandwichConfig.bonuses());
-        boolean marked = false;
+        String marked = null;
+        List<FoodItem> fillings = new ArrayList<>();
+        List<SandwichLayer> made = new ArrayList<>();
         for (FoodItem food : layers) {
             SandwichLayer layer = SandwichConfig.layerFor(food);
             if (layer == null) continue;
-            if (!layer.isBread()) sandwich.addIngredient(layer.fillerName(food));
-            if (layer.getSandwichOrigin() != null && !marked) {
-                sandwich.setOrigin(layer.getSandwichOrigin());
-                marked = true;
+            if (!layer.isBread()) {
+                sandwich.addIngredient(layer.fillerName(food));
+                fillings.add(food);
+                made.add(layer);
             }
+            if (marked == null) marked = layer.getSandwichOrigin();
         }
+        SaladKind kind = SandwichConfig.kindFor(fillings, made);
+        if (kind != null) marked = kind.getOrigin();
+        if (marked != null) sandwich.setOrigin(marked);
         return ItemBuilder.buildComposedWithQuality(sandwich, composed.getFinalQuality());
     }
 

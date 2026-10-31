@@ -79,6 +79,7 @@ extras:
 #   origins     every one of these origins
 #   any-origin  at least one of these origins
 #   mostly      at least half the ingredients are this origin
+#   tags        per ingredient, tag steps it must be at, any one of them (meat: [cooked]; see sandwiches.yml)
 kinds:
   Fruit:
     only: [fruit]

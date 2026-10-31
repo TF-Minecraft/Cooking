@@ -46,6 +46,34 @@ bonuses:
     track: flavourful
     valuable: true
 
+# The kind of sandwich its fillings make (the bread doesn't count); the first that matches wins. The sandwich takes
+# the kind as its origin, so types.yml sandwich overrides give each kind its own look and name (a Hamburger). A kind
+# beats a layer's sandwich-origin, so a hamburger with jam is still a Hamburger; with no kind the first layer with a
+# sandwich-origin sets it (Jam), and with neither the sandwich keeps the output's origin.
+#   layers      every one of these fillings (layer ids below)
+#   only        nothing but these fillings
+#   origins     every one of these origins
+#   any-origin  at least one of these origins
+#   mostly      at least half the fillings are this origin
+#   tags        per layer, the tag steps (tags.yml) its fillings must be at, any one of them: meat: [cooked] takes
+#               fried meat only, so raw, boiled or burnt beef makes a plain Beef Sandwich
+kinds:
+  Cheeseburger:
+    layers: [meat, cheese]
+    origins: [Beef]
+    tags:
+      meat: [cooked]
+  Hamburger:
+    layers: [meat]
+    origins: [Beef]
+    tags:
+      meat: [cooked]
+  BLT:
+    layers: [meat, vegetable]
+    origins: [Pork, Lettuce, Tomato]
+    tags:
+      meat: [cooked]
+
 # What can go in a sandwich, matched by types.yml type; the first layer that takes a food wins.
 #   bread: true    a slice that starts and closes the sandwich (it doesn't name it)
 #   name           the filling's part of the sandwich's name; {origin} is the food's origin (Strawberry)
@@ -129,3 +157,26 @@ layers:
       - rotten ia.tfmc_cooking:sandwich_vegetable_{origin}_rotten
       - ia.tfmc_cooking:sandwich_vegetable_{origin}
       - ia.tfmc_cooking:sandwich_vegetable_lettuce
+  meat:
+    # Fried (or raw, boiled, burnt) cuts of meat and sausage. Sausage's origin is Mixed.
+    types:
+      - meat_red_meat
+      - meat_pork
+      - meat_poultry
+      - meat_poultry_leg
+      - sausage
+    name: "{origin}"
+    names:
+      mixed: Sausage
+    thickness: 0.5
+    # A patty, bacon rashers for pork (sandwich_meat_pork) and sausage slices (sandwich_meat_mixed).
+    models:
+      - rotten ia.tfmc_cooking:sandwich_meat_{origin}_rotten
+      - rotten ia.tfmc_cooking:sandwich_meat_rotten
+      - burnt ia.tfmc_cooking:sandwich_meat_{origin}_burnt
+      - burnt ia.tfmc_cooking:sandwich_meat_burnt
+      - boiled ia.tfmc_cooking:sandwich_meat_boiled
+      - raw ia.tfmc_cooking:sandwich_meat_{origin}_raw
+      - raw ia.tfmc_cooking:sandwich_meat_raw
+      - ia.tfmc_cooking:sandwich_meat_{origin}
+      - ia.tfmc_cooking:sandwich_meat

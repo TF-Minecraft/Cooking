@@ -14,11 +14,16 @@ public final class NameComposer {
     private NameComposer() {}
 
     public static String compose(FoodItem item, Map<String, String> extras) {
+        return compose(item, item == null ? null : item.getName(), extras);
+    }
+
+    /** As {@link #compose(FoodItem, Map)}, from this name instead of the type's (an origin's override name). */
+    public static String compose(FoodItem item, String name, Map<String, String> extras) {
         if (item == null) {
             return "";
         }
 
-        String template = item.getName();
+        String template = name;
         if (template == null) {
             template = "";
         }

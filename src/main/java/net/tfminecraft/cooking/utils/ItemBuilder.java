@@ -68,7 +68,21 @@ public class ItemBuilder {
     }
 
     public static ItemStack buildComposedWithQuality(FoodItem template, int quality) {
-        return buildSingleWithQuality(template, null, quality, NameComposer.compose(template, Map.of()));
+        return buildSingleWithQuality(template, null, quality,
+                NameComposer.compose(template, nameTemplate(template), Map.of()));
+    }
+
+    /**
+     * The name a food is built from: its origin's types.yml override name when it has one (a sandwich of origin
+     * Hamburger is "{prefixes}Hamburger"), else its type's name.
+     */
+    static String nameTemplate(FoodItem item) {
+        String origin = item.getOrigin();
+        if (origin != null) {
+            OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
+            if (od != null && od.getName() != null) return od.getName();
+        }
+        return item.getName();
     }
 
     public static ItemStack buildSingleWithQuality(FoodItem template, ItemStack base, int quality) {
@@ -122,21 +136,17 @@ public class ItemBuilder {
      */
     private static String displayName(FoodItem item, ItemStack base) {
         String origin = item.getOrigin();
-        String displayName = item.getName();
-        if (origin != null) {
-            OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
-            if (od != null) {
-                if (od.getName() != null) displayName = od.getName();
-            }
-        }
+        // The origin's override name, when types.yml has one (a Hamburger), else the type's.
+        String nameTemplate = nameTemplate(item);
+        String displayName = nameTemplate;
         if (displayName.contains("{inherit}") && base != null) {
             displayName = displayName.replace("{inherit}", StringFormatter.getName(base));
         } else if (displayName.contains("{inherit}")) {
             displayName = displayName.replace("{inherit}", WordUtils.capitalize(origin != null ? origin : "unknown"));
         }
         // Names like "{prefixes}{fillers}Bread" are filled from the food's tags and ingredients (Sweet Banana Bread).
-        if (displayName.equals(item.getName()) && NAME_TOKENS.matcher(displayName).find()) {
-            displayName = NameComposer.compose(item, Map.of());
+        if (displayName.equals(nameTemplate) && NAME_TOKENS.matcher(displayName).find()) {
+            displayName = NameComposer.compose(item, nameTemplate, Map.of());
         }
         return displayName;
     }
