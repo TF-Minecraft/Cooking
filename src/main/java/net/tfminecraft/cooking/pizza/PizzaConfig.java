@@ -11,6 +11,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.sandwich.SandwichLayer;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 
@@ -27,6 +28,7 @@ public final class PizzaConfig {
     private static SandwichLayer base;
     private static SandwichLayer sauce;
     private static List<SandwichLayer> toppings = List.of();
+    private static List<DishBonus> bonuses = List.of();
 
     public void load(File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -49,6 +51,7 @@ public final class PizzaConfig {
         base = layer(config, "base");
         sauce = layer(config, "sauce");
         toppings = loaded;
+        bonuses = DishBonus.load(config.getConfigurationSection("bonuses"));
     }
 
     private static SandwichLayer layer(YamlConfiguration config, String id) {
@@ -78,6 +81,11 @@ public final class PizzaConfig {
     /** The one spread that goes straight on the dough. */
     public static boolean isSauce(SandwichLayer layer) {
         return layer != null && layer == sauce;
+    }
+
+    /** The tags a pizza earns from its layers (Saucy, Loaded...). */
+    public static List<DishBonus> bonuses() {
+        return bonuses;
     }
 
     public static int maxToppings() {

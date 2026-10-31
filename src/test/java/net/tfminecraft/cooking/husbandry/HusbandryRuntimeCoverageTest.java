@@ -31,6 +31,8 @@ import org.mockito.MockedStatic;
 import io.papermc.paper.entity.EntitySerializationFlag;
 
 class HusbandryRuntimeCoverageTest {
+
+    private static final List<String> UNREAD_PLAYER = List.of("playerdata/rider.dat: truncated");
     @TempDir Path directory;
     Farm f;
     private final HusbandryLifecycleListener lifecycle = new HusbandryLifecycleListener();
@@ -166,7 +168,7 @@ class HusbandryRuntimeCoverageTest {
         same.setLastLocation("farm", 1, 2, 3); f.repository.upsertAnimal(same); HusbandryLocator.markMissing(rider.uuid());
         WorldMock nether = f.addWorld("nether"); nether.setEnvironment(World.Environment.NETHER);
         WorldMock end = f.addWorld("end"); end.setEnvironment(World.Environment.THE_END);
-        var result = new HusbandryEntityScan.Result(Map.of(moved.uuid(), new HusbandryEntityScan.Found("nether", 9, 8, 7), same.uuid(), new HusbandryEntityScan.Found("farm", 1, 2, 3)), Set.of(rider.uuid()), true);
+        var result = new HusbandryEntityScan.Result(Map.of(moved.uuid(), new HusbandryEntityScan.Found("nether", 9, 8, 7), same.uuid(), new HusbandryEntityScan.Found("farm", 1, 2, 3)), Set.of(rider.uuid()), List.of());
         try (Scan scan = new Scan(result)) {
             HusbandryLocator.scanUnloaded(); scan.background();
             assertEquals(List.of(new File(f.world.getWorldFolder(), "entities"), new File(nether.getWorldFolder(), "DIM-1/entities"), new File(end.getWorldFolder(), "DIM1/entities")), scan.worlds.stream().map(HusbandryEntityScan.WorldDir::entities).toList());
@@ -180,14 +182,16 @@ class HusbandryRuntimeCoverageTest {
     @Test void scanDoesNotOverwriteNewerLoadsMovesDeletesOrUnscannedWorlds() {
         HusbandryAnimal loaded = f.ownedOffline("Loaded"), changed = f.ownedOffline("Changed"), deleted = f.ownedOffline("Deleted"), foreign = f.ownedOffline("Foreign");
         foreign.setLastLocation("unscanned", 1, 2, 3); f.repository.upsertAnimal(foreign);
-        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), true))) {
+        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), List.of()))) {
             HusbandryLocator.scanUnloaded(); scan.background();
             HusbandryEntities.putLoaded(loaded); changed.setUnloadedAt(999L); f.repository.upsertAnimal(changed); f.repository.deleteAnimal(deleted.uuid()); scan.apply();
         }
         assertTrue(f.repository.exists(loaded.uuid())); assertEquals(999L, f.repository.getAnimal(changed.uuid()).orElseThrow().unloadedAt()); assertTrue(f.repository.exists(foreign.uuid()));
         HusbandryEntities.clearLoaded();
-        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), false))) { HusbandryLocator.scanUnloaded(); scan.background(); scan.apply(); }
+        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), UNREAD_PLAYER))) { HusbandryLocator.scanUnloaded(); scan.background(); scan.apply(); }
         assertTrue(f.repository.exists(loaded.uuid())); assertTrue(f.repository.exists(changed.uuid()));
+        // Kept but shown as Missing while a rider's file could not be read.
+        assertTrue(HusbandryLocator.isMissing(loaded.uuid())); assertTrue(HusbandryLocator.isMissing(changed.uuid())); assertFalse(HusbandryLocator.isMissing(foreign.uuid()));
     }
 
     @Test void scanWaitsForSnapshotRestorationAndKeepsFailedRecordsForRetry() {
@@ -196,7 +200,7 @@ class HusbandryRuntimeCoverageTest {
         doThrow(new SqliteDatabaseException("delete failure")).when(f.repository).deleteAnimal(failedDrop.uuid());
         doThrow(new SqliteDatabaseException("write failure")).when(f.repository).upsertAnimal(argThat(a -> a != null && a.uuid().equals(failedMove.uuid())));
         try (MockedStatic<HusbandrySnapshots> snapshots = mockStatic(HusbandrySnapshots.class, CALLS_REAL_METHODS);
-             Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(failedMove.uuid(), new HusbandryEntityScan.Found("farm", 3, 4, 5)), Set.of(), true))) {
+             Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(failedMove.uuid(), new HusbandryEntityScan.Found("farm", 3, 4, 5)), Set.of(), List.of()))) {
             snapshots.when(() -> HusbandrySnapshots.restore(eq(f.repository), argThat(a -> a != null && a.uuid().equals(restoring.uuid())), anyList())).thenReturn(true);
             HusbandryLocator.scanUnloaded(); scan.background(); scan.apply();
         }
@@ -205,7 +209,7 @@ class HusbandryRuntimeCoverageTest {
     }
 
     @Test void scanningStopsAcrossRepositoryAndPluginShutdownBoundaries() {
-        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), true))) {
+        try (Scan scan = new Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), List.of()))) {
             HusbandryLocator.scanUnloaded(); assertTrue(scan.async.isEmpty()); HusbandryAnimal owned = f.ownedOffline("Pending"); HusbandryEntities.putLoaded(owned); HusbandryLocator.scanUnloaded(); assertTrue(scan.async.isEmpty()); HusbandryEntities.clearLoaded();
             when(f.plugin.getHusbandryRepository()).thenReturn(null); HusbandryLocator.scanUnloaded(); assertTrue(scan.async.isEmpty()); when(f.plugin.getHusbandryRepository()).thenReturn(f.repository);
             HusbandryLocator.scanUnloaded(); when(f.plugin.isEnabled()).thenReturn(false); scan.background(); assertTrue(scan.sync.isEmpty());
@@ -213,7 +217,7 @@ class HusbandryRuntimeCoverageTest {
             HusbandryLocator.scanUnloaded(); scan.background(); when(f.plugin.getHusbandryRepository()).thenReturn(null); scan.apply(); assertTrue(f.repository.exists(owned.uuid()));
         }
         HusbandryLocator.markMissing(null); HusbandryLocator.markFound(null); assertFalse(HusbandryLocator.isMissing(null));
-        assertTrue(HusbandryLocator.isConfirmedGhost(true, null, List.of("farm"))); assertTrue(HusbandryLocator.isConfirmedGhost(true, " ", List.of("farm"))); assertFalse(HusbandryLocator.isConfirmedGhost(true, "farm", null));
+        assertTrue(HusbandryLocator.inScannedWorld(null, List.of("farm"))); assertTrue(HusbandryLocator.inScannedWorld(" ", List.of("farm"))); assertFalse(HusbandryLocator.inScannedWorld("farm", null));
         HusbandryAnimal unnamed = new HusbandryAnimal(UUID.randomUUID(), "", ""); assertTrue(HusbandryLocator.describe(unnamed, null).startsWith("(unnamed) (unknown)")); assertTrue(HusbandryLocator.ghostLog(unnamed, List.of()).endsWith("last seen unknown"));
     }
 

@@ -19,6 +19,7 @@ public final class SandwichConfig {
     private static int maxFillings = 6;
     private static String output = "meal(type=sandwich;origin=Mixed)";
     private static List<SandwichLayer> layers = List.of();
+    private static List<DishBonus> bonuses = List.of();
 
     public void load(File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -36,6 +37,7 @@ public final class SandwichConfig {
         maxFillings = Math.max(1, config.getInt("max-fillings", 6));
         output = config.getString("output", "meal(type=sandwich;origin=Mixed)");
         layers = loaded;
+        bonuses = DishBonus.load(config.getConfigurationSection("bonuses"));
     }
 
     public static boolean isSandwichFurniture(Furniture f) {
@@ -52,6 +54,11 @@ public final class SandwichConfig {
 
     public static int maxFillings() {
         return maxFillings;
+    }
+
+    /** The tags a sandwich earns from its layers (Hearty, Buttered...). */
+    public static List<DishBonus> bonuses() {
+        return bonuses;
     }
 
     /** The finished sandwich's food line (types.yml type, origin, tags). */

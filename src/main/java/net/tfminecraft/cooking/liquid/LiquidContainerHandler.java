@@ -25,6 +25,7 @@ import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.events.FurniturePlaceEvent;
@@ -324,10 +325,7 @@ public final class LiquidContainerHandler implements Listener {
     }
 
     private void resumeContainersInChunk(Chunk chunk) {
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!furniture.getLoc().getChunk().equals(chunk)) {
-                continue;
-            }
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
             resumeContainer(furniture);
         }
     }

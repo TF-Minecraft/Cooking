@@ -20,6 +20,7 @@ import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.mixing.MixingBowlAnimation;
 import net.tfminecraft.cooking.quality.*;
 import net.tfminecraft.cooking.utils.*;
+import net.tfminecraft.cooking.testsupport.FurnitureChunkLookup;
 import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.interactiblefurniture.events.*;
 import net.tfminecraft.interactiblefurniture.furniture.*;
@@ -406,6 +407,7 @@ public class ButterChurnCoverageTest {
             when(world.getChunkAt(any(Location.class))).thenAnswer(call -> { Location loc = call.getArgument(0); return world.getChunkAt(loc.getBlockX() >> 4, loc.getBlockZ() >> 4); });
             when(manager.getPlacedFurniture()).thenReturn(placed);
             InteractibleFurniture plugin = mock(InteractibleFurniture.class); when(plugin.getFurnitureManager()).thenReturn(manager);
+            FurnitureChunkLookup.answer(manager);
             scoped(InteractibleFurniture.class).when(InteractibleFurniture::getInstance).thenReturn(plugin);
             MockedStatic<FurnitureCache> furnitureCache = scoped(FurnitureCache.class);
             furnitureCache.when(() -> FurnitureCache.isButterChurn(any())).thenAnswer(call -> kind(call.getArgument(0), "churn"));

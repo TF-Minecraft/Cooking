@@ -21,6 +21,31 @@ max-fillings: 6
 # The finished sandwich (types.yml). Food and nutrition are replaced by its layers'.
 output: meal(type=sandwich;origin=Mixed)
 
+# Tags a sandwich earns from its layers, like a soup's Seasoned or Thick (tags.yml tracks; their multipliers apply).
+#   track      the tags.yml track; step picks one of its steps (default: its first)
+#   count      fillings: the number of fillings, with steps giving the step reached at each count
+#   layers     every one of these layers (ids below); min: each at least this often
+#   any-of     at least one of these layers
+#   valuable   a food types.yml marks valuable (tomato, onion, lettuce, cucumber, corn)
+#   addons     rounded: a chopped garnish and a spice; aromatic: two of one kind
+bonuses:
+  size:
+    track: dish_size
+    count: fillings
+    steps:
+      3: hearty
+      5: loaded
+  buttered:
+    track: buttered
+    layers: [butter]
+  well_rounded:
+    track: well_rounded
+    layers: [cheese, vegetable]
+    any-of: [jam, paste, catsup, mustard, butter]
+  flavourful:
+    track: flavourful
+    valuable: true
+
 # What can go in a sandwich, matched by types.yml type; the first layer that takes a food wins.
 #   bread: true    a slice that starts and closes the sandwich (it doesn't name it)
 #   name           the filling's part of the sandwich's name; {origin} is the food's origin (Strawberry)
