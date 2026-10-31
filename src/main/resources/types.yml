@@ -4,7 +4,7 @@
 roast:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -63,7 +63,7 @@ roast:
 meat_poultry:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -86,7 +86,7 @@ meat_poultry:
 meat_poultry_leg:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5{inherit} Leg"
   overrides:
     CHICKEN:
@@ -104,7 +104,7 @@ meat_poultry_leg:
 meat_red_meat:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5Steak"
   overrides:
     BEEF:
@@ -130,7 +130,7 @@ meat_red_meat:
 meat_pork:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5Pork"
   model: meat_pork
   food: 20
@@ -144,7 +144,7 @@ meat_pork:
 sausage:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5Sausage"
   model: sausage
   food: 20
@@ -158,7 +158,7 @@ sausage:
 sausage_chain:
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   name: "#d9baa5Sausage Chain"
   model: sausage_chain
   food: 20
@@ -575,7 +575,7 @@ seafood_whole:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 4.67
+    freshness: 9.33
 
 seafood_fish_filet:
   name: "#6fa8dc{inherit} Filet"
@@ -594,7 +594,7 @@ seafood_fish_filet:
       burn: 30
   age:
     warmth: 450
-    freshness: 4.67
+    freshness: 9.33
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -617,7 +617,7 @@ seafood_jellyfish:
       burn: 30
   age:
     warmth: 450
-    freshness: 4.67
+    freshness: 9.33
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -640,7 +640,7 @@ seafood_octopus:
       burn: 30
   age:
     warmth: 450
-    freshness: 4.67
+    freshness: 9.33
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -673,7 +673,7 @@ egg:
       burn: 25
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
