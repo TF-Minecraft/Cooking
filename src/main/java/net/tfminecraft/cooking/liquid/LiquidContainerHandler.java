@@ -18,7 +18,13 @@ import net.tfminecraft.cooking.cup.BucketItems;
 import net.tfminecraft.cooking.cup.CupItems;
 import net.tfminecraft.cooking.cup.MilkBucketConverter;
 import net.tfminecraft.cooking.cup.MilkBucketSnapshot;
+import net.tfminecraft.cooking.brewery.BrewLiquid;
+import net.tfminecraft.cooking.condiment.CondimentConfig;
+import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.InventoryAdder;
+import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -77,6 +83,15 @@ public final class LiquidContainerHandler implements Listener {
             handleDispense(furniture, player);
             return;
         }
+        BrewLiquid brew = BrewLiquid.from(hand);
+        if (brew != null) {
+            handleWine(furniture, player, brew);
+            return;
+        }
+        if (hand.getType() == Material.GLASS_BOTTLE && FoodItem.fromItem(hand) == null) {
+            handleVinegar(furniture, player);
+            return;
+        }
 
         player.sendMessage("Hold a water bucket, milk bucket, or empty cup.");
     }
@@ -108,7 +123,7 @@ public final class LiquidContainerHandler implements Listener {
             return;
         }
         if (!LiquidContainerState.canAccept(furniture, LiquidContainerState.TYPE_WATER)) {
-            player.sendMessage("This container already has milk.");
+            player.sendMessage("This container already has " + held(furniture) + ".");
             return;
         }
         if (LiquidContainerState.getBlocks(furniture) >= ItemCache.maxBlocks) {
@@ -139,7 +154,7 @@ public final class LiquidContainerHandler implements Listener {
             player.updateInventory();
         }
         if (!LiquidContainerState.canAccept(furniture, LiquidContainerState.TYPE_MILK)) {
-            player.sendMessage("This container already has water.");
+            player.sendMessage("This container already has " + held(furniture) + ".");
             return;
         }
         if (LiquidContainerState.getBlocks(furniture) >= ItemCache.maxBlocks) {
@@ -172,6 +187,10 @@ public final class LiquidContainerHandler implements Listener {
     private void handleDispense(Furniture furniture, Player player) {
         if (LiquidContainerState.isEmpty(furniture)) {
             player.sendMessage("The container is empty.");
+            return;
+        }
+        if (LiquidContainerState.TYPE_WINE.equalsIgnoreCase(LiquidContainerState.getType(furniture))) {
+            player.sendMessage("Use an empty glass bottle for the vinegar.");
             return;
         }
 
@@ -220,6 +239,67 @@ public final class LiquidContainerHandler implements Listener {
             LiquidContainerAging.stop(furniture);
         }
         markDirty(furniture);
+    }
+
+    /** Wine or cider poured in sours into vinegar (condiments.yml); each bottle is one level and restarts the clock. */
+    private void handleWine(Furniture furniture, Player player, BrewLiquid brew) {
+        String origin = CondimentConfig.vinegarOrigin(brew.name());
+        if (origin == null) {
+            player.sendMessage("Only wine or cider sours into vinegar.");
+            return;
+        }
+        boolean sameWine = LiquidContainerState.isEmpty(furniture)
+                || origin.equals(LiquidContainerState.getVinegarOrigin(furniture));
+        if (!LiquidContainerState.canAccept(furniture, LiquidContainerState.TYPE_WINE) || !sameWine) {
+            player.sendMessage("This container already has " + held(furniture) + ".");
+            return;
+        }
+        if (LiquidContainerState.getBlocks(furniture) >= ItemCache.maxBlocks) {
+            player.sendMessage("The container is full.");
+            return;
+        }
+        if (LiquidContainerState.isEmpty(furniture)) LiquidContainerState.clear(furniture);
+        LiquidContainerState.setType(furniture, LiquidContainerState.TYPE_WINE);
+        LiquidContainerState.setSouring(furniture, origin, brew.stars(),
+                System.currentTimeMillis() + CondimentConfig.vinegarMillis());
+        LiquidContainerState.addBlocks(furniture, 1, ItemCache.maxBlocks);
+        HeldStack.useOneKeepStack(player, new ItemStack(Material.GLASS_BOTTLE));
+        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
+        LiquidContainerDisplay.sync(furniture);
+        markDirty(furniture);
+    }
+
+    /** An empty glass bottle draws one level of vinegar once the wine has soured. */
+    private void handleVinegar(Furniture furniture, Player player) {
+        if (LiquidContainerState.isEmpty(furniture)
+                || !LiquidContainerState.TYPE_WINE.equalsIgnoreCase(LiquidContainerState.getType(furniture))) {
+            player.sendMessage("Pour in wine or cider and let it sour to get vinegar.");
+            return;
+        }
+        long left = LiquidContainerState.getSouredAt(furniture) - System.currentTimeMillis();
+        if (left > 0) {
+            long minutes = Math.max(1, (left + 59_999) / 60_000);
+            player.sendMessage("The wine is still souring: about " + minutes + " minute" + (minutes == 1 ? "" : "s") + " left.");
+            return;
+        }
+        FoodParser.Result parsed = FoodParser.parse(CondimentConfig.vinegarOutput()
+                .replace("{origin}", LiquidContainerState.getVinegarOrigin(furniture)));
+        ItemStack vinegar = parsed == null || parsed.template == null ? null
+                : ItemBuilder.buildSingleWithQuality(parsed.template, null, LiquidContainerState.getVinegarQuality(furniture));
+        if (vinegar == null) {
+            player.sendMessage("Could not fill a bottle.");
+            return;
+        }
+        LiquidContainerState.removeBlock(furniture);
+        HeldStack.useOneKeepStack(player, vinegar);
+        furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ITEM_BOTTLE_FILL, 1f, 1f);
+        LiquidContainerDisplay.sync(furniture);
+        markDirty(furniture);
+    }
+
+    private static String held(Furniture furniture) {
+        String type = LiquidContainerState.getType(furniture);
+        return type == null ? "something else" : type;
     }
 
     private static boolean hasStorageSlot(Player player) {
