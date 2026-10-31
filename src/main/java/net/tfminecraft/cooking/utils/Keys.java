@@ -31,6 +31,9 @@ public class Keys {
 
     public static final NamespacedKey TAGS =
             new NamespacedKey(Cooking.plugin, "tags");
+    /** The ids of the food's hidden tag tracks (TagTrack.isHidden), joined by ':'. */
+    public static final NamespacedKey HIDDEN_TAGS =
+            new NamespacedKey(Cooking.plugin, "hidden_tags");
     public static final NamespacedKey AGE_REMAINDER =
             new NamespacedKey(Cooking.plugin, "age_remainder");
     public static final NamespacedKey LAST_UPDATE =

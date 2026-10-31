@@ -6,11 +6,17 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
+/**
+ * One tags.yml track on a food: its steps and the value that picks the current one. A hidden track (a poison a cook
+ * slipped in) still applies its multipliers when the food is eaten, but the lore leaves its line out and shows Food
+ * and Nutrition without it (FoodItem getShownFood / getShownNutrition); the item keeps it hidden through rebuilds.
+ */
 public class TagTrack {
     private String id;
     private boolean ageable;
     private int value;
     private int index;
+    private boolean hidden;
     private final List<TagStep> steps = new ArrayList<>();
 
     public TagTrack(String key, int i, ConfigurationSection config) {
@@ -34,6 +40,7 @@ public class TagTrack {
         this.value = other.value;
         this.ageable = other.ageable;
         this.index = other.index;
+        this.hidden = other.hidden;
         this.steps.addAll(other.steps);
     }
 
@@ -63,6 +70,10 @@ public class TagTrack {
         this.value = value;
     }
     public boolean isAgeable() { return ageable; }
+
+    /** True when the lore keeps this track secret: its line and its effect on the shown Food and Nutrition. */
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
 
     public TagStep getCurrentStep() {
         if (steps.isEmpty()) return null;

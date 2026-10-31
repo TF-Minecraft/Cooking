@@ -3627,6 +3627,29 @@ brown_mushroom:
     display-data:
       rotation:
         x: 90
+  # Boiled in the soup pot (and so in a bowl of its soup) or burnt there, brown and red look alike.
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:boiled_mushroom
+    display:
+      item: ia.tfmc_cooking:boiled_mushroom
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
+    display:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
+    display-data:
+      rotation:
+        x: 90
 
 red_mushroom:
   fresh:
@@ -3646,6 +3669,29 @@ red_mushroom:
       item: ia.tfmc_cooking:red_mushroom_rotten
     display:
       item: ia.tfmc_cooking:red_mushroom_rotten
+    display-data:
+      rotation:
+        x: 90
+  # Boiled in the soup pot (and so in a bowl of its soup) or burnt there, brown and red look alike.
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:boiled_mushroom
+    display:
+      item: ia.tfmc_cooking:boiled_mushroom
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
+    display:
+      item: ia.tfmc_cooking:grilled_mushroom_burnt
     display-data:
       rotation:
         x: 90

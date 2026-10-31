@@ -221,6 +221,12 @@ public class ItemBuilder {
         } else {
             pdc.remove(Keys.TAGS);
         }
+        List<String> hidden = item.getHiddenTrackIds();
+        if (!hidden.isEmpty()) {
+            pdc.set(Keys.HIDDEN_TAGS, PersistentDataType.STRING, String.join(":", hidden));
+        } else {
+            pdc.remove(Keys.HIDDEN_TAGS);
+        }
 
         if (item.hasSauce()) {
             pdc.set(Keys.SAUCE, PersistentDataType.STRING, FoodParser.toString(item.getSauce(), 1));
@@ -304,6 +310,10 @@ public class ItemBuilder {
         return buildLore(item, new HashMap<>());
     }
 
+    /**
+     * The food's lore. A hidden track (TagTrack.isHidden) gets no line, and the stars, Nutrition, Food and sauce shown
+     * leave it out, so the lore reads as if it weren't there; eating still applies it.
+     */
     static List<String> buildLore(FoodItem item, Map<String, Integer> indexMap) {
         String category = CategoryDictionary.getName(item.getCategory() != null ? item.getCategory() : "");
         String origin = item.hasTag(Tag.PROCESSED)
@@ -314,14 +324,14 @@ public class ItemBuilder {
             FoodItem sauce = item.getSauce();
             String sauceName = item.hasSauceName() ? item.getSauceName() : "Sauce";
             sauceLine = "§6" + sauceName + " §8("
-                    + DisplayUtils.getSauceStatString(sauce.getFinalFood(), sauce.getFinalNutrition()) + "§8)";
+                    + DisplayUtils.getSauceStatString(sauce.getShownFood(), sauce.getShownNutrition()) + "§8)";
         }
         return assembleLore(
                 category,
                 origin,
-                item.getEffectiveQuality(),
-                StringFormatter.formatHex("#d4ad77Nutrition §f" + item.getFinalNutrition()),
-                StringFormatter.formatHex("#d4ad77Food §f" + item.getFinalFood()),
+                item.getShownQuality(),
+                StringFormatter.formatHex("#d4ad77Nutrition §f" + item.getShownNutrition()),
+                StringFormatter.formatHex("#d4ad77Food §f" + item.getShownFood()),
                 item.getIngredients(),
                 sauceLine,
                 item,
@@ -380,7 +390,7 @@ public class ItemBuilder {
         if (tracks != null) {
             for (TagTrack t : tracks) {
                 TagStep step = t.getCurrentStep();
-                if (step == null) {
+                if (step == null || t.isHidden()) {
                     continue;
                 }
                 if (!shouldShowTagLore(tagLabels, t, step)) {

@@ -120,6 +120,7 @@ public class FoodParser {
         int qualMin = 1, qualMax = 5;
         boolean unique = true;
         boolean explicitQuality = false;
+        List<String> hidden = List.of();
 
         FoodItem base = FoodLoader.getByString(fields.get("type"));
         if (base == null) return null;
@@ -204,6 +205,11 @@ public class FoodParser {
                     }
                     break;
 
+                case "hidden":
+                    // Tracks the lore keeps secret (TagTrack.isHidden); applied once every tag is in.
+                    hidden = Arrays.asList(value.split(":"));
+                    break;
+
                 case "ingredients":
                     if (!value.isEmpty()) {
                         for (String ing : value.split(":"))
@@ -235,6 +241,7 @@ public class FoodParser {
 
         item.setCategory(cat);
         item.setOrigin(originInput);
+        item.hideTracks(hidden);
 
         int finalAmount = ThreadLocalRandom.current().nextInt(amountMin, amountMax + 1);
         item.setAmount(finalAmount);
@@ -276,6 +283,11 @@ public class FoodParser {
             sb.append(t.getId()).append(".").append(t.getValue());
         }
         sb.append(";");
+
+        List<String> hidden = f.getHiddenTrackIds();
+        if (!hidden.isEmpty()) {
+            sb.append("hidden=").append(String.join(":", hidden)).append(";");
+        }
 
         if(f.getIngredients().size() >= 0) {
             // Ingredients

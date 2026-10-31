@@ -47,6 +47,13 @@ public final class PizzaItems {
         CompositionApplier.apply(pizza, composed);
         CompositionFreshnessApplier.keepOwnAgeing(pizza);
         applyTotals(pizza, layers);
+        TagTrack cooked = TrackLoader.getByString(COOKED_TRACK);
+        if (cooked != null) {
+            TagTrack bake = new TagTrack(cooked);
+            bake.setValue(baked);
+            pizza.addOrModifyTrack(bake);
+        }
+        // After the bake: a bonus hidden in a well-made pizza (a poison) needs it cooked, not burnt.
         DishBonus.apply(pizza, layers, PizzaConfig::layerFor,
                 layer -> !PizzaConfig.isBase(layer) && !PizzaConfig.isSauce(layer), PizzaConfig.bonuses());
         for (FoodItem food : layers) {
@@ -55,12 +62,6 @@ public final class PizzaItems {
             // A topping named "" (salt) doesn't name the pizza.
             String name = layer.fillerName(food);
             if (!name.isEmpty()) pizza.addIngredient(name);
-        }
-        TagTrack cooked = TrackLoader.getByString(COOKED_TRACK);
-        if (cooked != null) {
-            TagTrack bake = new TagTrack(cooked);
-            bake.setValue(baked);
-            pizza.addOrModifyTrack(bake);
         }
         return ItemBuilder.buildComposedWithQuality(pizza, composed.getFinalQuality());
     }

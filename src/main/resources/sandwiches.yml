@@ -23,11 +23,16 @@ output: meal(type=sandwich;origin=Mixed)
 
 # Tags a sandwich earns from its layers, like a soup's Seasoned or Thick (tags.yml tracks; their multipliers apply).
 #   track      the tags.yml track; step picks one of its steps (default: its first)
-#   count      fillings: the number of fillings, with steps giving the step reached at each count
+#   count      fillings: the number of fillings, with steps giving the step reached at each count; origin: the
+#              foods of origin (below) among everything in it, raw or cooked
 #   layers     every one of these layers (ids below); min: each at least this often
 #   any-of     at least one of these layers
 #   valuable   a food types.yml marks valuable (tomato, onion, lettuce, cucumber, corn)
 #   addons     rounded: a chopped garnish and a spice; aromatic: two of one kind
+#   hide-at-stars  the tag is hidden on a dish of at least this many stars: no line in the lore, and the Food and
+#              Nutrition shown leave it out (eating still applies it); with hide-tags, only while every food the
+#              bonus counted is at one of these tag steps (grilled: cooked, not raw or burnt), and with
+#              hide-dish-tags while the dish itself is (a pizza's bake)
 bonuses:
   size:
     track: dish_size
@@ -45,6 +50,17 @@ bonuses:
   flavourful:
     track: flavourful
     valuable: true
+  # Red mushrooms poison it, one more step each; grilled into a sandwich of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-tags: [cooked]
 
 # The kind of sandwich its fillings make (the bread doesn't count); the first that matches wins. The sandwich takes
 # the kind as its origin, so types.yml sandwich overrides give each kind its own look and name (a Hamburger). A kind
@@ -157,6 +173,16 @@ layers:
       - rotten ia.tfmc_cooking:sandwich_vegetable_{origin}_rotten
       - ia.tfmc_cooking:sandwich_vegetable_{origin}
       - ia.tfmc_cooking:sandwich_vegetable_lettuce
+  mushroom:
+    # Grilled brown and red mushrooms. Both are just "Mushroom" and look alike, so a red one hides among them.
+    types:
+      - grilled_mushroom
+    name: Mushroom
+    thickness: 0.3
+    models:
+      - rotten ia.tfmc_cooking:sandwich_mushroom_rotten
+      - burnt ia.tfmc_cooking:sandwich_mushroom_burnt
+      - ia.tfmc_cooking:sandwich_mushroom
   meat:
     # Fried (or raw, boiled, burnt) cuts of meat and sausage. Sausage's origin is Mixed.
     types:

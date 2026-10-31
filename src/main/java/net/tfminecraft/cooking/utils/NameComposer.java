@@ -63,7 +63,8 @@ public final class NameComposer {
         StringBuilder prefixes = new StringBuilder();
         for (String trackId : NamingConfig.getPrefixTracks()) {
             TagTrack track = item.getTagTrack(trackId);
-            if (track == null) {
+            // A hidden tag (a poison) never names the food.
+            if (track == null || track.isHidden()) {
                 continue;
             }
             TagStep step = track.getCurrentStep();

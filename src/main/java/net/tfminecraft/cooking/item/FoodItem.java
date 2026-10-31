@@ -317,6 +317,19 @@ public class FoodItem {
     public int getEffectiveQuality() {
         return QualityUtils.clamp(qualityMin + TagQuality.stars(tags.values()));
     }
+
+    /** The stars the lore shows: as {@link #getEffectiveQuality()}, leaving out hidden tracks. */
+    public int getShownQuality() {
+        return QualityUtils.clamp(qualityMin + TagQuality.stars(shownTracks()));
+    }
+
+    private List<TagTrack> shownTracks() {
+        List<TagTrack> shown = new ArrayList<>();
+        for (TagTrack track : tags.values()) {
+            if (!track.isHidden()) shown.add(track);
+        }
+        return shown;
+    }
     public void setQualityRange(int min, int max) {
         this.qualityMin = min;
         this.qualityMax = max;
@@ -575,14 +588,41 @@ public class FoodItem {
         return current;
     }
 
+    /** The ids of the tracks the lore keeps secret (TagTrack.isHidden), in lore order. */
+    public List<String> getHiddenTrackIds() {
+        List<String> hidden = new ArrayList<>();
+        for (TagTrack track : getTagTracks()) {
+            if (track.isHidden()) hidden.add(track.getId());
+        }
+        return hidden;
+    }
+
+    /** Hides the tracks with these ids that the food has; ids it doesn't have are ignored. */
+    public void hideTracks(Collection<String> trackIds) {
+        for (String trackId : trackIds) {
+            TagTrack track = tags.get(trackId);
+            if (track != null) track.setHidden(true);
+        }
+    }
+
+    /** True when both have the same tag steps, hidden alike, so a secret tag never stacks into a plain food. */
     public boolean sameTags(FoodItem other) {
-        List<String> myTags = getCurrentTagIds();
-        List<String> otherTags = other.getCurrentTagIds();
+        List<String> myTags = tagKeys();
+        List<String> otherTags = other.tagKeys();
         if(myTags.size() != otherTags.size()) return false;
         for(String t : myTags) {
             if(!otherTags.contains(t)) return false;
         }
         return true;
+    }
+
+    private List<String> tagKeys() {
+        List<String> keys = new ArrayList<>();
+        for (TagTrack track : tags.values()) {
+            TagStep step = track.getCurrentStep();
+            if (step != null) keys.add(step.getId() + (track.isHidden() ? "~hidden" : ""));
+        }
+        return keys;
     }
 
     public boolean hasTag(Tag tag) {
@@ -601,31 +641,46 @@ public class FoodItem {
     // --------------------------------------------------------------
     // FINAL VALUES (QUALITY + TAGS + COOK STATE)
     // --------------------------------------------------------------
+    /** The food eating this gives: every tag counts, hidden ones too. */
     public double getFinalFood() {
-        if (hasCarveState() && carveRemaining > 0) {
-            return roundToTenth(applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingFood(this), 0)
-                    + sauceFinal(0));
-        }
-        return roundToTenth(applyMultipliers(baseFood, 0) + sauceFinal(0));
+        return finalValue(0, true);
     }
 
+    /** The nutrition eating this gives: every tag counts, hidden ones too. */
     public double getFinalNutrition() {
-        if (hasCarveState() && carveRemaining > 0) {
-            return roundToTenth(applyMultipliers(net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingNutrition(this), 1)
-                    + sauceFinal(1));
-        }
-        return roundToTenth(applyMultipliers(baseNutrition, 1) + sauceFinal(1));
+        return finalValue(1, true);
     }
 
-    private double sauceFinal(int type) {
+    /** The food the lore shows: as {@link #getFinalFood()}, leaving out hidden tracks. */
+    public double getShownFood() {
+        return finalValue(0, false);
+    }
+
+    /** The nutrition the lore shows: as {@link #getFinalNutrition()}, leaving out hidden tracks. */
+    public double getShownNutrition() {
+        return finalValue(1, false);
+    }
+
+    private double finalValue(int type, boolean withHidden) {
+        double base;
+        if (hasCarveState() && carveRemaining > 0) {
+            base = type == 1 ? net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingNutrition(this)
+                    : net.tfminecraft.cooking.carve.CarvableRoastUtils.getRemainingFood(this);
+        } else {
+            base = type == 1 ? baseNutrition : baseFood;
+        }
+        return roundToTenth(applyMultipliers(base, type, withHidden) + sauceFinal(type, withHidden));
+    }
+
+    private double sauceFinal(int type, boolean withHidden) {
         if (!hasSauce()) {
             return 0;
         }
-        return type == 1 ? getSauce().getFinalNutrition() : getSauce().getFinalFood();
+        return getSauce().finalValue(type, withHidden);
     }
 
-    private double applyMultipliers(double base, int type) {
-        int stars = getEffectiveQuality();
+    private double applyMultipliers(double base, int type, boolean withHidden) {
+        int stars = withHidden ? getEffectiveQuality() : getShownQuality();
         double qualityMultiplier = type == 1
                 ? net.tfminecraft.cooking.quality.QualityConfig.nutritionMultiplier(stars)
                 : 1.0 + (stars - 1) * 0.20;
@@ -633,6 +688,7 @@ public class FoodItem {
         double result = base * qualityMultiplier;
 
         for (TagTrack t : tags.values()) {
+            if (!withHidden && t.isHidden()) continue;
             TagStep step = t.getCurrentStep();
             if (step != null) {
                 if (type == 1) result *= step.getNutritionMultiplier();
@@ -713,6 +769,8 @@ public class FoodItem {
                 out.addOrModifyTrack(t);
             }
         }
+        String hiddenData = pdc.get(Keys.HIDDEN_TAGS, PersistentDataType.STRING);
+        if (hiddenData != null) out.hideTracks(Arrays.asList(hiddenData.split(":")));
 
         out.decodeAgeRemainder(pdc.get(Keys.AGE_REMAINDER, PersistentDataType.STRING));
 

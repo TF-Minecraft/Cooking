@@ -35,6 +35,8 @@ bake:
 
 # Tags a pizza earns from its layers, written like sandwiches.yml's bonuses. count: fillings counts the toppings;
 # count: seasonings counts different salts and peppers among them.
+# count: origin counts the foods of that origin, raw or grilled, and hide-at-stars with hide-dish-tags keeps the
+# tag secret on a well-baked pizza (see sandwiches.yml).
 bonuses:
   size:
     track: dish_size
@@ -64,6 +66,17 @@ bonuses:
   sweet_and_savoury:
     track: sweet_and_savoury
     layers: [fruit, sausage]
+  # Red mushrooms poison it; on a cooked (not burnt) pizza of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-dish-tags: [cooked]
 
 # Layers, matched by types.yml type, written like sandwiches.yml's:
 #   name         the topping's part of the pizza's name; {origin} is the food's origin (Pineapple)
@@ -146,6 +159,18 @@ toppings:
       - rotten ia.tfmc_cooking:pizza_topping_sausage_rotten
       - burnt ia.tfmc_cooking:pizza_topping_sausage_burnt
       - ia.tfmc_cooking:pizza_topping_sausage
+  mushroom:
+    # Raw or grilled brown and red mushrooms; raw ones bake with the pizza. Both are just "Mushroom" and look alike.
+    types:
+      - mushroom
+      - grilled_mushroom
+    name: Mushroom
+    thickness: 0.05
+    models:
+      - rotten ia.tfmc_cooking:pizza_topping_mushroom_rotten
+      - burnt ia.tfmc_cooking:pizza_topping_mushroom_burnt
+      - cooked ia.tfmc_cooking:pizza_topping_mushroom_cooked
+      - ia.tfmc_cooking:pizza_topping_mushroom
   spice:
     types:
       - spice_1

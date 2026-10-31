@@ -57,6 +57,11 @@ ingredients:
       - sausage
     name: "{origin}"
 
+  mushroom:
+    # Grilled brown and red mushrooms, both just "Mushroom".
+    types:
+      - grilled_mushroom
+    name: Mushroom
 # What goes in unseen and doesn't name the salad.
 #   once            only one food of this extra per salad (one dressing)
 #   returns-bottle  the player keeps the empty glass bottle
@@ -93,6 +98,8 @@ kinds:
 
 # Tags a salad earns from what's in it, written like sandwiches.yml's bonuses. count: fillings counts the ingredients,
 # count: seasonings the different salts and peppers; fresh: true needs everything in it still Fresh.
+# count: origin counts the foods of that origin, and hide-at-stars with hide-tags keeps the tag secret in a
+# well-made salad (see sandwiches.yml).
 bonuses:
   size:
     track: dish_size
@@ -112,3 +119,14 @@ bonuses:
   crisp:
     track: crisp
     fresh: true
+  # Red mushrooms poison it; grilled into a salad of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-tags: [cooked]

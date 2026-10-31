@@ -21,7 +21,7 @@ public class CookData {
             ConfigurationSection param = config.getConfigurationSection(key);
             try {
                 parameters.put(Method.valueOf(key.toUpperCase(java.util.Locale.ROOT)), new CookParameter(param.getInt("tag", 1), param.getInt("time", 15), param.getInt("burn", 30),
-                        param.getString("output", null)));
+                        param.getString("output", null), param.getBoolean("raw-in-cookware", false)));
             } catch (Exception e) {
                 Bukkit.getLogger().info("Failed to create cooking data for "+id);
             }
@@ -56,11 +56,12 @@ public class CookData {
 
     /**
      * True when some method cooks this food as itself, so it carries a cooked track (Raw) from the start. A food whose
-     * only options name an output (chopped corn, which pops into popcorn) is not raw until it's in the cookware.
+     * only options name an output (chopped corn, which pops into popcorn) or are raw-in-cookware (a mushroom, which
+     * boils in the pot) is not raw until it's in the cookware.
      */
     public boolean cooksInPlace() {
         for (CookParameter parameter : parameters.values()) {
-            if (parameter.getOutput() == null) {
+            if (!parameter.rawInCookwareOnly()) {
                 return true;
             }
         }
