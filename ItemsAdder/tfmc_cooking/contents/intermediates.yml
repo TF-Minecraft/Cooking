@@ -165,7 +165,7 @@ items:
   popcorn:
     display_name: "Popcorn"
     resource:
-      material: PAPER
+      material: APPLE
       generate: false
       model_path: item/intermediate/popcorn
 
@@ -221,13 +221,13 @@ items:
   popcorn_burnt:
     display_name: "Popcorn Burnt"
     resource:
-      material: PAPER
+      material: APPLE
       generate: false
       model_path: item/intermediate/popcorn_burnt
 
   popcorn_rotten:
     display_name: "Popcorn Rotten"
     resource:
-      material: PAPER
+      material: APPLE
       generate: false
       model_path: item/intermediate/popcorn_rotten

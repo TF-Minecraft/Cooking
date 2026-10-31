@@ -65,3 +65,19 @@ saucepan:
         - c.bone
       boil-seconds: 60
       output: stock(type=stock;origin=Bone;tags=freshness.0)
+    # Sugar and butter boiled in a cup of water: caramel, a popcorn topping (popcorn-machines.yml).
+    # Butter from the churn is dairy and butter picked up is an ingredient, so each has its line.
+    caramel:
+      liquid: water
+      ingredients:
+        - c.sweetener(origin=Sugar)
+        - c.dairy(type=butter)
+      boil-seconds: 45
+      output: condiment(type=caramel;origin=Sugar;tags=freshness.0)
+    caramel_picked_up_butter:
+      liquid: water
+      ingredients:
+        - c.sweetener(origin=Sugar)
+        - c.ingredient(type=butter)
+      boil-seconds: 45
+      output: condiment(type=caramel;origin=Sugar;tags=freshness.0)

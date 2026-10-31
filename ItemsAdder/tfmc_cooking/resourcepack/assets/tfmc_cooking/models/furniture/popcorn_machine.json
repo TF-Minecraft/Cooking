@@ -1,0 +1,39 @@
+{
+	"credit": "TFMC popcorn machine",
+	"textures": {
+		"base": "minecraft:block/smooth_stone",
+		"post": "minecraft:block/quartz_block_side",
+		"roof": "minecraft:block/quartz_block_top",
+		"trim": "minecraft:block/red_concrete",
+		"glass": "tfmc_cooking:item/popcorn_machine/glass",
+		"steel": "minecraft:block/iron_block",
+		"latch": "minecraft:block/polished_blackstone",
+		"particle": "minecraft:block/quartz_block_side"
+	},
+	"elements": [
+		{"from": [1, 0, 1], "to": [15, 4, 15], "faces": {"north": {"uv": [1, 12, 15, 16], "texture": "#base"}, "south": {"uv": [1, 12, 15, 16], "texture": "#base"}, "east": {"uv": [1, 12, 15, 16], "texture": "#base"}, "west": {"uv": [1, 12, 15, 16], "texture": "#base"}, "up": {"uv": [1, 1, 15, 15], "texture": "#base"}, "down": {"uv": [1, 1, 15, 15], "texture": "#base"}}, "name": "base"},
+		{"from": [6, 1, 0.5], "to": [10, 2.5, 1], "faces": {"north": {"uv": [6, 13.5, 10, 15], "texture": "#latch"}, "south": {"uv": [6, 13.5, 10, 15], "texture": "#latch"}, "east": {"uv": [15, 13.5, 15.5, 15], "texture": "#latch"}, "west": {"uv": [0.5, 13.5, 1, 15], "texture": "#latch"}, "up": {"uv": [6, 0.5, 10, 1], "texture": "#latch"}, "down": {"uv": [6, 0.5, 10, 1], "texture": "#latch"}}, "name": "latch"},
+		{"from": [7.25, 0.25, 0.25], "to": [8.75, 1, 0.75], "faces": {"north": {"uv": [7.25, 15, 8.75, 15.75], "texture": "#latch"}, "south": {"uv": [7.25, 15, 8.75, 15.75], "texture": "#latch"}, "east": {"uv": [15.25, 15, 15.75, 15.75], "texture": "#latch"}, "west": {"uv": [0.25, 15, 0.75, 15.75], "texture": "#latch"}, "up": {"uv": [7.25, 0.25, 8.75, 0.75], "texture": "#latch"}, "down": {"uv": [7.25, 0.25, 8.75, 0.75], "texture": "#latch"}}, "name": "latch knob"},
+		{"from": [5, 4, 0.75], "to": [11, 5, 2], "faces": {"north": {"uv": [5, 11, 11, 12], "texture": "#steel"}, "south": {"uv": [5, 11, 11, 12], "texture": "#steel"}, "east": {"uv": [14, 11, 15.25, 12], "texture": "#steel"}, "west": {"uv": [0.75, 11, 2, 12], "texture": "#steel"}, "up": {"uv": [5, 0.75, 11, 2], "texture": "#steel"}, "down": {"uv": [5, 0.75, 11, 2], "texture": "#steel"}}, "name": "chute"},
+		{"from": [1, 4, 1], "to": [2, 19, 2], "faces": {"north": {"uv": [14, 0, 15, 15], "texture": "#post"}, "south": {"uv": [1, 0, 2, 15], "texture": "#post"}, "east": {"uv": [14, 0, 15, 15], "texture": "#post"}, "west": {"uv": [1, 0, 2, 15], "texture": "#post"}, "up": {"uv": [1, 1, 2, 2], "texture": "#post"}, "down": {"uv": [1, 1, 2, 2], "texture": "#post"}}, "name": "post"},
+		{"from": [1, 4, 14], "to": [2, 19, 15], "faces": {"north": {"uv": [14, 0, 15, 15], "texture": "#post"}, "south": {"uv": [1, 0, 2, 15], "texture": "#post"}, "east": {"uv": [1, 0, 2, 15], "texture": "#post"}, "west": {"uv": [14, 0, 15, 15], "texture": "#post"}, "up": {"uv": [1, 14, 2, 15], "texture": "#post"}, "down": {"uv": [1, 14, 2, 15], "texture": "#post"}}, "name": "post"},
+		{"from": [14, 4, 1], "to": [15, 19, 2], "faces": {"north": {"uv": [1, 0, 2, 15], "texture": "#post"}, "south": {"uv": [14, 0, 15, 15], "texture": "#post"}, "east": {"uv": [14, 0, 15, 15], "texture": "#post"}, "west": {"uv": [1, 0, 2, 15], "texture": "#post"}, "up": {"uv": [14, 1, 15, 2], "texture": "#post"}, "down": {"uv": [14, 1, 15, 2], "texture": "#post"}}, "name": "post"},
+		{"from": [14, 4, 14], "to": [15, 19, 15], "faces": {"north": {"uv": [1, 0, 2, 15], "texture": "#post"}, "south": {"uv": [14, 0, 15, 15], "texture": "#post"}, "east": {"uv": [1, 0, 2, 15], "texture": "#post"}, "west": {"uv": [14, 0, 15, 15], "texture": "#post"}, "up": {"uv": [14, 14, 15, 15], "texture": "#post"}, "down": {"uv": [14, 14, 15, 15], "texture": "#post"}}, "name": "post"},
+		{"from": [2, 4, 1.4], "to": [14, 19, 1.6], "faces": {"north": {"uv": [2, 0, 14, 15], "texture": "#glass"}, "south": {"uv": [2, 0, 14, 15], "texture": "#glass"}}, "name": "glass front"},
+		{"from": [2, 4, 14.4], "to": [14, 19, 14.6], "faces": {"north": {"uv": [2, 0, 14, 15], "texture": "#glass"}, "south": {"uv": [2, 0, 14, 15], "texture": "#glass"}}, "name": "glass back"},
+		{"from": [1.4, 4, 2], "to": [1.6, 19, 14], "faces": {"east": {"uv": [2, 0, 14, 15], "texture": "#glass"}, "west": {"uv": [2, 0, 14, 15], "texture": "#glass"}}, "name": "glass left"},
+		{"from": [14.4, 4, 2], "to": [14.6, 19, 14], "faces": {"east": {"uv": [2, 0, 14, 15], "texture": "#glass"}, "west": {"uv": [2, 0, 14, 15], "texture": "#glass"}}, "name": "glass right"},
+		{"from": [0.5, 19, 0.5], "to": [15.5, 20, 15.5], "faces": {"north": {"uv": [0.5, 0, 15.5, 1], "texture": "#trim"}, "south": {"uv": [0.5, 0, 15.5, 1], "texture": "#trim"}, "east": {"uv": [0.5, 0, 15.5, 1], "texture": "#trim"}, "west": {"uv": [0.5, 0, 15.5, 1], "texture": "#trim"}, "up": {"uv": [0.5, 0.5, 15.5, 15.5], "texture": "#trim"}, "down": {"uv": [0.5, 0.5, 15.5, 15.5], "texture": "#trim"}}, "name": "trim"},
+		{"from": [0.5, 20, 0.5], "to": [15.5, 21.5, 15.5], "faces": {"north": {"uv": [0.5, 0, 15.5, 1.5], "texture": "#roof"}, "south": {"uv": [0.5, 0, 15.5, 1.5], "texture": "#roof"}, "east": {"uv": [0.5, 0, 15.5, 1.5], "texture": "#roof"}, "west": {"uv": [0.5, 0, 15.5, 1.5], "texture": "#roof"}, "up": {"uv": [0.5, 0.5, 15.5, 15.5], "texture": "#roof"}, "down": {"uv": [0.5, 0.5, 15.5, 15.5], "texture": "#roof"}}, "name": "roof"},
+		{"from": [4, 21.5, 4], "to": [12, 22.25, 12], "faces": {"north": {"uv": [4, 0, 12, 0.75], "texture": "#post"}, "south": {"uv": [4, 0, 12, 0.75], "texture": "#post"}, "east": {"uv": [4, 0, 12, 0.75], "texture": "#post"}, "west": {"uv": [4, 0, 12, 0.75], "texture": "#post"}, "up": {"uv": [4, 4, 12, 12], "texture": "#post"}, "down": {"uv": [4, 4, 12, 12], "texture": "#post"}}, "name": "roof cap"},
+		{"from": [7.5, 17, 7.5], "to": [8.5, 19, 8.5], "faces": {"north": {"uv": [7.5, 0, 8.5, 2], "texture": "#steel"}, "south": {"uv": [7.5, 0, 8.5, 2], "texture": "#steel"}, "east": {"uv": [7.5, 0, 8.5, 2], "texture": "#steel"}, "west": {"uv": [7.5, 0, 8.5, 2], "texture": "#steel"}, "up": {"uv": [7.5, 7.5, 8.5, 8.5], "texture": "#steel"}, "down": {"uv": [7.5, 7.5, 8.5, 8.5], "texture": "#steel"}}, "name": "rod"}
+	],
+	"display": {
+		"thirdperson_righthand": {"rotation": [50, 0, 0], "translation": [0, 3.25, 1.75], "scale": [0.35, 0.35, 0.35]},
+		"thirdperson_lefthand": {"rotation": [50, 0, 0], "translation": [0, 3.25, 1.75], "scale": [0.35, 0.35, 0.35]},
+		"firstperson_righthand": {"translation": [0, 4, 0], "scale": [0.4, 0.4, 0.4]},
+		"firstperson_lefthand": {"translation": [0, 4, 0], "scale": [0.4, 0.4, 0.4]},
+		"ground": {"translation": [0, 3, 0], "scale": [0.35, 0.35, 0.35]},
+		"gui": {"rotation": [25, -135, 0], "translation": [0, -1.5, 0], "scale": [0.45, 0.45, 0.45]}
+	}
+}

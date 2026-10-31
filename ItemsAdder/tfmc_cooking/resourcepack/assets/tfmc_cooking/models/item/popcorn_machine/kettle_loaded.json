@@ -1,0 +1,24 @@
+{
+	"credit": "TFMC popcorn machine kettle",
+	"textures": {
+		"pot": "minecraft:block/anvil",
+		"steel": "minecraft:block/iron_block",
+		"dark": "minecraft:block/polished_blackstone",
+		"kernels": "tfmc_cooking:item/popcorn_machine/kernels",
+		"particle": "minecraft:block/anvil"
+	},
+	"elements": [
+		{"from": [5, 5.5, 5], "to": [11, 6, 11], "faces": {"north": {"uv": [5, 10, 11, 10.5], "texture": "#pot"}, "south": {"uv": [5, 10, 11, 10.5], "texture": "#pot"}, "east": {"uv": [5, 10, 11, 10.5], "texture": "#pot"}, "west": {"uv": [5, 10, 11, 10.5], "texture": "#pot"}, "up": {"uv": [5, 5, 11, 11], "texture": "#pot"}, "down": {"uv": [5, 5, 11, 11], "texture": "#pot"}}, "name": "bottom"},
+		{"from": [5, 6, 5], "to": [11, 10, 5.5], "faces": {"north": {"uv": [5, 6, 11, 10], "texture": "#pot"}, "south": {"uv": [5, 6, 11, 10], "texture": "#pot"}, "east": {"uv": [10.5, 6, 11, 10], "texture": "#pot"}, "west": {"uv": [5, 6, 5.5, 10], "texture": "#pot"}, "up": {"uv": [5, 5, 11, 5.5], "texture": "#pot"}, "down": {"uv": [5, 5, 11, 5.5], "texture": "#pot"}}, "name": "wall"},
+		{"from": [5, 6, 10.5], "to": [11, 10, 11], "faces": {"north": {"uv": [5, 6, 11, 10], "texture": "#pot"}, "south": {"uv": [5, 6, 11, 10], "texture": "#pot"}, "east": {"uv": [5, 6, 5.5, 10], "texture": "#pot"}, "west": {"uv": [10.5, 6, 11, 10], "texture": "#pot"}, "up": {"uv": [5, 10.5, 11, 11], "texture": "#pot"}, "down": {"uv": [5, 10.5, 11, 11], "texture": "#pot"}}, "name": "wall"},
+		{"from": [5, 6, 5.5], "to": [5.5, 10, 10.5], "faces": {"north": {"uv": [10.5, 6, 11, 10], "texture": "#pot"}, "south": {"uv": [5, 6, 5.5, 10], "texture": "#pot"}, "east": {"uv": [5.5, 6, 10.5, 10], "texture": "#pot"}, "west": {"uv": [5.5, 6, 10.5, 10], "texture": "#pot"}, "up": {"uv": [5, 5.5, 5.5, 10.5], "texture": "#pot"}, "down": {"uv": [5, 5.5, 5.5, 10.5], "texture": "#pot"}}, "name": "wall"},
+		{"from": [10.5, 6, 5.5], "to": [11, 10, 10.5], "faces": {"north": {"uv": [5, 6, 5.5, 10], "texture": "#pot"}, "south": {"uv": [10.5, 6, 11, 10], "texture": "#pot"}, "east": {"uv": [5.5, 6, 10.5, 10], "texture": "#pot"}, "west": {"uv": [5.5, 6, 10.5, 10], "texture": "#pot"}, "up": {"uv": [10.5, 5.5, 11, 10.5], "texture": "#pot"}, "down": {"uv": [10.5, 5.5, 11, 10.5], "texture": "#pot"}}, "name": "wall"},
+		{"from": [4.5, 10, 4.5], "to": [11.5, 10.5, 11.5], "faces": {"north": {"uv": [4.5, 5.5, 11.5, 6], "texture": "#steel"}, "south": {"uv": [4.5, 5.5, 11.5, 6], "texture": "#steel"}, "east": {"uv": [4.5, 5.5, 11.5, 6], "texture": "#steel"}, "west": {"uv": [4.5, 5.5, 11.5, 6], "texture": "#steel"}, "down": {"uv": [4.5, 4.5, 11.5, 11.5], "texture": "#steel"}}, "name": "rim"},
+		{"from": [4.5, 10.5, 4.5], "to": [11.5, 10.75, 5], "faces": {"north": {"uv": [4.5, 5.25, 11.5, 5.5], "texture": "#steel"}, "south": {"uv": [4.5, 5.25, 11.5, 5.5], "texture": "#steel"}, "east": {"uv": [11, 5.25, 11.5, 5.5], "texture": "#steel"}, "west": {"uv": [4.5, 5.25, 5, 5.5], "texture": "#steel"}, "up": {"uv": [4.5, 4.5, 11.5, 5], "texture": "#steel"}, "down": {"uv": [4.5, 4.5, 11.5, 5], "texture": "#steel"}}, "name": "lip"},
+		{"from": [4.5, 10.5, 11], "to": [11.5, 10.75, 11.5], "faces": {"north": {"uv": [4.5, 5.25, 11.5, 5.5], "texture": "#steel"}, "south": {"uv": [4.5, 5.25, 11.5, 5.5], "texture": "#steel"}, "east": {"uv": [4.5, 5.25, 5, 5.5], "texture": "#steel"}, "west": {"uv": [11, 5.25, 11.5, 5.5], "texture": "#steel"}, "up": {"uv": [4.5, 11, 11.5, 11.5], "texture": "#steel"}, "down": {"uv": [4.5, 11, 11.5, 11.5], "texture": "#steel"}}, "name": "lip"},
+		{"from": [7.5, 10.75, 7.5], "to": [8.5, 11.5, 8.5], "faces": {"north": {"uv": [7.5, 4.5, 8.5, 5.25], "texture": "#steel"}, "south": {"uv": [7.5, 4.5, 8.5, 5.25], "texture": "#steel"}, "east": {"uv": [7.5, 4.5, 8.5, 5.25], "texture": "#steel"}, "west": {"uv": [7.5, 4.5, 8.5, 5.25], "texture": "#steel"}, "up": {"uv": [7.5, 7.5, 8.5, 8.5], "texture": "#steel"}, "down": {"uv": [7.5, 7.5, 8.5, 8.5], "texture": "#steel"}}, "name": "hanger"},
+		{"from": [11, 8, 7.5], "to": [12.5, 8.75, 8.5], "faces": {"north": {"uv": [3.5, 7.25, 5, 8], "texture": "#dark"}, "south": {"uv": [11, 7.25, 12.5, 8], "texture": "#dark"}, "east": {"uv": [7.5, 7.25, 8.5, 8], "texture": "#dark"}, "west": {"uv": [7.5, 7.25, 8.5, 8], "texture": "#dark"}, "up": {"uv": [11, 7.5, 12.5, 8.5], "texture": "#dark"}, "down": {"uv": [11, 7.5, 12.5, 8.5], "texture": "#dark"}}, "name": "crank"},
+		{"from": [12, 8, 7.5], "to": [12.75, 10, 8.5], "faces": {"north": {"uv": [3.25, 6, 4, 8], "texture": "#dark"}, "south": {"uv": [12, 6, 12.75, 8], "texture": "#dark"}, "east": {"uv": [7.5, 6, 8.5, 8], "texture": "#dark"}, "west": {"uv": [7.5, 6, 8.5, 8], "texture": "#dark"}, "up": {"uv": [12, 7.5, 12.75, 8.5], "texture": "#dark"}, "down": {"uv": [12, 7.5, 12.75, 8.5], "texture": "#dark"}}, "name": "crank handle"},
+		{"from": [5.5, 8.5, 5.5], "to": [10.5, 9.25, 10.5], "faces": {"up": {"uv": [5.5, 5.5, 10.5, 10.5], "texture": "#kernels"}}, "name": "kernels"}
+	]
+}
