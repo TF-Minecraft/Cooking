@@ -624,6 +624,55 @@ public class CraftingStationCoverageTest {
     }
 
     @Test
+    void anInputWithItsOwnModelForTheFurnitureShowsIt() {
+        CraftingStation station = env.station(1, false);
+        MemoryConfiguration models = new MemoryConfiguration();
+        models.set("plain.gui.item", "v.beef");
+        models.set("plain.display.item", "v.beef");
+        models.set("plain.display.furniture", List.of("board v.bone"));
+        FoodItem crushed = env.food("raw", "Olive");
+        crushed.setModel(new net.tfminecraft.cooking.item.model.FoodModel("olive", models));
+        ItemStack olive = env.stack(crushed, Material.BEEF, 1);
+        FurnitureSlotItemAddEvent add = env.addEvent("input_1", olive);
+        station.addItem(add);
+        assertNotSame(olive, add.getItem());
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), same(crushed), eq("board")));
+
+        ItemStack plain = env.raw(1);
+        FurnitureSlotItemAddEvent other = env.addEvent("input_2", plain);
+        station.addItem(other);
+        assertSame(plain, other.getItem());
+    }
+
+    @Test
+    void aRecipeThatDoesNotFillKeepsItsInputsAsThemselvesOnAPouringStation() {
+        MemoryConfiguration config = env.config(2, true, "tool:knife");
+        config.set("fill-models", List.of("fill_1", "fill_2"));
+        config.set("pour-return", "empty_cup");
+        config.set("recipes.cut.fill", false);
+        CraftingStation station = new CraftingStation(env.furniture, new CraftingStation("board", config));
+        assertFalse(new CraftingRecipe("cut", config.getConfigurationSection("recipes.cut")).fills());
+
+        ItemStack olive = env.raw(1);
+        FurnitureSlotItemAddEvent add = env.addEvent("input_1", olive);
+        station.addItem(add);
+        assertSame(olive, add.getItem());
+        verify(env.api.getCreator(), never()).getItemFromPath("empty_cup");
+        verify(env.api.getCreator(), never()).getItemFromPath("fill_1");
+        FurnitureSlotItemTakeEvent take = env.takeEvent("input_1", olive);
+        station.removeItem(take);
+        assertFalse(take.isCancelled());
+
+        env.active.clear();
+        for (int n = 1; n <= 3; n++) env.place("input_" + n, env.raw(1));
+        station.rebuildFromFurniture();
+        env.updater.clearInvocations();
+        station.craft(env.player);
+        assertEquals(1, env.dropped.size(), "The odd olive drops as itself");
+        env.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), any(), isNull()), never());
+    }
+
+    @Test
     void pouredLeftoversAreNotHandedOutAgainAndBreakingSpillsThePouredInputs() {
         CraftingStation station = pouringStation("empty_cup");
         for (int n = 1; n <= 3; n++) env.place("input_" + n, env.raw(1));

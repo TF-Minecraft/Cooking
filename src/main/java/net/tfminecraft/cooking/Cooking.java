@@ -64,6 +64,8 @@ import net.tfminecraft.cooking.baking.BakingTrayHandler;
 import net.tfminecraft.cooking.baking.BakingTrayLoader;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.cooking.pizza.PizzaHandler;
+import net.tfminecraft.cooking.condiment.CondimentConfig;
+import net.tfminecraft.cooking.condiment.SapTapListener;
 import net.tfminecraft.cooking.salad.SaladConfig;
 import net.tfminecraft.cooking.salad.SaladHandler;
 import net.tfminecraft.cooking.sandwich.SandwichConfig;
@@ -138,6 +140,7 @@ public class Cooking extends JavaPlugin {
     private final MillingRecipeLoader millingRecipeLoader = new MillingRecipeLoader();
     private final BakingTrayHandler bakingTrayHandler = new BakingTrayHandler();
     private final SandwichConfig sandwichConfig = new SandwichConfig();
+    private final CondimentConfig condimentConfig = new CondimentConfig();
     private final SandwichHandler sandwichHandler = new SandwichHandler();
     private final PizzaConfig pizzaConfig = new PizzaConfig();
     private final PizzaHandler pizzaHandler = new PizzaHandler();
@@ -268,6 +271,7 @@ public class Cooking extends JavaPlugin {
         bakingTrayLoader.load(new File(getDataFolder(), "baking-trays.yml"));
         sandwichConfig.load(new File(getDataFolder(), "sandwiches.yml"));
         pizzaConfig.load(new File(getDataFolder(), "pizzas.yml"));
+        condimentConfig.load(new File(getDataFolder(), "condiments.yml"));
         saladConfig.load(new File(getDataFolder(), "salads.yml"));
         millingRecipeLoader.load(new File(getDataFolder(), "milling-recipes.yml"));
         stationLoader.load(new File(getDataFolder(), "crafting-stations.yml"));
@@ -334,6 +338,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(bakingTrayHandler, this);
         getServer().getPluginManager().registerEvents(sandwichHandler, this);
         getServer().getPluginManager().registerEvents(pizzaHandler, this);
+        getServer().getPluginManager().registerEvents(new SapTapListener(), this);
         getServer().getPluginManager().registerEvents(saladHandler, this);
         getServer().getPluginManager().registerEvents(millingStoneHandler, this);
         getServer().getPluginManager().registerEvents(troughHandler, this);
@@ -430,6 +435,7 @@ public class Cooking extends JavaPlugin {
                 "baking-trays.yml",
                 "sandwiches.yml",
                 "pizzas.yml",
+                "condiments.yml",
                 "salads.yml",
                 "milling-recipes.yml",
                 "cookware.yml",

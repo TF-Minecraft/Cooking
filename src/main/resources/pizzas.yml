@@ -72,11 +72,15 @@ bonuses:
 #   models       its look on the peel: a model, or a tag and a model used while the food has that tag. The pizza's
 #                bake counts as a tag too (raw, cooked, burnt). The first that exists is used, so later lines are
 #                fallbacks. {origin} is the origin in lower case with _ for spaces (melon_slice).
+#                A topping's model is looked for first with its place among the toppings (_t1 for the second, up to
+#                _t5 for the sixth), so each place can lie on its own spots and toppings never lie in each other; then
+#                as it is.
 # The dough every pizza starts with.
 base:
   types:
     - dough
-  thickness: 1.0
+  # The flat middle of the dough: the sauce and toppings lie on it, inside the raised crust.
+  thickness: 0.5
   models:
     - rotten ia.tfmc_cooking:pizza_base_rotten
     - burnt ia.tfmc_cooking:pizza_base_burnt

@@ -12,6 +12,8 @@
 #   keep-output-age: true  the output keeps the age tags of its output line instead of averaging the
 #     ingredients' age (a new cheese starts fresh however old its milk was).
 #   yield: <n>  outputs per recipe unit (one loaf gives 4 slices). Default 1.
+#   fill: false  on a station with fill-models, this recipe's inputs lie as themselves instead of showing as the fill
+#     and give no pour-return (olives pressed into oil in the cheese press).
 #   inherit: true  the output is the input cut differently: it keeps the input's origin, fillers (Banana) and tags
 #     (Sweet, Cooked, its age) that the output line doesn't set. The station takes one such input at a time.
 cutting_board:

@@ -84,14 +84,14 @@ public final class SandwichLayer {
 
     /** As {@link #model(FoodItem, ItemStack)}, with extra tags that count as the food's own (a pizza's bake). */
     public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags) {
-        return model(food, source, extraTags, "");
+        return model(food, source, extraTags, List.of());
     }
 
     /**
-     * As {@link #model(FoodItem, ItemStack, List)}, trying each model with a suffix first (a cut pizza's _left3) and
-     * then as it is.
+     * As {@link #model(FoodItem, ItemStack, List)}, trying each model with these suffixes first, in order (a pizza's
+     * third topping on a cut pizza: _t2_left3, _t2, _left3), and then as it is.
      */
-    public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags, String suffix) {
+    public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags, List<String> suffixes) {
         List<String> tags = new ArrayList<>(food.getCurrentTagIds());
         tags.addAll(extraTags);
         String origin = food.getOrigin() == null ? "none" : food.getOrigin().toLowerCase(Locale.ROOT).replace(' ', '_');
@@ -99,8 +99,11 @@ public final class SandwichLayer {
             String[] parts = entry.trim().split("\\s+", 2);
             if (parts.length == 2 && !tags.contains(parts[0])) continue;
             String path = parts[parts.length - 1].replace("{origin}", origin);
-            ItemStack shown = suffix.isEmpty() ? null : existing(ItemRef.apply(path + suffix, source));
-            if (shown == null) shown = existing(ItemRef.apply(path, source));
+            for (String suffix : suffixes) {
+                ItemStack shown = existing(ItemRef.apply(path + suffix, source));
+                if (shown != null) return shown;
+            }
+            ItemStack shown = existing(ItemRef.apply(path, source));
             if (shown != null) return shown;
         }
         return null;

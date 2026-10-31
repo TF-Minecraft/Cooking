@@ -4,6 +4,7 @@ import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.cache.ItemCache;
+import net.tfminecraft.cooking.condiment.CondimentConfig;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 
@@ -16,6 +17,11 @@ public final class LiquidContainerDisplay {
         String modelPath = LiquidContainerState.TYPE_MILK.equalsIgnoreCase(type)
                 ? ItemCache.liquidBlockMilk
                 : ItemCache.liquidBlockWater;
+        if (LiquidContainerState.TYPE_WINE.equalsIgnoreCase(type)) {
+            modelPath = LiquidContainerState.isSoured(furniture, System.currentTimeMillis())
+                    ? CondimentConfig.vinegarModel()
+                    : CondimentConfig.souringModel();
+        }
 
         ItemStack model = TLibs.getItemAPI().getCreator().getItemFromPath(modelPath);
         if (model == null) {

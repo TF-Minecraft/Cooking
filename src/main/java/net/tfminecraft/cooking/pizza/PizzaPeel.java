@@ -123,23 +123,46 @@ public final class PizzaPeel {
     }
 
     /**
-     * The layer's look on the peel at the pizza's bake (raw, cooked or burnt) and with its slices taken: a model with
-     * _left3 for three slices left, falling back to the whole one (pizzas.yml models).
+     * The layer's look on the peel at the pizza's bake (raw, cooked or burnt), laid out for its place among the toppings
+     * and with the slices taken (pizzas.yml models). The second topping looks for its model with _t1 (each position has
+     * its own spots, so toppings never lie in each other) and three slices left with _left3; each falls back to the
+     * model without it.
      */
-    static ItemStack shown(Furniture f, ItemStack one, FoodItem food, SandwichLayer layer) {
+    static ItemStack shown(Furniture f, ItemStack one, FoodItem food, SandwichLayer layer, int topping) {
         int left = left(f);
         String cut = left < PizzaConfig.slices() ? "_left" + left : "";
-        ItemStack shown = layer.model(food, one, List.of(STATE_TAGS.get(baked(f))), cut);
+        String spot = topping > 0 ? "_t" + topping : "";
+        List<String> suffixes = new ArrayList<>();
+        for (String suffix : List.of(spot + cut, spot, cut)) {
+            if (!suffix.isEmpty() && !suffixes.contains(suffix)) suffixes.add(suffix);
+        }
+        ItemStack shown = layer.model(food, one, List.of(STATE_TAGS.get(baked(f))), suffixes);
         return shown == null ? one : shown;
+    }
+
+    /** A layer's place among the toppings, counted from 0; -1 for the dough, the sauce and what isn't a layer. */
+    static int toppingPlace(SandwichLayer layer, int toppingsBelow) {
+        return layer == null || PizzaConfig.isBase(layer) || PizzaConfig.isSauce(layer) ? -1 : toppingsBelow;
+    }
+
+    /** Toppings among these layers. */
+    static int toppingsIn(List<PlacedSlot> layers) {
+        int toppings = 0;
+        for (PlacedSlot slot : layers) {
+            if (toppingPlace(PizzaConfig.layerFor(FoodItem.fromItem(slot.getCurrentItem())), 0) >= 0) toppings++;
+        }
+        return toppings;
     }
 
     /** Shows every layer as it looks at the pizza's bake and cuts. */
     static void remodel(Furniture f) {
+        List<PlacedSlot> below = new ArrayList<>();
         for (PlacedSlot slot : layers(f)) {
             ItemStack item = slot.getCurrentItem();
             FoodItem food = FoodItem.fromItem(item);
             SandwichLayer layer = PizzaConfig.layerFor(food);
-            if (layer != null) slot.forceModel(shown(f, item, food, layer));
+            if (layer != null) slot.forceModel(shown(f, item, food, layer, toppingPlace(layer, toppingsIn(below))));
+            below.add(slot);
         }
     }
 

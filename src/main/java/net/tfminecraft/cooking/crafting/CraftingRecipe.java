@@ -20,6 +20,8 @@ public class CraftingRecipe {
     private int yield;
     /** The output is the input cut differently: it keeps the input's origin, fillers and tags. One input at a time. */
     private boolean inherit;
+    /** On a station with fill-models, its inputs show as the rising fill. False keeps them as themselves (olives in the cheese press). */
+    private boolean fill;
 
     public CraftingRecipe(String id, ConfigurationSection config) {
         this.id = id;
@@ -30,6 +32,7 @@ public class CraftingRecipe {
         this.keepOutputAge = config.getBoolean("keep-output-age", false);
         this.yield = Math.max(1, config.getInt("yield", 1));
         this.inherit = config.getBoolean("inherit", false);
+        this.fill = config.getBoolean("fill", true);
     }
 
     public boolean canAdd(ItemStack item) {
@@ -62,5 +65,8 @@ public class CraftingRecipe {
     }
     public boolean inherits() {
         return inherit;
+    }
+    public boolean fills() {
+        return fill;
     }
 }

@@ -30,6 +30,8 @@ import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
 
 import net.tfminecraft.cooking.brewery.BrewLiquid;
 import net.tfminecraft.cooking.cache.ItemCache;
+import net.tfminecraft.cooking.condiment.BottleRecipe;
+import net.tfminecraft.cooking.condiment.CondimentConfig;
 
 import net.tfminecraft.cooking.cup.BucketItems;
 
@@ -81,9 +83,12 @@ public class SauceReference extends CookingReference {
     private static final String VAR_COLOURS = "sauce.colours";
     private static final String VAR_LIQUID = "sauce.liquid";
     private static final String VAR_BREW = "sauce.brew";
+    private static final String VAR_BOILED = "sauce.boiled";
 
     private FoodItem liquidSource;
     private BrewLiquid brew;
+    /** Seconds the saucepan has boiled since its last liquid or ingredient went in (condiments.yml bottling). */
+    private int boiled;
 
     public SauceReference(Furniture f, Method m) {
 
@@ -101,6 +106,12 @@ public class SauceReference extends CookingReference {
 
         if (!HeatSources.stationHasHeat(f)) {
             return;
+        }
+
+        if (secondaries.containsKey("liquid")) {
+            boiled++;
+            f.getVariables().put(VAR_BOILED, boiled);
+            if (boiled % 10 == 0) InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
         }
 
         handleCookingSlots();
@@ -205,7 +216,8 @@ public class SauceReference extends CookingReference {
 
 
 
-        return false;
+        // What a bottling recipe for this liquid still needs (tomato paste in vinegar for catsup).
+        return bottlingTakes(fi);
 
     }
 
@@ -383,6 +395,16 @@ public class SauceReference extends CookingReference {
 
         }
 
+        if (item.getType() == Material.GLASS_BOTTLE && FoodItem.fromItem(item) == null) {
+            bottle(p);
+            return;
+        }
+        FoodItem bottled = secondaries.containsKey("liquid") ? null : FoodItem.fromItem(item);
+        if (bottled != null && CondimentConfig.isSaucepanLiquid(bottled)) {
+            pourBottled(p, item, bottled);
+            return;
+        }
+
         BrewLiquid pouredBrew = secondaries.containsKey("liquid") ? null : BrewLiquid.from(item);
         if (pouredBrew != null) {
             pourBrew(p, pouredBrew);
@@ -437,6 +459,7 @@ public class SauceReference extends CookingReference {
 
                 if(add(slot, item)) {
 
+                    resetBoil();
                     saveColours();
 
                     updateModel();
@@ -516,8 +539,10 @@ public class SauceReference extends CookingReference {
     public void clear() {
         liquidSource = null;
         brew = null;
+        boiled = 0;
         super.clear();
         if (f == null) return;
+        f.getVariables().remove(VAR_BOILED);
         f.getVariables().remove(VAR_COLOURS);
         f.getVariables().remove(VAR_LIQUID);
         f.getVariables().remove(VAR_BREW);
@@ -539,7 +564,85 @@ public class SauceReference extends CookingReference {
         liquidSource = liquid == null ? null : FoodItem.fromItem(liquid);
         brew = restoreBrew(stringVariable(VAR_BREW));
         if (brew != null) liquidSource = brewIngredient(brew);
+        boiled = f.getVariables().get(VAR_BOILED) instanceof Number seconds ? seconds.intValue() : 0;
         restoreColours();
+    }
+
+    /** A bottled liquid (vinegar, sap) is poured in like water; the empty bottle goes back to the player. */
+    private void pourBottled(Player p, ItemStack item, FoodItem poured) {
+        if (f.getType() == null || f.getType().getSlot("liquid") == null) return;
+        liquidSource = new FoodItem(poured);
+        saveLiquid(item);
+        secondaries.put("liquid", -1);
+        addColour(ItemCache.getColour(item));
+        saveColours();
+        HeldStack.useOneKeepStack(p, new ItemStack(Material.GLASS_BOTTLE));
+        p.swingMainHand();
+        updateModel();
+        danger = 0;
+        resetBoil();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
+    }
+
+    /** The bottling recipe this saucepan holds exactly (vinegar, tomato paste and sugar make catsup), or null. */
+    BottleRecipe matchingBottle() {
+        if (liquidSource == null) return null;
+        for (BottleRecipe recipe : CondimentConfig.bottles()) {
+            if (recipe.matches(liquidSource, slots.values())) return recipe;
+        }
+        return null;
+    }
+
+    private boolean bottlingTakes(FoodItem candidate) {
+        if (liquidSource == null) return false;
+        for (BottleRecipe recipe : CondimentConfig.bottles()) {
+            if (recipe.usesLiquid(liquidSource) && recipe.takes(candidate, slots.values())) return true;
+        }
+        return false;
+    }
+
+    /** An empty glass bottle takes what the saucepan made (catsup, mustard, syrup) once it has boiled long enough. */
+    private void bottle(Player p) {
+        if (!secondaries.containsKey("liquid")) {
+            p.sendMessage("§7The saucepan is empty.");
+            return;
+        }
+        BottleRecipe recipe = matchingBottle();
+        if (recipe == null) {
+            p.sendMessage("§7Nothing in this saucepan goes in a bottle. Use a ladle for sauce.");
+            return;
+        }
+        if (boiled < recipe.getBoilSeconds()) {
+            p.sendMessage("§7It needs to boil a while longer (" + (recipe.getBoilSeconds() - boiled) + "s).");
+            return;
+        }
+        FoodParser.Result parsed = FoodParser.parse(recipe.getOutput());
+        ItemStack output = null;
+        if (parsed != null && parsed.template != null) {
+            List<FoodItem> inputs = new ArrayList<>();
+            inputs.add(liquidSource);
+            inputs.addAll(slots.values());
+            CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SAUCE_SCOOP);
+            CompositionApplier.apply(parsed.template, composed);
+            output = ItemBuilder.buildSingleWithQuality(parsed.template, null, composed.getFinalQuality());
+        }
+        if (output == null) {
+            p.sendMessage("§cThis can't be bottled right now.");
+            return;
+        }
+        HeldStack.useOneIntoHand(p, output);
+        p.swingMainHand();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BOTTLE_FILL, 1f, 1f);
+        org.bukkit.Bukkit.getPluginManager().callEvent(
+                new net.tfminecraft.cooking.events.DishCookedEvent(p, output, "bottle"));
+        clear();
+    }
+
+    /** Boiling counts again from when the last thing went in. */
+    private void resetBoil() {
+        boiled = 0;
+        f.getVariables().put(VAR_BOILED, 0);
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
     }
 
     /** Seasonings, sweeteners and other additions are not raw, so the base rebuild skips them. */

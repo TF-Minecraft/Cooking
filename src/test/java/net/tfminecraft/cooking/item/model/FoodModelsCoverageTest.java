@@ -65,6 +65,7 @@ class FoodModelsCoverageTest {
         ModelData model=new ModelData(config,Map.of("table",parent));
         assertEquals(Material.BREAD,model.apply(null,null).getType());
         assertEquals(Material.BONE,model.apply("oven",null).getType());
+        assertTrue(model.hasFurnitureModel("oven")); assertFalse(model.hasFurnitureModel("table")); assertFalse(model.hasFurnitureModel(null));
         assertEquals(Material.PAPER,model.apply("table",null).getType());
         assertEquals(.25f,model.getDisplayData().getxPos());
         assertEquals(.5f,model.getDisplayData("OVEN").getyPos());
