@@ -681,12 +681,20 @@ mushroom:
   model: brown_mushroom
   food: 6
   nutrition: 4.5
+  mashable: true
   cooking-options:
     frying_pan:
       tag: 1
       time: 12
       burn: 25
       output: vegetable(type=grilled_mushroom)
+    # Boils in the soup pot and mashes into soup like cut veg. raw-in-cookware: it isn't Raw in hand, only once it's
+    # in the pot (as the frying pan's output makes it only Raw in the pan).
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+      raw-in-cookware: true
   age:
     warmth: 450
     freshness: 7

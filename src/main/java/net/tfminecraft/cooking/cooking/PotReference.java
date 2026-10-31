@@ -46,6 +46,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -244,6 +245,8 @@ public class PotReference extends CookingReference {
         CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SOUP_SCOOP);
         CompositionApplier.apply(soup, composed);
         soup.setBaseFood(scoopFood(soup.getBaseFood()));
+        // The pot has no layers: only bonuses that count origins (a poison) apply, over everything in it.
+        DishBonus.apply(soup, inputs, food -> null, layer -> false, PotConfig.bonuses());
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);

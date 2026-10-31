@@ -8,11 +8,16 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.sandwich.DishBonus;
 
-/** pot.yml: what the soup pot takes besides a water bucket (stock), and the dishes it mashes without water. */
+/**
+ * pot.yml: what the soup pot takes besides a water bucket (stock), the dishes it mashes without water, and the tags a
+ * soup earns from what's in the pot (bonuses, such as a poison).
+ */
 public final class PotConfig {
     private static List<PotLiquid> liquids = List.of();
     private static List<MashRecipe> mashes = List.of();
+    private static List<DishBonus> bonuses = List.of();
 
     public void load(File file) {
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
@@ -34,6 +39,12 @@ public final class PotConfig {
         }
         liquids = poured;
         mashes = recipes;
+        bonuses = DishBonus.load(config.getConfigurationSection("bonuses"));
+    }
+
+    /** The tags a ladled soup earns from what's in the pot, written like sandwiches.yml's bonuses (count: origin). */
+    public static List<DishBonus> bonuses() {
+        return bonuses;
     }
 
     /** The liquid this food pours into the pot, or null. */

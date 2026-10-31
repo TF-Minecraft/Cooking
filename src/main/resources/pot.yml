@@ -45,3 +45,18 @@ mashes:
     output: mash(type=mashed_potatoes;origin=Potato;tags=freshness.0)
     display: ia.tfmc_cooking:gray
     hint: 4 boiled cut potatoes and a butter
+
+# Tags a soup earns from what's in the pot when it's ladled, written like sandwiches.yml's bonuses. The pot has no
+# layers, so only count: origin applies, over everything in it (pieces, extras and stock).
+bonuses:
+  # Red mushrooms poison it; boiled (mashed, or left to boil, not burnt) into a soup of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-tags: [boiled]

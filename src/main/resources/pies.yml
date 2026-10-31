@@ -81,6 +81,12 @@ fillings:
       - vegetable_chopped_2
       - garnish_chopped
     name: "{origin}"
+  mushroom:
+    # Raw or grilled brown and red mushrooms, baked with the pie; both just "Mushroom".
+    types:
+      - mushroom
+      - grilled_mushroom
+    name: Mushroom
   cheese:
     types:
       - cheese
@@ -102,11 +108,11 @@ kinds:
   Shepherds:
     name: Shepherd's
     layers: [meat, mash]
-    only: [meat, mash, vegetable]
+    only: [meat, mash, vegetable, mushroom]
   Meat:
     name: Meat
     layers: [meat]
-    only: [meat, vegetable]
+    only: [meat, vegetable, mushroom]
   Apple:
     name: Apple
     only-origins: [Apple]
@@ -120,9 +126,22 @@ kinds:
   Mixed: {}
 
 # Tags a pie earns from its fillings, written like sandwiches.yml's bonuses. count: fillings counts the fillings.
+# count: origin counts the foods of that origin, raw or grilled, and hide-at-stars with hide-dish-tags keeps the
+# tag secret in a well-baked pie (see sandwiches.yml).
 bonuses:
   size:
     track: dish_size
     count: fillings
     steps:
       3: hearty
+  # Red mushrooms poison it; in a cooked (not burnt) pie of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-dish-tags: [cooked]

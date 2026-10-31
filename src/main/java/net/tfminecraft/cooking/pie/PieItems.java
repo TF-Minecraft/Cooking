@@ -52,14 +52,15 @@ public final class PieItems {
         CompositionApplier.apply(pie, composed);
         CompositionFreshnessApplier.keepOwnAgeing(pie);
         SandwichItems.applyTotals(pie, all, true);
-        DishBonus.apply(pie, all, PieConfig::layerFor, layer -> !PieConfig.isCrust(layer), PieConfig.bonuses());
-        name(pie, filled);
         TagTrack cooked = TrackLoader.getByString(COOKED_TRACK);
         if (cooked != null) {
             TagTrack bake = new TagTrack(cooked);
             bake.setValue(baked);
             pie.addOrModifyTrack(bake);
         }
+        // After the bake: a bonus hidden in a well-made pie (a poison) needs it cooked, not burnt.
+        DishBonus.apply(pie, all, PieConfig::layerFor, layer -> !PieConfig.isCrust(layer), PieConfig.bonuses());
+        name(pie, filled);
         WarmthUtils.applyHot(pie);
         return ItemBuilder.buildComposedWithQuality(pie, composed.getFinalQuality());
     }

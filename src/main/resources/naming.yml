@@ -17,6 +17,8 @@ dough-fillers:
 # Map ingredient origins to display adjectives in {fillers} names
 origin-adjectives:
   "Spice Leaf": Spiced
+  "Brown Mushroom": Mushroom
+  "Red Mushroom": Mushroom
 
 # Category buckets for station logic
 categories:

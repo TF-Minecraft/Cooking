@@ -3,6 +3,7 @@ package net.tfminecraft.cooking.sandwich;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -20,15 +21,24 @@ import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.utils.StationAddonRules;
 
 /**
- * A tag a finished sandwich or pizza earns from its layers (sandwiches.yml / pizzas.yml bonuses), like a soup's
- * Seasoned or Thick: a step of a tags.yml track, whose multipliers then apply to the dish.
+ * A tag a finished dish earns from what's in it (sandwiches.yml, pizzas.yml, salads.yml, pies.yml and pot.yml
+ * bonuses), like a soup's Seasoned or Thick: a step of a tags.yml track, whose multipliers then apply to the dish.
+ * A bonus can keep its tag secret (TagTrack.isHidden) on a dish made well enough: a poison is hidden in good cooking.
  *
  * <pre>
  * bonuses:
  *   loaded:
  *     track: dish_size
- *     count: fillings          # fillings (or toppings), or seasonings: different salts and peppers
- *     steps: {3: hearty, 5: loaded}
+ *     count: fillings          # fillings (or toppings), seasonings: different salts and peppers, or origin: the
+ *     steps: {3: hearty, 5: loaded}   # dish's foods of origin below, raw or cooked, layer or not
+ *   poison:
+ *     track: poison
+ *     count: origin
+ *     origin: Red Mushroom
+ *     steps: {1: tainted, 2: poisoned, 3: deadly}
+ *     hide-at-stars: 3         # hidden when the dish ends at 3 stars or more, and
+ *     hide-tags: [cooked]      # every food the bonus counts is at one of these tag steps (grilled), and
+ *     hide-dish-tags: [cooked] # the dish itself is (its bake); each list only when given
  *   well_rounded:
  *     track: well_rounded
  *     layers: [cheese, vegetable]   # every one of these layers
@@ -51,7 +61,11 @@ public final class DishBonus {
     private final boolean valuable;
     private final boolean fresh;
     private final String count;
+    private final String origin;
     private final TreeMap<Integer, String> steps = new TreeMap<>();
+    private final int hideAtStars;
+    private final List<String> hideTags = new ArrayList<>();
+    private final List<String> hideDishTags = new ArrayList<>();
 
     public DishBonus(ConfigurationSection config) {
         this.track = config.getString("track", config.getName());
@@ -64,6 +78,10 @@ public final class DishBonus {
         this.valuable = config.getBoolean("valuable", false);
         this.fresh = config.getBoolean("fresh", false);
         this.count = config.getString("count");
+        this.origin = config.getString("origin", "");
+        this.hideAtStars = config.getInt("hide-at-stars", 0);
+        for (String id : config.getStringList("hide-tags")) hideTags.add(id.toLowerCase(Locale.ROOT));
+        for (String id : config.getStringList("hide-dish-tags")) hideDishTags.add(id.toLowerCase(Locale.ROOT));
         ConfigurationSection counted = config.getConfigurationSection("steps");
         if (counted != null) {
             for (String at : counted.getKeys(false)) {
@@ -88,8 +106,10 @@ public final class DishBonus {
     }
 
     /**
-     * Gives the dish every bonus its layers earn. The layer function says which layer a food makes (null for none);
-     * the filling test picks the layers that count as fillings or toppings (not bread, dough or sauce).
+     * Gives the dish every bonus its foods earn. The layer function says which layer a food makes (null for none,
+     * as for everything in a soup); the filling test picks the layers that count as fillings or toppings (not bread,
+     * dough or sauce). Call it once the dish's quality and own tags (a pizza's bake) are set: a bonus that can hide its
+     * tag decides that from them, after every bonus is in.
      */
     public static void apply(FoodItem dish, List<FoodItem> foods, Function<FoodItem, SandwichLayer> layerFor,
             Predicate<SandwichLayer> filling, List<DishBonus> bonuses) {
@@ -97,27 +117,80 @@ public final class DishBonus {
         Map<String, FoodItem> addonsByOrigin = new HashMap<>();
         Set<String> seasonings = new HashSet<>();
         Map<String, FoodItem> all = new HashMap<>();
-        int fillings = 0;
+        List<FoodItem> fillings = new ArrayList<>();
+        List<FoodItem> seasoned = new ArrayList<>();
         boolean allFresh = true;
         for (FoodItem food : foods) {
             SandwichLayer layer = layerFor.apply(food);
             if (layer == null) continue;
             all.put(String.valueOf(all.size()), food);
             counts.merge(layer.getId().toLowerCase(Locale.ROOT), 1, Integer::sum);
-            if (filling.test(layer)) fillings++;
+            if (filling.test(layer)) fillings.add(food);
             String origin = food.getOrigin() == null ? "" : food.getOrigin().toLowerCase(Locale.ROOT);
             if (StationAddonRules.isAddonCategory(food.getCategory())) addonsByOrigin.putIfAbsent(origin, food);
-            if (StationAddonRules.isSeasoningCategory(food.getCategory())) seasonings.add(origin);
+            if (StationAddonRules.isSeasoningCategory(food.getCategory())) {
+                seasonings.add(origin);
+                seasoned.add(food);
+            }
             TagTrack age = food.getTagTrack(FRESHNESS);
             if (age != null && age.getCurrentStep() != age.getSteps().get(0)) allFresh = false;
         }
         String profile = StationAddonRules.classifyAddons(addonsByOrigin).name();
         boolean hasValuable = StationAddonRules.hasValuable(all);
+        Map<String, List<FoodItem>> hideable = new LinkedHashMap<>();
+        Map<String, DishBonus> hiders = new HashMap<>();
         for (DishBonus bonus : bonuses) {
-            int counted = "seasonings".equalsIgnoreCase(bonus.count) ? seasonings.size() : fillings;
-            String earned = bonus.earned(counts, counted, profile, hasValuable, allFresh);
-            if (earned != null) give(dish, bonus.track, earned);
+            List<FoodItem> counted;
+            int amount;
+            if ("seasonings".equalsIgnoreCase(bonus.count)) {
+                counted = seasoned;
+                amount = seasonings.size();
+            } else if ("origin".equalsIgnoreCase(bonus.count)) {
+                counted = bonus.ofOrigin(foods);
+                amount = counted.size();
+            } else {
+                counted = bonus.count == null ? new ArrayList<>(all.values()) : fillings;
+                amount = fillings.size();
+            }
+            String earned = bonus.earned(counts, amount, profile, hasValuable, allFresh);
+            String given = earned == null ? null : give(dish, bonus.track, earned);
+            if (given != null && bonus.hideAtStars > 0) {
+                hideable.put(given, counted);
+                hiders.put(given, bonus);
+            }
         }
+        // Every tag is in, so the dish's stars are final.
+        hideable.forEach((trackId, counted) ->
+                dish.getTagTrack(trackId).setHidden(hiders.get(trackId).hides(dish, counted)));
+    }
+
+    /** The foods of this bonus's origin among all of the dish's, whatever layer they make. */
+    private List<FoodItem> ofOrigin(List<FoodItem> foods) {
+        List<FoodItem> matching = new ArrayList<>();
+        for (FoodItem food : foods) {
+            if (origin.equalsIgnoreCase(food.getOrigin() == null ? "" : food.getOrigin())) matching.add(food);
+        }
+        return matching;
+    }
+
+    /**
+     * True when the dish keeps this bonus's tag secret: it has at least hide-at-stars stars, it is at a hide-dish-tags
+     * step (if any are given), and so is every food the bonus counted at a hide-tags step (if any are given).
+     */
+    boolean hides(FoodItem dish, List<FoodItem> counted) {
+        if (dish.getEffectiveQuality() < hideAtStars) return false;
+        if (!hideDishTags.isEmpty() && !atAny(dish, hideDishTags)) return false;
+        for (FoodItem food : counted) {
+            if (!hideTags.isEmpty() && !atAny(food, hideTags)) return false;
+        }
+        return true;
+    }
+
+    private static boolean atAny(FoodItem food, List<String> tags) {
+        for (String id : food.getCurrentTagIds()) {
+            if (tags.contains(id.toLowerCase(Locale.ROOT))) return true;
+        }
+        return false;
     }
 
     /** The step this bonus gives, or null when the layers don't earn it ("" means the track's first step). */
@@ -134,9 +207,10 @@ public final class DishBonus {
         return reached == null ? null : reached.getValue();
     }
 
-    private static void give(FoodItem dish, String trackId, String stepId) {
+    /** Gives the dish this step of the track; the track's id, or null when tags.yml has no such track. */
+    private static String give(FoodItem dish, String trackId, String stepId) {
         TagTrack template = TrackLoader.getByString(trackId);
-        if (template == null || template.getSteps().isEmpty()) return;
+        if (template == null || template.getSteps().isEmpty()) return null;
         TagTrack track = new TagTrack(template);
         int value = (int) track.getSteps().get(0).getRequiredValue();
         for (TagStep step : track.getSteps()) {
@@ -144,5 +218,6 @@ public final class DishBonus {
         }
         track.forceSetValue(value);
         dish.addOrModifyTrack(track);
+        return track.getId();
     }
 }

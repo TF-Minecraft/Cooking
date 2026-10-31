@@ -288,3 +288,21 @@ rich:
     value: 0
     food-mult: 1.15
     nutrition-mult: 1.15
+
+# Poison a cook can hide in a dish (bonuses with count: origin, such as red mushrooms in sandwiches.yml), stronger with
+# each one. Food is left alone on purpose: eating moves Nutrition toward the meal's, weighted by the food it gives, so a
+# filling meal with no nutrition drags a diet down hardest. A dish made well (the bonus's hide-at-stars and hide-tags)
+# keeps it secret: no line in the lore, and the Food and Nutrition shown leave it out; eating still applies it.
+poison:
+  tainted:
+    name: "#a3a04aTainted"
+    value: 0
+    nutrition-mult: 0.4
+  poisoned:
+    name: "#7d9a3aPoisoned"
+    value: 1
+    nutrition-mult: 0.15
+  deadly:
+    name: "#6b3a7dDeadly"
+    value: 2
+    nutrition-mult: 0

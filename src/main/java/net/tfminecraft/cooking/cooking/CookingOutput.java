@@ -23,11 +23,13 @@ public final class CookingOutput {
     private CookingOutput() {}
 
     /**
-     * A piece whose type has no doneness of its own (cooking-options with only outputs) starts raw once it's in the
-     * cookware, so the usual raw, cooked, burnt steps can follow.
+     * A piece whose type has no doneness of its own (cooking-options with only outputs or raw-in-cookware) starts raw
+     * once it's in the cookware, so the usual raw, cooked, burnt steps can follow.
      */
     static void startRaw(FoodItem piece, Method method) {
-        if (output(piece, method) == null || piece.getCookData().cooksInPlace() || piece.hasTagTrack(COOKED_TRACK)) {
+        CookParameter parameter = piece.getCookData().getParameters().get(method);
+        if (parameter == null || !parameter.rawInCookwareOnly() || piece.getCookData().cooksInPlace()
+                || piece.hasTagTrack(COOKED_TRACK)) {
             return;
         }
         piece.addTagTrack(COOKED_TRACK);
