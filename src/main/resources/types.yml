@@ -1,5 +1,9 @@
+# Warmth ages 450 times slower: Hot for 30 minutes, Warm until 2h30.
+# Only applies when the food has a warmth track; see tags.yml.
 ####Meats
 roast:
+  age:
+    warmth: 450
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -56,6 +60,8 @@ roast:
       burn: 40
 
 meat_poultry:
+  age:
+    warmth: 450
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -76,6 +82,8 @@ meat_poultry:
       burn: 30
 
 meat_poultry_leg:
+  age:
+    warmth: 450
   name: "#d9baa5{inherit} Leg"
   overrides:
     CHICKEN:
@@ -91,6 +99,8 @@ meat_poultry_leg:
       burn: 30
 
 meat_red_meat:
+  age:
+    warmth: 450
   name: "#d9baa5Steak"
   overrides:
     BEEF:
@@ -114,6 +124,8 @@ meat_red_meat:
       burn: 30
 
 meat_pork:
+  age:
+    warmth: 450
   name: "#d9baa5Pork"
   model: meat_pork
   food: 18
@@ -125,6 +137,8 @@ meat_pork:
       burn: 30
 
 sausage:
+  age:
+    warmth: 450
   name: "#d9baa5Sausage"
   model: sausage
   food: 18
@@ -136,6 +150,8 @@ sausage:
       burn: 30
 
 sausage_chain:
+  age:
+    warmth: 450
   name: "#d9baa5Sausage Chain"
   model: sausage_chain
   food: 18
@@ -158,6 +174,7 @@ vegetable_1:
   food: 6
   nutrition: 4.5
   age:
+    warmth: 450
     freshness: 2.33
 
 ###Veggies — raw CustomCrops
@@ -179,6 +196,7 @@ vegetable_2:
   food: 10
   nutrition: 7.5
   age:
+    warmth: 450
     freshness: 2.33
 
 ###Veggies — raw (chop only, no cut step; excludes from cut_vegetables recipe)
@@ -197,6 +215,7 @@ vegetable_chop_only:
   food: 8
   nutrition: 6
   age:
+    warmth: 450
     freshness: 2.33
 
 ###Veggies — cut vanilla (pan + pot)
@@ -225,6 +244,7 @@ vegetable_cut:
       time: 15
       burn: 30
   age:
+    warmth: 450
     freshness: 1.67
 
 ###Veggies — cut CustomCrops (pan + pot)
@@ -256,6 +276,7 @@ vegetable_cut_2:
       time: 15
       burn: 30
   age:
+    warmth: 450
     freshness: 1.67
 
 ###Veggies — chopped garnish vanilla (no cooking; cook on cut stage)
@@ -274,6 +295,7 @@ vegetable_chopped:
   food: 6
   nutrition: 4.5
   age:
+    warmth: 450
     freshness: 1.33
 
 ###Veggies — chopped garnish CustomCrops
@@ -295,10 +317,13 @@ vegetable_chopped_2:
   food: 10
   nutrition: 7.5
   age:
+    warmth: 450
     freshness: 1.33
 
 ###Seasoning — does not spoil
 seasoning_1:
+  age:
+    warmth: 450
   name: "#f0f0f0{inherit}"
   overrides:
     SALT:
@@ -310,6 +335,8 @@ seasoning_1:
 
 ###Sweetener — does not spoil
 sweetener_1:
+  age:
+    warmth: 450
   name: "#f0f0f0{inherit}"
   overrides:
     SUGAR:
@@ -339,6 +366,7 @@ spice_1:
   food: 0
   nutrition: 0
   age:
+    warmth: 450
     freshness: 14
 
 ###Garnish — chopped (no cooking yet)
@@ -357,10 +385,13 @@ garnish_chopped:
   food: 8
   nutrition: 6
   age:
+    warmth: 450
     freshness: 1.33
 
 ###Baked goods
 bread:
+  age:
+    warmth: 450
   name: "#d9c4a5{prefixes}{fillers}Bread"
   model: bread
   food: 16
@@ -375,6 +406,7 @@ dry_ration:
   food: 20
   nutrition: 5
   age:
+    warmth: 450
     freshness: 10
 
 ###Fruits — raw vanilla (no cut step)
@@ -391,6 +423,7 @@ fruit_1:
   food: 6
   nutrition: 5.25
   age:
+    warmth: 450
     freshness: 0.67
 
 ###Fruits — raw CustomCrops
@@ -422,6 +455,7 @@ fruit_2:
   food: 10
   nutrition: 8.75
   age:
+    warmth: 450
     freshness: 0.67
 
 ##Crops
@@ -431,6 +465,7 @@ wheat:
   food: 4
   nutrition: 4
   age:
+    warmth: 450
     freshness: 10
 
 flour:
@@ -439,6 +474,7 @@ flour:
   food: 4
   nutrition: 4
   age:
+    warmth: 450
     freshness: 10
   tag-labels:
     freshness:
@@ -450,6 +486,7 @@ yeast:
   food: 4
   nutrition: 4
   age:
+    warmth: 450
     freshness: 2
   tag-labels:
     freshness:
@@ -461,6 +498,7 @@ dough:
   food: 4
   nutrition: 4
   age:
+    warmth: 450
     freshness: 0.5
     rising: 1
   tag-labels:
@@ -469,12 +507,16 @@ dough:
 
 ##SAUCE
 sauce:
+  age:
+    warmth: 450
   name: "{colour}{prefixes}{fillers}Sauce"
   food: 6
   nutrition: 5
 
 ##SOUP
 soup:
+  age:
+    warmth: 450
   name: "{colour}{prefixes}{fillers}Soup"
   food: 26
   nutrition: 8
@@ -486,6 +528,7 @@ cup_of_milk:
   food: 10
   nutrition: 6
   age:
+    warmth: 450
     freshness: 0.25
   tag-labels:
     freshness:
@@ -498,6 +541,7 @@ milk_bucket:
   food: 10
   nutrition: 6
   age:
+    warmth: 450
     freshness: 0.25
   tag-labels:
     freshness:
@@ -509,6 +553,7 @@ seafood_whole:
   food: 6
   nutrition: 6
   age:
+    warmth: 450
     freshness: 2.33
 
 seafood_fish_filet:
@@ -523,6 +568,7 @@ seafood_fish_filet:
       time: 15
       burn: 30
   age:
+    warmth: 450
     freshness: 2.33
   tag-labels:
     freshness:
@@ -541,6 +587,7 @@ seafood_jellyfish:
       time: 15
       burn: 30
   age:
+    warmth: 450
     freshness: 2.33
   tag-labels:
     freshness:
@@ -559,6 +606,7 @@ seafood_octopus:
       time: 15
       burn: 30
   age:
+    warmth: 450
     freshness: 2.33
   tag-labels:
     freshness:
@@ -572,6 +620,7 @@ butter:
   food: 10
   nutrition: 6
   age:
+    warmth: 450
     freshness: 7
   tag-labels:
     freshness:
@@ -591,6 +640,7 @@ egg:
       time: 12
       burn: 25
   age:
+    warmth: 450
     freshness: 1
   tag-labels:
     freshness:

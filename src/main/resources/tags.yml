@@ -39,6 +39,7 @@ butter_spiced:
     name: "#f0f0f0Spiced"
     value: 1
     craft-quality-pct: 0.10
+# types.yml age.warmth 450 makes each age unit 7.5 minutes; warmth expires at age 20 (2h30).
 warmth:
   ageable: true
   hot:
@@ -48,7 +49,7 @@ warmth:
     food-mult: 1.25
   warm:
     name: "#dea254Warm"
-    value: 10
+    value: 4
     nutrition-mult: 1.30
     food-mult: 1.20
 processed:
