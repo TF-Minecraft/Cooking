@@ -20,6 +20,8 @@ public class CraftingRecipe {
     private int yield;
     /** The output is the input cut differently: it keeps the input's origin, fillers and tags. One input at a time. */
     private boolean inherit;
+    /** With inherit, each output takes an even share of its input's food (a pie's slices hold what the pie did). */
+    private boolean shareFood;
     /** On a station with fill-models, its inputs show as the rising fill. False keeps them as themselves (olives in the cheese press). */
     private boolean fill;
 
@@ -32,6 +34,7 @@ public class CraftingRecipe {
         this.keepOutputAge = config.getBoolean("keep-output-age", false);
         this.yield = Math.max(1, config.getInt("yield", 1));
         this.inherit = config.getBoolean("inherit", false);
+        this.shareFood = config.getBoolean("share-food", false);
         this.fill = config.getBoolean("fill", true);
     }
 
@@ -65,6 +68,9 @@ public class CraftingRecipe {
     }
     public boolean inherits() {
         return inherit;
+    }
+    public boolean sharesFood() {
+        return shareFood;
     }
     public boolean fills() {
         return fill;

@@ -164,7 +164,7 @@ class CommandManagerCoverageTest {
         FoodItem roast = new FoodItem("roast", config);
         staticMock(FoodLoader.class).when(() -> FoodLoader.getByString("roast")).thenReturn(roast);
         List<String> contexts = List.of("CUTTING_BOARD", "MIXING_BOWL", "SAUCE_SCOOP", "SOUP_SCOOP", "CARVE",
-                "CHURN", "FRYING_PAN", "SAUSAGE_MAKER", "SANDWICH", "PIZZA", "SALAD", "MILLING", "BAKING");
+                "CHURN", "FRYING_PAN", "SAUSAGE_MAKER", "SANDWICH", "PIZZA", "SALAD", "PIE", "MILLING", "BAKING");
         assertEquals(contexts, tabs("qualitytest", "compose", "food(type=roast)", ""));
         assertEquals(List.of("BAKING"), tabs("qualitytest", "COMPOSE", "food(type=roast)", "bA"));
         assertEquals(List.of("SAUCE_SCOOP", "SAUSAGE_MAKER", "SANDWICH", "SALAD"), tabs("qualitytest", "compose2", "food(type=roast)|food(type=roast)", "sA"));

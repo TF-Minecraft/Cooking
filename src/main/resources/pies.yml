@@ -1,0 +1,128 @@
+# Pies, made in a pie tin and baked in the oven like the bread tray:
+#   1. Place a pie tin and right-click it with a piece of dough to line it.
+#   2. Right-click with fillings to put them in under the top crust (they don't show). An empty hand takes back what
+#      went in last: the last filling, then the dough.
+#   3. Sneak and right-click with an empty hand to carry the tin, and put it in a lit oven like a baking tray. Only a
+#      filled pie goes in (dough alone doesn't); an empty tin can.
+#   4. Once it's baked, right-click the tin with an empty hand to take the whole pie out (hot, like bread from the
+#      tray), even from the oven. Cut it into slices on the cutting board with the knife (crafting-stations.yml
+#      cut_pie).
+# The pie's food is what its dough and fillings hold between them, its nutrition their average (weighted by food),
+# like a sandwich's; each one's own cooking is left out, since the pie's bake (its cooked tag) cooks all of it, raw
+# meat too. Its quality, freshness and variety come from all of them (composition.yml context PIE). Its kind (kinds
+# below) gives it its origin, which picks its look through types.yml overrides, and its name: Key Lime Pie; a pie no
+# named kind takes is named by its fillings: "Carrot and Onion Pie" (naming.yml fillers max).
+#
+# The tin needs a slot named by slot below (InteractibleFurniture), at the furniture's centre with scale 1 and
+# interactible: false; the dough lies in it and shows the whole pie, drawn in the tin's own coordinates. The tin also
+# needs carry: true to go in the oven.
+
+# Furniture ids pies are made in.
+furniture:
+  - pie_tray
+
+# The tin's slot the dough lies in.
+slot: pie
+
+# Fillings in a pie: it bakes with at least min-fillings and takes no more than max-fillings.
+min-fillings: 1
+max-fillings: 3
+
+# The whole pie (types.yml). Its food and nutrition are replaced by what's in it.
+output: meal(type=pie;origin=Mixed)
+
+# Seconds in a lit oven until the pie is cooked, and until it burns (counted from when it went in, or from the last
+# filling put in).
+bake:
+  cook-seconds: 5
+  burn-seconds: 10
+
+# The dough that lines the tin, matched by types.yml type.
+#   models  its look in the tin: a model, or a tag and a model used while the dough has that tag. The pie's bake counts
+#           as a tag too (raw, cooked, burnt), and so does filled while fillings lie under the top crust. The first
+#           that exists is used, so later lines are fallbacks; with none, the dough shows as it looks in hand.
+crust:
+  types:
+    - dough
+  models:
+    - rotten ia.tfmc_cooking:pie_crust_rotten
+    - burnt ia.tfmc_cooking:pie_crust_burnt
+    - cooked ia.tfmc_cooking:pie_crust_cooked
+    - filled ia.tfmc_cooking:pie_crust_filled
+    - ia.tfmc_cooking:pie_crust_raw
+
+# What goes in a pie, matched by types.yml type; the first that takes a food wins.
+#   name   the filling's part of the pie's name; {origin} is the food's origin (Carrot)
+#   names  a name per origin instead (goat: Goat Cheese)
+fillings:
+  fruit:
+    types:
+      - fruit_1
+      - fruit_2
+    name: "{origin}"
+    names:
+      melon slice: Melon
+  meat:
+    types:
+      - meat_red_meat
+      - meat_poultry
+      - meat_poultry_leg
+      - meat_pork
+    name: "{origin}"
+  mash:
+    types:
+      - mashed_potatoes
+    name: Mashed Potato
+  vegetable:
+    types:
+      - vegetable_cut
+      - vegetable_cut_2
+      - vegetable_chopped
+      - vegetable_chopped_2
+      - garnish_chopped
+    name: "{origin}"
+  cheese:
+    types:
+      - cheese
+    name: Cheese
+    names:
+      goat: Goat Cheese
+
+# The kind of pie its fillings make; the first that matches wins. The pie takes the kind as its origin, so types.yml
+# overrides give each kind its own look, and its name in place of the fillings' names.
+#   layers        every one of these fillings (ids above)
+#   only          nothing but these fillings
+#   origins       every one of these origins
+#   any-origin    at least one of these origins
+#   only-origins  nothing but these origins
+#   min-origins   at least this many different origins
+#   mostly        at least half the fillings are this origin
+#   name          what the pie is called by: "{name} Pie"
+kinds:
+  Shepherds:
+    name: Shepherd's
+    layers: [meat, mash]
+    only: [meat, mash, vegetable]
+  Meat:
+    name: Meat
+    layers: [meat]
+    only: [meat, vegetable]
+  Apple:
+    name: Apple
+    only-origins: [Apple]
+  Key Lime:
+    name: Key Lime
+    only-origins: [Lime]
+  Mixed Berry:
+    name: Mixed Berry
+    only-origins: [Strawberry, Cherry, Grape, Blueberry, Blackberry, Raspberry, Cranberry, Sweet Berries]
+    min-origins: 2
+  Mixed: {}
+
+# Tags a pie earns from its fillings, written like sandwiches.yml's bonuses. count: fillings counts the fillings.
+bonuses:
+  size:
+    track: dish_size
+    count: fillings
+    steps:
+      3: hearty

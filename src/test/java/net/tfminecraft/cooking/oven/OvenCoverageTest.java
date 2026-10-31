@@ -24,12 +24,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.MockedStatic;
 
 import net.tfminecraft.cooking.baking.BakingTrayCoverageTest.Bakery;
 import net.tfminecraft.cooking.baking.BakingTrayState;
 import net.tfminecraft.cooking.cache.FurnitureCache;
+import net.tfminecraft.cooking.cooking.PotReference;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.heat.HeatSources;
+import net.tfminecraft.cooking.pie.PieConfig;
+import net.tfminecraft.cooking.pie.PieTin;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.cooking.pizza.PizzaPeel;
@@ -246,7 +250,7 @@ class OvenCoverageTest {
         handler.onFurnitureAdd(allowed); assertFalse(allowed.isCancelled());
         var empty = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, null); handler.onFurnitureAdd(empty); assertFalse(empty.isCancelled());
         var wrong = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, oven.furniture); handler.onFurnitureAdd(wrong); assertTrue(wrong.isCancelled());
-        assertTrue(env.messages.contains("§cOnly baking trays and pizza peels can go in the oven."));
+        assertTrue(env.messages.contains("§cOnly baking trays, pie tins and pizza peels can go in the oven."));
         var other = new FurnitureSlotFurnitureAddEvent(env.player, oven.furniture, slot, bakery.tray.furniture); handler.onFurnitureAdd(other); assertFalse(other.isCancelled());
         when(slot.getSlotType()).thenReturn(SlotType.ITEM);
         var itemSlot = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, oven.furniture); handler.onFurnitureAdd(itemSlot); assertFalse(itemSlot.isCancelled());
@@ -271,6 +275,38 @@ class OvenCoverageTest {
             verify(env.manager).markDirty(peel.furniture);
         } finally {
             new PizzaConfig().load(directory.resolve("missing.yml").toFile());
+        }
+    }
+
+    @Test
+    void cavitiesTakeEmptyTinsAndFilledPiesButNotDoughAloneAndBakeThePies(@TempDir Path directory) throws Exception {
+        Path config = directory.resolve("pies.yml");
+        Files.writeString(config, "furniture: [pie_tray]\nbake:\n  cook-seconds: 1\n  burn-seconds: 2\n"
+                + "crust:\n  types: [dough]\nfillings:\n  fruit:\n    types: [fruit_2]\n");
+        new PieConfig().load(config.toFile());
+        try (MockedStatic<PotReference> codec = mockStatic(PotReference.class)) {
+            ItemStack apple = env.stack(bakery.food("fruit_2", null), Material.APPLE, 1);
+            codec.when(() -> PotReference.decodeStack("apple")).thenReturn(apple);
+            Station tin = bakery.station("pie_tray"); tin.define("pie");
+            var slot = cavity.define("tray"); when(slot.getSlotType()).thenReturn(SlotType.FURNITURE);
+            var empty = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, tin.furniture);
+            new OvenCavityHandler().onFurnitureAdd(empty); assertFalse(empty.isCancelled());
+
+            tin.place("pie", env.stack(bakery.food("dough", null), Material.WHEAT, 1));
+            var dough = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, tin.furniture);
+            new OvenCavityHandler().onFurnitureAdd(dough); assertTrue(dough.isCancelled());
+            assertTrue(env.messages.contains("§cFill the pie before baking it."));
+
+            tin.variables.put("pie.fillings", "apple");
+            var filled = new FurnitureSlotFurnitureAddEvent(env.player, cavity.furniture, slot, tin.furniture);
+            new OvenCavityHandler().onFurnitureAdd(filled); assertFalse(filled.isCancelled());
+
+            bakery.nest(cavity, "tin", tin.furniture);
+            new OvenCavityManager().start(); env.server.getScheduler().performTicks(20);
+            assertEquals(PieTin.COOKED, PieTin.baked(tin.furniture));
+            verify(env.manager).markDirty(tin.furniture);
+        } finally {
+            new PieConfig().load(directory.resolve("missing.yml").toFile());
         }
     }
 

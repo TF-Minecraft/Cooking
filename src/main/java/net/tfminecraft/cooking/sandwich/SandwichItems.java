@@ -20,6 +20,7 @@ import net.tfminecraft.cooking.utils.ItemBuilder;
 
 /** Turns the layers on a board into one sandwich. */
 public final class SandwichItems {
+    private static final String COOKED_TRACK = "cooked";
 
     private SandwichItems() {}
 
@@ -70,22 +71,30 @@ public final class SandwichItems {
      * eating them one after another would give.
      */
     public static void applyTotals(FoodItem sandwich, List<FoodItem> layers) {
+        applyTotals(sandwich, layers, false);
+    }
+
+    /**
+     * As {@link #applyTotals(FoodItem, List)}; bakedTogether leaves out each layer's own cooking, for a dish that is
+     * baked as a whole (a pie's raw meat cooks with it), so its bake applies to all of it once.
+     */
+    public static void applyTotals(FoodItem dish, List<FoodItem> layers, boolean bakedTogether) {
         double food = 0;
         double nutrition = 0;
         for (FoodItem layer : layers) {
-            double part = layer.getBaseFood() * kept(layer, true);
+            double part = layer.getBaseFood() * kept(layer, true, bakedTogether);
             food += part;
-            nutrition += part * layer.getBaseNutrition() * kept(layer, false);
+            nutrition += part * layer.getBaseNutrition() * kept(layer, false, bakedTogether);
         }
-        sandwich.setBaseFood(food);
-        if (food > 0) sandwich.setBaseNutrition(nutrition / food);
+        dish.setBaseFood(food);
+        if (food > 0) dish.setBaseNutrition(nutrition / food);
     }
 
     /** What a layer's lasting tags (burnt bread) do to it; its age becomes the sandwich's own freshness instead. */
-    private static double kept(FoodItem layer, boolean forFood) {
+    private static double kept(FoodItem layer, boolean forFood, boolean bakedTogether) {
         double multiplier = 1;
         for (TagTrack track : layer.getTagTracks()) {
-            if (track.isAgeable()) continue;
+            if (track.isAgeable() || (bakedTogether && COOKED_TRACK.equals(track.getId()))) continue;
             TagStep step = track.getCurrentStep();
             if (step != null) multiplier *= forFood ? step.getFoodMultiplier() : step.getNutritionMultiplier();
         }

@@ -6,6 +6,8 @@ import org.bukkit.event.Listener;
 
 import net.tfminecraft.cooking.baking.BakingTrayRegistry;
 import net.tfminecraft.cooking.heat.HeatSources;
+import net.tfminecraft.cooking.pie.PieConfig;
+import net.tfminecraft.cooking.pie.PieTin;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotFurnitureAddEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -27,8 +29,13 @@ public final class OvenCavityHandler implements Listener {
         if (nested == null || BakingTrayRegistry.isTray(nested) || PizzaConfig.isPeel(nested)) {
             return;
         }
+        String refused = PieConfig.isTin(nested) ? PieTin.ovenRefusal(nested)
+                : "§cOnly baking trays, pie tins and pizza peels can go in the oven.";
+        if (refused == null) {
+            return;
+        }
 
         event.setCancelled(true);
-        event.getPlayer().sendMessage("§cOnly baking trays and pizza peels can go in the oven.");
+        event.getPlayer().sendMessage(refused);
     }
 }

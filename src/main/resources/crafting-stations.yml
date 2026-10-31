@@ -16,6 +16,8 @@
 #     and give no pour-return (olives pressed into oil in the cheese press).
 #   inherit: true  the output is the input cut differently: it keeps the input's origin, fillers (Banana) and tags
 #     (Sweet, Cooked, its age) that the output line doesn't set. The station takes one such input at a time.
+#   share-food: true  with inherit, each output takes an even share of its input's food (its food over yield) at
+#     its nutrition, so a pie's slices hold what the pie did instead of their type's own food.
 cutting_board:
   furniture: cutting_board
   single-origin: true

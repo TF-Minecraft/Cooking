@@ -127,7 +127,7 @@ class CookingLifecycleTest {
                 "milling-recipes.yml", "cookware.yml", "tags.yml", "naming.yml", "config.yml", "conversions.yml",
                 "carve-sequences.yml", "quality.yml", "composition.yml", "permission_effects.yml", "farming.yml",
                 "crops.yml", "husbandry.yml", "custom-fishing.yml", "sandwiches.yml", "pizzas.yml",
-                "condiments.yml")) {
+                "condiments.yml", "pies.yml")) {
             Path resource = plugin.getDataFolder().toPath().resolve(name);
             assertTrue(Files.isRegularFile(resource), name);
             assertFalse(Files.readString(resource).isBlank(), name);

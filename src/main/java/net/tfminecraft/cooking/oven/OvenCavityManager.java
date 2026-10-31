@@ -14,6 +14,8 @@ import net.tfminecraft.cooking.baking.BakingTrayState;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.TagTrack;
+import net.tfminecraft.cooking.pie.PieBaking;
+import net.tfminecraft.cooking.pie.PieConfig;
 import net.tfminecraft.cooking.pizza.PizzaBaking;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -50,6 +52,10 @@ public final class OvenCavityManager {
                 Furniture tray = slot.getNested();
                 if (PizzaConfig.isPeel(tray)) {
                     PizzaBaking.tick(consumer, tray);
+                    continue;
+                }
+                if (PieConfig.isTin(tray)) {
+                    PieBaking.tick(consumer, tray);
                     continue;
                 }
                 BakingTrayRecipe recipe = BakingTrayRegistry.getByFurniture(tray);
