@@ -45,6 +45,17 @@ class BowlIngredientLayoutTest {
     }
 
     @Test
+    void saladHeapsSpreadWiderEachSlotAHairAboveTheLast() {
+        for (int i = 1; i <= 5; i++) {
+            DisplayData data = BowlIngredientLayout.offsetFor("input_" + i, 0.13f);
+            assertEquals(0.13, Math.hypot(data.getxPos(), data.getzPos()), 0.001);
+            assertEquals(-BowlIngredientLayout.DROP + (i - 1) * BowlIngredientLayout.STAGGER, data.getyPos(), 0.0001);
+            assertEquals(0.7f, data.getxScale(), 0.0001);
+        }
+        assertNull(BowlIngredientLayout.offsetFor("food_item", 0.13f));
+    }
+
+    @Test
     void soupLiquidAndHiddenFoodStayCentered() {
         assertNull(BowlIngredientLayout.offsetFor("liquid"));
         assertNull(BowlIngredientLayout.offsetFor("food_item"));

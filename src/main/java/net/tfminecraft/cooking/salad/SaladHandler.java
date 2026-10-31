@@ -30,8 +30,9 @@ import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 /**
  * Tosses salads in a placed bowl (salads.yml). Right-clicking an empty bowl with an ingredient lays it in the bowl
- * (input_1, input_2, ...); dressings and seasonings go in unseen. Sneaking with an empty hand takes the last thing
- * back. An empty-hand right-click tosses the salad, which then stays in the bowl (food_item) until it's eaten there
+ * (input_1, input_2, ...) as its layer's bowl model, a small heap of its pieces, keeping its food data; dressings and
+ * seasonings go in unseen. Sneaking with an empty hand takes the last thing back. An empty-hand right-click tosses the
+ * salad, which then stays in the bowl (food_item) with its ingredients showing until it's eaten there
  * (BowlEatHandler); it can't be taken out.
  */
 public final class SaladHandler implements Listener {
@@ -68,7 +69,7 @@ public final class SaladHandler implements Listener {
                 p.sendMessage("§7The bowl is full; toss the salad with an empty hand.");
                 return;
             }
-            addIngredient(p, f, slot, hand);
+            addIngredient(p, f, slot, hand, food, ingredient);
             return;
         }
         SandwichLayer extra = SaladConfig.extraFor(food);
@@ -110,12 +111,18 @@ public final class SaladHandler implements Listener {
         for (ItemStack drop : drops) f.getLoc().getWorld().dropItem(f.getLoc(), drop);
     }
 
-    private void addIngredient(Player p, Furniture f, String slotId, ItemStack hand) {
+    /**
+     * Lays one of the held ingredient in the bowl as its layer's bowl model, spread around the bowl
+     * (salads.yml spread-radius). Without one it shows as it looks in hand, closer in, as a soup's ingredients do.
+     */
+    private void addIngredient(Player p, Furniture f, String slotId, ItemStack hand, FoodItem food, SandwichLayer layer) {
         ItemStack one = hand.clone();
         one.setAmount(1);
+        ItemStack shown = layer.model(food, one);
         PlacedSlot slot = f.getOrCreatePlacedSlot(slotId);
-        slot.forceModel(one);
-        DisplayData spread = BowlIngredientLayout.offsetFor(slotId);
+        slot.forceModel(shown == null ? one : shown);
+        DisplayData spread = shown == null ? BowlIngredientLayout.offsetFor(slotId)
+                : BowlIngredientLayout.offsetFor(slotId, SaladConfig.spreadRadius());
         if (spread != null) slot.applyDisplayData(spread);
         hand.setAmount(hand.getAmount() - 1);
         p.getInventory().setItemInMainHand(hand);

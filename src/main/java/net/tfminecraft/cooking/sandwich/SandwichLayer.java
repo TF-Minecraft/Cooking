@@ -76,7 +76,8 @@ public final class SandwichLayer {
     /**
      * The layer's look on the board, keeping the food's data. Each models entry is a model, or a tag and a model that
      * applies only while the food has that tag (rotten); the first that exists wins, so later entries are fallbacks.
-     * {origin} becomes the origin in lower case with _ for spaces (melon_slice). Null when none exists.
+     * {origin} becomes the origin in lower case with _ for spaces (melon_slice), and {type} its types.yml type in lower
+     * case (meat_pork), for layers whose types share origins (cut and chopped carrot). Null when none exists.
      */
     public ItemStack model(FoodItem food, ItemStack source) {
         return model(food, source, List.of());
@@ -94,11 +95,12 @@ public final class SandwichLayer {
     public ItemStack model(FoodItem food, ItemStack source, List<String> extraTags, List<String> suffixes) {
         List<String> tags = new ArrayList<>(food.getCurrentTagIds());
         tags.addAll(extraTags);
-        String origin = food.getOrigin() == null ? "none" : food.getOrigin().toLowerCase(Locale.ROOT).replace(' ', '_');
+        String origin = placeholder(food.getOrigin());
+        String type = placeholder(food.getId());
         for (String entry : models) {
             String[] parts = entry.trim().split("\\s+", 2);
             if (parts.length == 2 && !tags.contains(parts[0])) continue;
-            String path = parts[parts.length - 1].replace("{origin}", origin);
+            String path = parts[parts.length - 1].replace("{origin}", origin).replace("{type}", type);
             for (String suffix : suffixes) {
                 ItemStack shown = existing(ItemRef.apply(path + suffix, source));
                 if (shown != null) return shown;
@@ -107,6 +109,11 @@ public final class SandwichLayer {
             if (shown != null) return shown;
         }
         return null;
+    }
+
+    /** A name as a models placeholder: lower case with _ for spaces, or none. */
+    private static String placeholder(String name) {
+        return name == null ? "none" : name.toLowerCase(Locale.ROOT).replace(' ', '_');
     }
 
     // TLibs hands out dirt for an ItemsAdder item that doesn't exist.

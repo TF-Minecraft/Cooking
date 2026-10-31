@@ -17,6 +17,10 @@ furniture:
 min-ingredients: 2
 max-ingredients: 5
 
+# How far from the bowl's middle each ingredient lies, in blocks (input_1 to input_5 around it), drawn as the heap of
+# pieces its layer's models give it. An ingredient with no model of its own shows as it looks in hand, closer in.
+spread-radius: 0.13
+
 # Dressings and seasonings in a salad, at most. Each origin goes in once.
 max-extras: 3
 
@@ -26,6 +30,9 @@ output: meal(type=salad;origin=Mixed)
 # What shows in the bowl and names the salad, matched by types.yml type; the first that takes a food wins.
 #   name   the ingredient's part of the salad's name; {origin} is the food's origin (Tomato)
 #   names  a name per origin instead (goat: Goat Cheese)
+#   models its look in the bowl, as sandwiches.yml layers: a model, or a tag and a model for while the food has
+#          that tag (rotten); the first that exists wins. {origin} is the origin and {type} the types.yml type, in
+#          lower case with _ for spaces (salad_bowl_vegetable_cut_carrot_cooked). With none, it shows as in hand.
 ingredients:
   vegetable:
     types:
@@ -35,6 +42,16 @@ ingredients:
       - vegetable_cut
       - vegetable_cut_2
     name: "{origin}"
+    # A heap of its pieces: chopped dice, cut chunks, lettuce leaves, onion rings, corn kernels, rice grains.
+    models:
+      - rotten ia.tfmc_cooking:salad_bowl_{type}_{origin}_rotten
+      - rotten ia.tfmc_cooking:salad_bowl_vegetable_rotten
+      - burnt ia.tfmc_cooking:salad_bowl_{type}_{origin}_burnt
+      - burnt ia.tfmc_cooking:salad_bowl_vegetable_burnt
+      - boiled ia.tfmc_cooking:salad_bowl_{type}_{origin}_boiled
+      - cooked ia.tfmc_cooking:salad_bowl_{type}_{origin}_cooked
+      - ia.tfmc_cooking:salad_bowl_{type}_{origin}
+      - ia.tfmc_cooking:salad_bowl_vegetable
   fruit:
     types:
       - fruit_1
@@ -42,12 +59,26 @@ ingredients:
     name: "{origin}"
     names:
       melon slice: Melon
+    # Sliced or cubed fruit, whole berries.
+    models:
+      - rotten ia.tfmc_cooking:salad_bowl_fruit_{origin}_rotten
+      - rotten ia.tfmc_cooking:salad_bowl_fruit_rotten
+      - ia.tfmc_cooking:salad_bowl_fruit_{origin}
+      - ia.tfmc_cooking:salad_bowl_fruit
   cheese:
     types:
       - cheese
     name: Cheese
     names:
       goat: Goat Cheese
+    # Cubed cow's cheese, crumbled goat's cheese, fresh, dry or mouldy (cheese_age).
+    models:
+      - mouldy ia.tfmc_cooking:salad_bowl_cheese_{origin}_mouldy
+      - mouldy ia.tfmc_cooking:salad_bowl_cheese_cow_mouldy
+      - dry ia.tfmc_cooking:salad_bowl_cheese_{origin}_dry
+      - dry ia.tfmc_cooking:salad_bowl_cheese_cow_dry
+      - ia.tfmc_cooking:salad_bowl_cheese_{origin}
+      - ia.tfmc_cooking:salad_bowl_cheese_cow
   meat:
     types:
       - meat_red_meat
@@ -56,12 +87,28 @@ ingredients:
       - meat_pork
       - sausage
     name: "{origin}"
+    # By type, as every red meat looks alike: strips of steak or pork, shredded poultry, sausage slices.
+    models:
+      - rotten ia.tfmc_cooking:salad_bowl_{type}_rotten
+      - rotten ia.tfmc_cooking:salad_bowl_meat_rotten
+      - burnt ia.tfmc_cooking:salad_bowl_{type}_burnt
+      - burnt ia.tfmc_cooking:salad_bowl_meat_burnt
+      - boiled ia.tfmc_cooking:salad_bowl_{type}_boiled
+      - cooked ia.tfmc_cooking:salad_bowl_{type}_cooked
+      - cooked ia.tfmc_cooking:salad_bowl_meat_cooked
+      - ia.tfmc_cooking:salad_bowl_{type}_raw
+      - ia.tfmc_cooking:salad_bowl_meat_raw
 
   mushroom:
     # Grilled brown and red mushrooms, both just "Mushroom".
     types:
       - grilled_mushroom
     name: Mushroom
+    # Grilled slices, the same for brown and red, so a red one can't be told apart in the bowl.
+    models:
+      - rotten ia.tfmc_cooking:salad_bowl_mushroom_rotten
+      - burnt ia.tfmc_cooking:salad_bowl_mushroom_burnt
+      - ia.tfmc_cooking:salad_bowl_mushroom
 # What goes in unseen and doesn't name the salad.
 #   once            only one food of this extra per salad (one dressing)
 #   returns-bottle  the player keeps the empty glass bottle
