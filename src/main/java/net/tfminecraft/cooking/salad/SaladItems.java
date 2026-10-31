@@ -9,6 +9,7 @@ import org.bukkit.inventory.ItemStack;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionContext;
+import net.tfminecraft.cooking.quality.CompositionFreshnessApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.sandwich.DishBonus;
@@ -36,6 +37,7 @@ public final class SaladItems {
         FoodItem salad = parsed.template;
         CompositionResult composed = CompositionQualityResolver.compose(player, all, CompositionContext.SALAD);
         CompositionApplier.apply(salad, composed);
+        CompositionFreshnessApplier.keepOwnAgeing(salad);
         SandwichItems.applyTotals(salad, all);
         List<FoodItem> named = new ArrayList<>();
         List<SandwichLayer> made = new ArrayList<>();
