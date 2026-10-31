@@ -164,6 +164,49 @@ class HusbandryEntityScanTest {
     }
 
     @Test
+    void leftoverTempPlayerFilesAreNotRead(@TempDir Path dir) throws IOException {
+        File playerdata = dir.resolve("playerdata").toFile();
+        playerdata.mkdirs();
+        Files.write(new File(playerdata, RIDER + ".dat").toPath(), gzip(player(entity(HORSE, 5.5, 64.0, 5.5))));
+        // An interrupted vanilla save leaves <uuid>-<number>.dat with only a gzip header.
+        Files.write(new File(playerdata, RIDER + "-7214243180096765426.dat").toPath(),
+                new byte[] {0x1F, (byte) 0x8B, 8, 0, 0, 0, 0, 0, 0, (byte) 0xFF});
+        Files.write(new File(playerdata, "notes.dat").toPath(), new byte[] {1, 2, 3});
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("TFMC_Map", dir.resolve("entities").toFile())),
+                playerdata, Set.of(HORSE));
+
+        assertTrue(result.complete());
+        assertEquals(Set.of(HORSE), result.ridden());
+    }
+
+    @Test
+    void unreadableFilesAndChunksAreNamedWithTheirReason(@TempDir Path dir) throws IOException {
+        File entities = dir.resolve("entities").toFile();
+        entities.mkdirs();
+        // Index 1 of region (-1, 2) is chunk (-31, 64); index 0 is chunk (-32, 64) and reads fine.
+        writeRegion(new File(entities, "r.-1.2.mca"),
+                Map.of(0, zlib(chunk(entity(COW, -510.0, 64.0, 1030.0))), 1, new byte[] {1, 2, 3}), Map.of(1, 4));
+        Files.write(new File(entities, "r.3.3.mca").toPath(), new byte[100]);
+        File playerdata = dir.resolve("playerdata").toFile();
+        playerdata.mkdirs();
+        Files.write(new File(playerdata, RIDER + ".dat").toPath(), new byte[] {1, 2, 3});
+
+        HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
+                List.of(new HusbandryEntityScan.WorldDir("world", entities)), playerdata, Set.of(COW));
+
+        assertFalse(result.complete());
+        List<String> unreadable = result.unreadable();
+        assertTrue(unreadable.contains("world/r.-1.2.mca chunk -31,64: bad length or compression"), unreadable::toString);
+        assertTrue(unreadable.contains("world/r.3.3.mca: only 100 bytes"), unreadable::toString);
+        assertTrue(unreadable.stream().anyMatch(line -> line.startsWith("playerdata/" + RIDER + ".dat: ")),
+                unreadable::toString);
+        assertEquals(3, unreadable.size());
+        assertTrue(result.found().containsKey(COW));
+    }
+
+    @Test
     void missingFolderIsSkipped(@TempDir Path dir) {
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
                 List.of(new HusbandryEntityScan.WorldDir("world", dir.resolve("nope").toFile())), Set.of(COW));

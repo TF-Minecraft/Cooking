@@ -24,6 +24,8 @@ import net.tfminecraft.tlibs.database.SqliteDatabaseException;
  * so {@code /animals} can point at them. An owned animal that is not in any saved chunk
  * of a fully scanned world, nor under a logged-out rider, was lost from the save: it is
  * respawned from its snapshot, or, without one, its row is deleted as a ghost and logged.
+ * When something could not be read it is only marked {@code Missing}, and the unreadable
+ * files are logged so staff can clear them.
  */
 public final class HusbandryLocator {
 
@@ -97,6 +99,7 @@ public final class HusbandryLocator {
         int dropped = 0;
         int missing = 0;
         int held = 0;
+        int unsure = 0;
         List<String> scannedWorlds = worlds.stream().map(HusbandryEntityScan.WorldDir::world).toList();
         for (Map.Entry<UUID, Long> target : targets.entrySet()) {
             UUID uuid = target.getKey();
@@ -117,7 +120,13 @@ public final class HusbandryLocator {
             if (found == null) {
                 HusbandryAnimal animal = stored.get();
                 // An animal last seen in a world that was not scanned may still be there.
-                if (!isConfirmedGhost(result.complete(), animal.world(), scannedWorlds)) {
+                if (!inScannedWorld(animal.world(), scannedWorlds)) {
+                    continue;
+                }
+                // It may be in a chunk or with a rider that could not be read.
+                if (!result.complete()) {
+                    MISSING.add(uuid);
+                    unsure++;
                     continue;
                 }
                 try {
@@ -162,25 +171,36 @@ public final class HusbandryLocator {
                 Bukkit.getLogger().severe("[Cooking] Failed to save husbandry animal location: " + ex.getMessage());
             }
         }
-        if (located > 0 || restoring > 0 || dropped > 0 || missing > 0 || held > 0 || !result.complete()) {
+        if (located > 0 || restoring > 0 || dropped > 0 || missing > 0 || held > 0 || unsure > 0
+                || !result.complete()) {
             String failed = missing > 0
                     ? ", " + missing + " still marked missing after a failed drop"
                     : "";
             Bukkit.getLogger().info("[Cooking] Animal scan: updated " + located + " locations, restoring "
                     + restoring + " lost animals from snapshots, dropped " + dropped + " ghost animals" + failed
                     + (held > 0 ? ", held " + held + " missing animal records for staff review" : "")
-                    + (result.complete() ? "." : " (some chunks could not be read, none dropped)."));
+                    + (unsure > 0 ? ", kept " + unsure + " missing animals because some files could not be read" : "")
+                    + ".");
+        }
+        if (!result.complete()) {
+            Bukkit.getLogger().warning(unreadableLog(result.unreadable()));
         }
     }
 
-    /**
-     * A ghost is an owned animal absent from every saved chunk after a complete scan of its world.
-     * An incomplete scan, or a last world that was not scanned, is not enough to drop the row.
-     */
-    static boolean isConfirmedGhost(boolean scanComplete, String storedWorld, Collection<String> scannedWorlds) {
-        if (!scanComplete) {
-            return false;
+    static final int LOGGED_PROBLEMS = 10;
+
+    static String unreadableLog(List<String> problems) {
+        StringBuilder line = new StringBuilder("[Cooking] Animal scan could not read ")
+                .append(problems.size()).append(problems.size() == 1 ? " file or chunk: " : " files or chunks: ");
+        line.append(String.join("; ", problems.subList(0, Math.min(LOGGED_PROBLEMS, problems.size()))));
+        if (problems.size() > LOGGED_PROBLEMS) {
+            line.append("; and ").append(problems.size() - LOGGED_PROBLEMS).append(" more");
         }
+        return line.toString();
+    }
+
+    /** An animal last seen in a world that was not scanned may still be there. No world means any. */
+    static boolean inScannedWorld(String storedWorld, Collection<String> scannedWorlds) {
         if (storedWorld == null || storedWorld.isBlank()) {
             return true;
         }

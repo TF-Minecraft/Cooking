@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,9 +31,22 @@ final class HusbandryEntityScan {
 
     /**
      * {@code ridden} holds animals saved under a logged-out rider.
-     * {@code complete} is false when some chunk or player file could not be read, so a missing animal may still exist.
+     * {@code unreadable} names each folder, file or chunk that could not be read, with the reason.
      */
-    record Result(Map<UUID, Found> found, Set<UUID> ridden, boolean complete) {}
+    record Result(Map<UUID, Found> found, Set<UUID> ridden, List<String> unreadable) {
+
+        /** False when something could not be read, so a missing animal may still exist. */
+        boolean complete() {
+            return unreadable.isEmpty();
+        }
+    }
+
+    /**
+     * Vanilla player files are {@code <uuid>.dat}. An interrupted save leaves a truncated temp file
+     * named {@code <uuid>-<number>.dat} next to it; that and the {@code .dat_old} backup are not read.
+     */
+    private static final Pattern PLAYER_FILE = Pattern.compile(
+            "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\.dat");
 
     private static final Pattern REGION = Pattern.compile("r\\.(-?\\d{1,7})\\.(-?\\d{1,7})\\.mca");
     private static final int SECTOR = 4096;
@@ -48,9 +62,9 @@ final class HusbandryEntityScan {
     static Result scan(List<WorldDir> worlds, File playerdata, Set<UUID> targets) {
         Map<UUID, Found> found = new HashMap<>();
         Set<UUID> ridden = new HashSet<>();
-        boolean complete = true;
+        List<String> unreadable = new ArrayList<>();
         if (targets.isEmpty()) {
-            return new Result(found, ridden, true);
+            return new Result(found, ridden, List.of());
         }
         for (WorldDir world : worlds) {
             if (!world.entities().exists()) {
@@ -58,7 +72,7 @@ final class HusbandryEntityScan {
             }
             File[] files = world.entities().listFiles();
             if (files == null) {
-                complete = false;
+                unreadable.add(world.world() + " entities folder could not be listed");
                 continue;
             }
             for (File file : files) {
@@ -68,22 +82,22 @@ final class HusbandryEntityScan {
                 }
                 int regionX = Integer.parseInt(name.group(1));
                 int regionZ = Integer.parseInt(name.group(2));
-                complete &= scanRegion(world, file, regionX, regionZ, targets, found);
+                scanRegion(world, file, regionX, regionZ, targets, found, unreadable);
             }
         }
-        complete &= scanPlayers(playerdata, targets, ridden);
-        return new Result(found, ridden, complete);
+        scanPlayers(playerdata, targets, ridden, unreadable);
+        return new Result(found, ridden, List.copyOf(unreadable));
     }
 
-    private static boolean scanPlayers(File playerdata, Set<UUID> targets, Set<UUID> ridden) {
+    private static void scanPlayers(File playerdata, Set<UUID> targets, Set<UUID> ridden, List<String> unreadable) {
         if (playerdata == null || !playerdata.exists()) {
-            return true;
+            return;
         }
-        File[] files = playerdata.listFiles((dir, name) -> name.endsWith(".dat"));
+        File[] files = playerdata.listFiles((dir, name) -> PLAYER_FILE.matcher(name).matches());
         if (files == null) {
-            return false;
+            unreadable.add("playerdata folder could not be listed");
+            return;
         }
-        boolean complete = true;
         for (File file : files) {
             try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(
                     new GZIPInputStream(new ByteArrayInputStream(readBounded(file, MAX_CHUNK_BYTES)))
@@ -92,50 +106,58 @@ final class HusbandryEntityScan {
                 readPlayer(in, targets, vehicle);
                 ridden.addAll(vehicle.keySet());
             } catch (IOException | RuntimeException ex) {
-                complete = false;
+                unreadable.add("playerdata/" + file.getName() + ": " + reason(ex));
             }
         }
-        return complete;
     }
 
-    private static boolean scanRegion(
-            WorldDir world, File file, int regionX, int regionZ, Set<UUID> targets, Map<UUID, Found> found) {
+    private static String reason(Exception ex) {
+        String message = ex.getMessage();
+        return message == null || message.isBlank() ? ex.getClass().getSimpleName() : message;
+    }
+
+    private static void scanRegion(WorldDir world, File file, int regionX, int regionZ, Set<UUID> targets,
+            Map<UUID, Found> found, List<String> unreadable) {
+        String where = world.world() + "/" + file.getName();
         byte[] data;
         try {
             data = readBounded(file, MAX_REGION_BYTES);
         } catch (IOException ex) {
-            return false;
+            unreadable.add(where + ": " + reason(ex));
+            return;
         }
         if (data.length == 0) {
-            return true;
+            return;
         }
         if (data.length < SECTOR * 2) {
-            return false;
+            unreadable.add(where + ": only " + data.length + " bytes");
+            return;
         }
-        boolean complete = true;
         for (int index = 0; index < 1024; index++) {
             int entry = readInt(data, index * 4);
             long sectorOffset = (long) (entry >>> 8) * SECTOR;
             if (sectorOffset == 0) {
                 continue;
             }
+            int chunkX = regionX * 32 + index % 32;
+            int chunkZ = regionZ * 32 + index / 32;
+            String chunkWhere = where + " chunk " + chunkX + "," + chunkZ;
             if (sectorOffset + 5 > data.length) {
-                complete = false;
+                unreadable.add(chunkWhere + ": starts past the end of the file");
                 continue;
             }
             int offset = (int) sectorOffset;
             try {
-                byte[] chunk = chunkBytes(world, data, offset, regionX * 32 + index % 32, regionZ * 32 + index / 32);
+                byte[] chunk = chunkBytes(world, data, offset, chunkX, chunkZ);
                 if (chunk == null) {
-                    complete = false;
+                    unreadable.add(chunkWhere + ": bad length or compression");
                     continue;
                 }
                 readEntityChunk(new DataInputStream(new ByteArrayInputStream(chunk)), world.world(), targets, found);
             } catch (IOException | RuntimeException ex) {
-                complete = false;
+                unreadable.add(chunkWhere + ": " + reason(ex));
             }
         }
-        return complete;
     }
 
     private static byte[] chunkBytes(WorldDir world, byte[] data, int offset, int chunkX, int chunkZ)

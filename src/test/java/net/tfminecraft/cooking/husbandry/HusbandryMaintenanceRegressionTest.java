@@ -55,7 +55,7 @@ class HusbandryMaintenanceRegressionTest {
             };
             Logger logger = Bukkit.getLogger(); logger.addHandler(handler);
             try (MockedStatic<HusbandrySnapshots> snapshots = mockStatic(HusbandrySnapshots.class);
-                 var scan = new HusbandryRuntimeCoverageTest.Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), true))) {
+                 var scan = new HusbandryRuntimeCoverageTest.Scan(new HusbandryEntityScan.Result(Map.of(), Set.of(), List.of()))) {
                 snapshots.when(() -> HusbandrySnapshots.restore(any(), any(), anyList())).thenReturn(false);
                 HusbandryLocator.scanUnloaded(); scan.background(); assertDoesNotThrow(scan::apply);
             } finally { logger.removeHandler(handler); }
