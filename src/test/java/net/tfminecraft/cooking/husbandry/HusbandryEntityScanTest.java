@@ -164,13 +164,15 @@ class HusbandryEntityScanTest {
     }
 
     @Test
-    void leftoverTempPlayerFilesAreNotRead(@TempDir Path dir) throws IOException {
+    void onlyRealPlayerFilesAreRead(@TempDir Path dir) throws IOException {
         File playerdata = dir.resolve("playerdata").toFile();
         playerdata.mkdirs();
         Files.write(new File(playerdata, RIDER + ".dat").toPath(), gzip(player(entity(HORSE, 5.5, 64.0, 5.5))));
         // An interrupted vanilla save leaves <uuid>-<number>.dat with only a gzip header.
         Files.write(new File(playerdata, RIDER + "-7214243180096765426.dat").toPath(),
                 new byte[] {0x1F, (byte) 0x8B, 8, 0, 0, 0, 0, 0, 0, (byte) 0xFF});
+        // A player file the server could not load is kept as <uuid>_corrupted_<date>.dat.
+        Files.write(new File(playerdata, RIDER + "_corrupted_2026-10-31_11-12-59.dat").toPath(), new byte[] {1, 2, 3});
         Files.write(new File(playerdata, "notes.dat").toPath(), new byte[] {1, 2, 3});
 
         HusbandryEntityScan.Result result = HusbandryEntityScan.scan(
