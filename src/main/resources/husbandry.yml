@@ -32,7 +32,7 @@ care:
 
 grow-up: 1h
 
-profession: farming
+profession: forager
 
 exp:
   min: 6
@@ -395,14 +395,14 @@ mounts:
   speed:
     min-pct: 0.40
     genetics-pct: 0.30
-    care-pct: 0.20
+    care-pct: 0.30
   HORSE:
     min-health: 10
-    max-health: 20
+    max-health: 27
     min-speed: 0.0675
-    max-speed: 0.2025
+    max-speed: 0.27
     min-jump: 0.24
-    max-jump: 0.6
+    max-jump: 0.8
   DONKEY:
     min-health: 10
     max-health: 20

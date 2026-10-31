@@ -68,7 +68,7 @@ meat_poultry:
       name: "#d9baa5Chicken"
       model: meat_poultry
   model: meat_poultry
-  food: 18
+  food: 20
   nutrition: 8
   mashable: true
   cooking-options:
@@ -90,7 +90,7 @@ meat_poultry_leg:
       name: "#d9baa5Chicken Leg"
       model: meat_poultry_leg
   model: meat_poultry_leg
-  food: 18
+  food: 20
   nutrition: 8
   cooking-options:
     frying_pan:
@@ -110,7 +110,7 @@ meat_red_meat:
       name: "#d9baa5Venison"
       model: meat_red_meat
   model: meat_red_meat
-  food: 18
+  food: 20
   nutrition: 8
   mashable: true
   cooking-options:
@@ -128,7 +128,7 @@ meat_pork:
     warmth: 450
   name: "#d9baa5Pork"
   model: meat_pork
-  food: 18
+  food: 20
   nutrition: 8
   cooking-options:
     frying_pan:
@@ -141,7 +141,7 @@ sausage:
     warmth: 450
   name: "#d9baa5Sausage"
   model: sausage
-  food: 18
+  food: 20
   nutrition: 8
   cooking-options:
     frying_pan:
@@ -154,7 +154,7 @@ sausage_chain:
     warmth: 450
   name: "#d9baa5Sausage Chain"
   model: sausage_chain
-  food: 18
+  food: 20
   nutrition: 8
   carve-sequence: sausage
 
@@ -171,11 +171,11 @@ vegetable_1:
     PUMPKIN:
       model: pumpkin
   model: carrot
-  food: 6
+  food: 7
   nutrition: 4.5
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 7
 
 ###Veggies — raw CustomCrops
 vegetable_2:
@@ -193,11 +193,11 @@ vegetable_2:
     CORN:
       model: corn
   model: tomato
-  food: 10
+  food: 12
   nutrition: 7.5
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 7
 
 ###Veggies — raw (chop only, no cut step; excludes from cut_vegetables recipe)
 vegetable_chop_only:
@@ -212,11 +212,11 @@ vegetable_chop_only:
     GARLIC:
       model: garlic
   model: olive
-  food: 8
+  food: 9
   nutrition: 6
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 7
 
 ###Veggies — cut vanilla (pan + pot)
 vegetable_cut:
@@ -231,7 +231,7 @@ vegetable_cut:
     PUMPKIN:
       model: pumpkin_cut
   model: carrot_cut
-  food: 6
+  food: 7
   nutrition: 4.5
   mashable: true
   cooking-options:
@@ -245,7 +245,7 @@ vegetable_cut:
       burn: 30
   age:
     warmth: 450
-    freshness: 1.67
+    freshness: 5
 
 ###Veggies — cut CustomCrops (pan + pot)
 vegetable_cut_2:
@@ -263,7 +263,7 @@ vegetable_cut_2:
     CORN:
       model: corn_cut
   model: tomato_cut
-  food: 10
+  food: 12
   nutrition: 7.5
   mashable: true
   cooking-options:
@@ -277,7 +277,7 @@ vegetable_cut_2:
       burn: 30
   age:
     warmth: 450
-    freshness: 1.67
+    freshness: 5
 
 ###Veggies — chopped garnish vanilla (no cooking; cook on cut stage)
 vegetable_chopped:
@@ -292,11 +292,11 @@ vegetable_chopped:
     PUMPKIN:
       model: pumpkin_chopped
   model: carrot_chopped
-  food: 6
+  food: 7
   nutrition: 4.5
   age:
     warmth: 450
-    freshness: 1.33
+    freshness: 4
 
 ###Veggies — chopped garnish CustomCrops
 vegetable_chopped_2:
@@ -314,11 +314,11 @@ vegetable_chopped_2:
     CORN:
       model: corn_chopped
   model: tomato_chopped
-  food: 10
+  food: 11
   nutrition: 7.5
   age:
     warmth: 450
-    freshness: 1.33
+    freshness: 4
 
 ###Seasoning — does not spoil
 seasoning_1:
@@ -386,7 +386,7 @@ garnish_chopped:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 1.33
+    freshness: 4
 
 ###Baked goods
 bread:
@@ -394,7 +394,7 @@ bread:
     warmth: 450
   name: "#d9c4a5{prefixes}{fillers}Bread"
   model: bread
-  food: 16
+  food: 26
   nutrition: 5
   tag-labels:
     freshness:
@@ -424,7 +424,7 @@ fruit_1:
   nutrition: 5.25
   age:
     warmth: 450
-    freshness: 0.67
+    freshness: 7
 
 ###Fruits — raw CustomCrops
 fruit_2:
@@ -456,7 +456,7 @@ fruit_2:
   nutrition: 8.75
   age:
     warmth: 450
-    freshness: 0.67
+    freshness: 7
 
 ##Crops
 wheat:
@@ -550,7 +550,7 @@ milk_bucket:
 
 seafood_whole:
   name: "#6fa8dc{inherit}"
-  food: 6
+  food: 15
   nutrition: 6
   age:
     warmth: 450
@@ -559,10 +559,14 @@ seafood_whole:
 seafood_fish_filet:
   name: "#6fa8dc{inherit} Filet"
   model: seafood_fish_filet
-  food: 6
+  food: 10
   nutrition: 6
   mashable: true
   cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
     pot:
       tag: 3
       time: 15
@@ -578,10 +582,14 @@ seafood_fish_filet:
 seafood_jellyfish:
   name: "#87cefa{inherit} Cubes"
   model: seafood_jellyfish
-  food: 5
+  food: 9
   nutrition: 5
   mashable: true
   cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
     pot:
       tag: 3
       time: 15
@@ -597,10 +605,14 @@ seafood_jellyfish:
 seafood_octopus:
   name: "#d2691e{inherit}"
   model: seafood_octopus
-  food: 7
+  food: 11
   nutrition: 7
   mashable: true
   cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
     pot:
       tag: 3
       time: 15
@@ -626,7 +638,6 @@ butter:
     freshness:
       stale: "#c3db81Rancid"
       rotten: "#8B7355Spoiled"
-
 egg:
   name: "#f5e6c8Egg"
   model: egg
