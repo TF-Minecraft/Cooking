@@ -2,7 +2,7 @@
 #########Do not change these unless you know
 # craft-quality-pct: upward star-roll bonus when this step is active on an extra ingredient (e.g. 0.05 = +5% craft quality)
 # stars: added to inherited quality while this step is active. Negative lowers the star rating.
-# Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 3 days).
+# Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 1.25 days).
 # Per-type duration is types.yml age.freshness (higher = lasts longer).
 freshness:
   ageable: true
@@ -17,7 +17,7 @@ freshness:
     quality-reduce: 0.25
   rotten:
     name: "#0a6935Rotten"
-    value: 259200
+    value: 108000
     nutrition-mult: 0.05
     food-mult: 0.6
     quality-reduce: 0.75
@@ -39,6 +39,7 @@ butter_spiced:
     name: "#f0f0f0Spiced"
     value: 1
     craft-quality-pct: 0.10
+# types.yml age.warmth 450 makes each age unit 7.5 minutes; warmth expires at age 20 (2h30).
 warmth:
   ageable: true
   hot:
@@ -48,7 +49,7 @@ warmth:
     food-mult: 1.25
   warm:
     name: "#dea254Warm"
-    value: 10
+    value: 4
     nutrition-mult: 1.30
     food-mult: 1.20
 processed:
@@ -136,22 +137,22 @@ soup_thickness:
     value: 0
   light:
     name: "#9c95cfLight"
-    value: 300
+    value: 20
     nutrition-mult: 1.05
     food-mult: 1.2
   creamy:
     name: "#dbb886Creamy"
-    value: 900
+    value: 40
     nutrition-mult: 1.1
     food-mult: 1.4
   velvety:
     name: "#eb844dVelvety"
-    value: 1800
+    value: 60
     nutrition-mult: 1.15
     food-mult: 1.75
   thick:
     name: "#a6a18aThick"
-    value: 3600
+    value: 80
     nutrition-mult: 1.2
     food-mult: 2.0
 
@@ -196,7 +197,7 @@ flavourful:
     food-mult: 1.0
     nutrition-mult: 1.1
 
-# Dough proofing. Values are seconds at age.rising 1 (dough uses 1): rising after 5 minutes, risen after 15.
+# Dough proofing. Values are seconds at age.rising 1 (dough uses 1): rising after 20 seconds, risen after 45.
 rising:
   ageable: true
   unrisen:
@@ -205,11 +206,11 @@ rising:
     stars: -3
   rising:
     name: "#d4b483Rising"
-    value: 300
+    value: 20
     stars: -1
   risen:
     name: "#e6c98aRisen"
-    value: 900
+    value: 45
     stars: 0
 
 # A BreweryX brew poured into the saucepan as its liquid.
