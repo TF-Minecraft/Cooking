@@ -82,6 +82,8 @@ categories:
       - tfmc_cooking:carrot_rotten
       - tfmc_cooking:wheat_rotten
       - tfmc_cooking:apple_rotten
+      - tfmc_cooking:brown_mushroom_rotten
+      - tfmc_cooking:red_mushroom_rotten
       - tfmc_cooking:egg_rotten
       - tfmc_cooking:beetroot_rotten
       - tfmc_cooking:potato_rotten
@@ -307,12 +309,16 @@ categories:
       - tfmc_cooking:fried_egg_burnt
       - tfmc_cooking:fried_egg_rotten
       - tfmc_cooking:grilled_mushroom
+      - tfmc_cooking:grilled_mushroom_burnt
+      - tfmc_cooking:grilled_mushroom_rotten
       - tfmc_cooking:maple_syrup
       - tfmc_cooking:mashed_potatoes
       - tfmc_cooking:mustard
       - tfmc_cooking:mustard_seeds
       - tfmc_cooking:olive_oil
       - tfmc_cooking:popcorn
+      - tfmc_cooking:popcorn_burnt
+      - tfmc_cooking:popcorn_rotten
       - tfmc_cooking:rice
       - tfmc_cooking:stock
       - tfmc_cooking:sunflower_seeds
