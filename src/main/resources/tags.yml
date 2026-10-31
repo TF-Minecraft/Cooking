@@ -220,3 +220,49 @@ reduced:
     value: 0
     nutrition-mult: 1.10
     food-mult: 1.10
+
+# Sandwich and pizza bonuses (sandwiches.yml / pizzas.yml bonuses).
+dish_size:
+  hearty:
+    name: "#c08a4bHearty"
+    value: 0
+    food-mult: 1.10
+  loaded:
+    name: "#a0522dLoaded"
+    value: 1
+    food-mult: 1.20
+    nutrition-mult: 1.05
+
+buttered:
+  buttered:
+    name: "#f3e08aButtered"
+    value: 0
+    food-mult: 1.05
+    nutrition-mult: 1.10
+
+well_rounded:
+  well_rounded:
+    name: "#7cb342Well-Rounded"
+    value: 0
+    food-mult: 1.15
+    nutrition-mult: 1.15
+
+saucy:
+  saucy:
+    name: "#c0392bSaucy"
+    value: 0
+    food-mult: 1.10
+
+extra_cheesy:
+  extra_cheesy:
+    name: "#f1c232Extra Cheesy"
+    value: 0
+    food-mult: 1.15
+    nutrition-mult: 1.05
+
+sweet_and_savoury:
+  sweet_and_savoury:
+    name: "#e07b53Sweet and Savoury"
+    value: 0
+    food-mult: 1.10
+    nutrition-mult: 1.10

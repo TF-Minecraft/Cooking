@@ -14,6 +14,7 @@ import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.sandwich.SandwichLayer;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
@@ -44,6 +45,8 @@ public final class PizzaItems {
         CompositionResult composed = CompositionQualityResolver.compose(player, layers, CompositionContext.PIZZA);
         CompositionApplier.apply(pizza, composed);
         applyTotals(pizza, layers);
+        DishBonus.apply(pizza, layers, PizzaConfig::layerFor,
+                layer -> !PizzaConfig.isBase(layer) && !PizzaConfig.isSauce(layer), PizzaConfig.bonuses());
         for (FoodItem food : layers) {
             SandwichLayer layer = PizzaConfig.layerFor(food);
             if (layer == null || PizzaConfig.isBase(layer) || PizzaConfig.isSauce(layer)) continue;
