@@ -38,6 +38,13 @@ context-overrides:
       - dairy
   SAUSAGE_MAKER:
     extra: []
+  SALAD:
+    extra:
+      - salt
+      - pepper
+      - spice
+      - oil
+      - vinegar
 
 modifiers:
   enabled: true

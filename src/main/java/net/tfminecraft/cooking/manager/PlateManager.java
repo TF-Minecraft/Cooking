@@ -25,6 +25,7 @@ import net.tfminecraft.cooking.cache.CategoryDictionary;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.salad.SaladHandler;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.HeldStack;
@@ -187,6 +188,10 @@ public class PlateManager implements Listener{
         if (f.getType() == null || f.getType().getSlot("food_item") == null) return;
         PlacedSlot current = f.getActiveSlot("food_item").orElse(null);
         if (current != null && current.getCurrentItem() != null && !current.getCurrentItem().getType().isAir()) return;
+        if (SaladHandler.isMaking(f)) {
+            p.sendMessage("§7There's a salad in this bowl; toss it or take it out first.");
+            return;
+        }
         ItemStack emptyLadle = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
         if (emptyLadle == null || emptyLadle.getType().isAir()) return;
         Map<String, ItemStack> map = Encoder.decodeSlots(base.getItemMeta().getPersistentDataContainer().get(Keys.SLOT_DATA, PersistentDataType.STRING));

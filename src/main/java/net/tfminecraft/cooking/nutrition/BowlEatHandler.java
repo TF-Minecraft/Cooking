@@ -12,6 +12,7 @@ import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.manager.PlateManager;
+import net.tfminecraft.cooking.salad.SaladConfig;
 import net.tfminecraft.cooking.utils.PlayerActionContext;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -56,7 +57,7 @@ public final class BowlEatHandler implements Listener {
         }
 
         FoodItem food = FoodItem.fromItem(soupStack);
-        if (food == null || !food.getCategory().equalsIgnoreCase("soup")) {
+        if (food == null || !(food.getCategory().equalsIgnoreCase("soup") || SaladConfig.isSalad(food))) {
             return;
         }
 

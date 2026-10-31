@@ -36,10 +36,12 @@ import net.tfminecraft.cooking.utils.StationAddonRules;
  *     min: 2                        # each of the layers above at least this often
  *     addons: rounded               # a chopped garnish and a spice (aromatic: two of one kind)
  *     valuable: true                # a food types.yml marks valuable (tomato, onion...)
+ *     fresh: true                   # every layer still at its first freshness step
  * </pre>
  * A bonus with no count takes its track's first step, or the one named in step.
  */
 public final class DishBonus {
+    private static final String FRESHNESS = "freshness";
     private final String track;
     private final String step;
     private final List<String> layers = new ArrayList<>();
@@ -47,6 +49,7 @@ public final class DishBonus {
     private final int min;
     private final String addons;
     private final boolean valuable;
+    private final boolean fresh;
     private final String count;
     private final TreeMap<Integer, String> steps = new TreeMap<>();
 
@@ -59,6 +62,7 @@ public final class DishBonus {
         String profile = config.getString("addons");
         this.addons = profile == null ? null : profile.toUpperCase(Locale.ROOT);
         this.valuable = config.getBoolean("valuable", false);
+        this.fresh = config.getBoolean("fresh", false);
         this.count = config.getString("count");
         ConfigurationSection counted = config.getConfigurationSection("steps");
         if (counted != null) {
@@ -94,6 +98,7 @@ public final class DishBonus {
         Set<String> seasonings = new HashSet<>();
         Map<String, FoodItem> all = new HashMap<>();
         int fillings = 0;
+        boolean allFresh = true;
         for (FoodItem food : foods) {
             SandwichLayer layer = layerFor.apply(food);
             if (layer == null) continue;
@@ -103,24 +108,27 @@ public final class DishBonus {
             String origin = food.getOrigin() == null ? "" : food.getOrigin().toLowerCase(Locale.ROOT);
             if (StationAddonRules.isAddonCategory(food.getCategory())) addonsByOrigin.putIfAbsent(origin, food);
             if (StationAddonRules.isSeasoningCategory(food.getCategory())) seasonings.add(origin);
+            TagTrack age = food.getTagTrack(FRESHNESS);
+            if (age != null && age.getCurrentStep() != age.getSteps().get(0)) allFresh = false;
         }
         String profile = StationAddonRules.classifyAddons(addonsByOrigin).name();
         boolean hasValuable = StationAddonRules.hasValuable(all);
         for (DishBonus bonus : bonuses) {
             int counted = "seasonings".equalsIgnoreCase(bonus.count) ? seasonings.size() : fillings;
-            String earned = bonus.earned(counts, counted, profile, hasValuable);
+            String earned = bonus.earned(counts, counted, profile, hasValuable, allFresh);
             if (earned != null) give(dish, bonus.track, earned);
         }
     }
 
     /** The step this bonus gives, or null when the layers don't earn it ("" means the track's first step). */
-    String earned(Map<String, Integer> counts, int counted, String profile, boolean hasValuable) {
+    String earned(Map<String, Integer> counts, int counted, String profile, boolean hasValuable, boolean allFresh) {
         for (String layer : layers) {
             if (counts.getOrDefault(layer, 0) < min) return null;
         }
         if (!anyOf.isEmpty() && anyOf.stream().noneMatch(counts::containsKey)) return null;
         if (addons != null && !addons.equals(profile)) return null;
         if (valuable && !hasValuable) return null;
+        if (fresh && !allFresh) return null;
         if (count == null) return step == null ? "" : step;
         Map.Entry<Integer, String> reached = steps.floorEntry(counted);
         return reached == null ? null : reached.getValue();
