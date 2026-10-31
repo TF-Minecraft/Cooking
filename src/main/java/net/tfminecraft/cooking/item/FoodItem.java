@@ -546,6 +546,11 @@ public class FoodItem {
         return tags.containsKey(tag);
     }
 
+    /** The tracks this food's type ages on (types.yml age). */
+    public Set<String> getAgeingTracks() {
+        return Collections.unmodifiableSet(age.keySet());
+    }
+
     public void removeTrack(String id) {
         if (id == null) {
             return;

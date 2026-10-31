@@ -155,7 +155,8 @@ public final class PizzaHandler implements Listener {
     private static void place(Player p, Furniture f, String slotId, ItemStack hand, FoodItem food, SandwichLayer layer) {
         ItemStack one = hand.clone();
         one.setAmount(1);
-        f.getOrCreatePlacedSlot(slotId).forceModel(PizzaPeel.shown(f, one, food, layer));
+        int place = PizzaPeel.toppingPlace(layer, PizzaPeel.toppingsIn(PizzaPeel.layers(f)));
+        f.getOrCreatePlacedSlot(slotId).forceModel(PizzaPeel.shown(f, one, food, layer, place));
         hand.setAmount(hand.getAmount() - 1);
         p.getInventory().setItemInMainHand(hand);
         PizzaPeel.stack(f);
