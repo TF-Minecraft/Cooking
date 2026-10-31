@@ -35,7 +35,7 @@ saucepan:
   # An empty glass bottle on a heated saucepan that holds exactly this liquid and these ingredients, once it has
   # boiled boil-seconds since the last thing went in, fills with the output and empties the saucepan. Ingredients
   # that aren't seasonings, sweeteners or spices (tomato paste) go in only for a recipe that needs them.
-  # Paths are Cooking food paths: c.<category>(type=...;origin=...).
+  # Paths are Cooking food paths: c.<category>(type=...;origin=...). The liquid "water" is a cup of water.
   bottles:
     catsup:
       liquid: c.vinegar
@@ -56,3 +56,12 @@ saucepan:
       ingredients: []
       boil-seconds: 60
       output: sweetener(type=maple_syrup;origin=Maple Syrup;tags=freshness.0)
+    # Bones (carving gives them; conversions.yml makes them food) boiled in a cup of water. Pour it into the soup pot
+    # instead of a water bucket for a Rich soup (pot.yml liquids).
+    stock:
+      liquid: water
+      ingredients:
+        - c.bone
+        - c.bone
+      boil-seconds: 60
+      output: stock(type=stock;origin=Bone;tags=freshness.0)

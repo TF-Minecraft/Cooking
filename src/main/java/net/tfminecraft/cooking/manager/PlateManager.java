@@ -25,6 +25,7 @@ import net.tfminecraft.cooking.cache.CategoryDictionary;
 import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.pot.MashItems;
 import net.tfminecraft.cooking.salad.SaladHandler;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -37,6 +38,7 @@ import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemTakeEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
+import net.tfminecraft.interactiblefurniture.furniture.SlotDefinition;
 import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
 public class PlateManager implements Listener{
@@ -215,6 +217,43 @@ public class PlateManager implements Listener{
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f); //TODO SOUND
     }
 
+    /**
+     * A ladle of mash (mashed potatoes) takes a free food slot beside what's on the plate, as a food put there by hand
+     * would, and the player gets the empty ladle back. A sauce poured afterwards covers it with the rest.
+     */
+    public void addLadled(Player p, Furniture f, ItemStack ladled) {
+        String free = freeFoodSlot(f);
+        if (free == null) {
+            p.sendMessage("§7There's no room left on this plate.");
+            return;
+        }
+        ItemStack emptyLadle = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
+        if (emptyLadle == null || emptyLadle.getType().isAir()) return;
+        ItemStack serving = MashItems.unladled(ladled);
+        FoodItem food = FoodItem.fromItem(serving);
+        ItemStack shown = ItemUpdater.applyItemUpdate(serving, food, f.getId());
+        if (shown == null || shown.getType().isAir()) return;
+        PlacedSlot placed = f.getOrCreatePlacedSlot(free);
+        placed.forceModel(shown);
+        var model = food.getModelData();
+        if (model != null) placed.applyDisplayData(model.getDisplayData(f.getId()));
+        HeldStack.useOneKeepStack(p, emptyLadle.clone());
+        p.swingMainHand();
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+    }
+
+    /** The first empty slot a player could put food in: not the sauce visual, a decoration or a furniture slot. */
+    static String freeFoodSlot(Furniture f) {
+        if (f.getType() == null) return null;
+        for (SlotDefinition slot : f.getType().getSlots().values()) {
+            String id = slot.getId();
+            if (!slot.isInteractible() || slot.isFurnitureSlot() || id.equals("sauce") || id.contains("display")) continue;
+            if (!f.hasActiveSlot(id)) return id;
+        }
+        return null;
+    }
+
     @EventHandler
     public void interact(FurnitureInteractEvent e) {
         Player p = e.getPlayer();
@@ -226,7 +265,10 @@ public class PlateManager implements Listener{
         if(FurnitureCache.isPlate(f)) {
             FoodItem fi = FoodItem.fromItem(item);
             if(fi == null) return;
-            if(fi.getCategory().equalsIgnoreCase("sauce")) {
+            if (MashItems.isLadled(item)) {
+                e.setCancelled(true);
+                addLadled(p, f, item);
+            } else if(fi.getCategory().equalsIgnoreCase("sauce")) {
                 e.setCancelled(true);
                 addSauce(p, f, fi, item);
             }

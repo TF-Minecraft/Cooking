@@ -136,18 +136,34 @@ class CondimentCoverageTest {
         assertEquals(20, catsup.getBoilSeconds());
         assertEquals("condiment(type=catsup;origin=Tomato)", catsup.getOutput());
 
-        assertTrue(catsup.usesLiquid(vinegar));
-        assertFalse(catsup.usesLiquid(paste));
+        assertTrue(catsup.usesLiquid(vinegar, false));
+        assertFalse(catsup.usesLiquid(paste, false));
+        // A cup of water is no vinegar.
+        assertFalse(catsup.usesLiquid(null, true));
         assertTrue(catsup.takes(paste, List.of()));
         assertFalse(catsup.takes(carrot, List.of()));
         assertFalse(catsup.takes(paste, List.of(paste)));
         assertTrue(catsup.takes(sugar, List.of(paste)));
         assertFalse(catsup.takes(sugar, List.of(carrot)));
 
-        assertTrue(catsup.matches(vinegar, List.of(sugar, paste)));
-        assertFalse(catsup.matches(vinegar, List.of(paste)));
-        assertFalse(catsup.matches(vinegar, List.of(paste, sugar, sugar)));
-        assertFalse(catsup.matches(paste, List.of(paste, sugar)));
+        assertTrue(catsup.matches(vinegar, false, List.of(sugar, paste)));
+        assertFalse(catsup.matches(vinegar, false, List.of(paste)));
+        assertFalse(catsup.matches(vinegar, false, List.of(paste, sugar, sugar)));
+        assertFalse(catsup.matches(paste, false, List.of(paste, sugar)));
+
+        // liquid: water is the saucepan's cup of water, which pours no food; bones go in once each.
+        MemoryConfiguration water = new MemoryConfiguration();
+        water.set("liquid", " Water ");
+        water.set("ingredients", List.of("c.bone", "c.bone"));
+        BottleRecipe stock = new BottleRecipe("stock", water);
+        FoodItem bone = food("bone", "bone", "Bone");
+        assertTrue(stock.usesLiquid(null, true));
+        assertFalse(stock.usesLiquid(vinegar, false));
+        assertTrue(stock.takes(bone, List.of(bone)));
+        assertFalse(stock.takes(bone, List.of(bone, bone)));
+        assertTrue(stock.matches(null, true, List.of(bone, bone)));
+        assertFalse(stock.matches(null, false, List.of(bone, bone)));
+        assertFalse(stock.matches(null, true, List.of(bone)));
 
         MemoryConfiguration negative = new MemoryConfiguration();
         negative.set("boil-seconds", -5);

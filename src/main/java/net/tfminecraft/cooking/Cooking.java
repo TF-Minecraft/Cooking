@@ -67,6 +67,7 @@ import net.tfminecraft.cooking.pizza.PizzaHandler;
 import net.tfminecraft.cooking.condiment.CondimentConfig;
 import net.tfminecraft.cooking.condiment.SapTapListener;
 import net.tfminecraft.cooking.salad.SaladConfig;
+import net.tfminecraft.cooking.pot.PotConfig;
 import net.tfminecraft.cooking.salad.SaladHandler;
 import net.tfminecraft.cooking.sandwich.SandwichConfig;
 import net.tfminecraft.cooking.sandwich.SandwichHandler;
@@ -145,6 +146,7 @@ public class Cooking extends JavaPlugin {
     private final PizzaConfig pizzaConfig = new PizzaConfig();
     private final PizzaHandler pizzaHandler = new PizzaHandler();
     private final SaladConfig saladConfig = new SaladConfig();
+    private final PotConfig potConfig = new PotConfig();
     private final SaladHandler saladHandler = new SaladHandler();
     private final MillingStoneHandler millingStoneHandler = new MillingStoneHandler();
     private final TroughHandler troughHandler = new TroughHandler();
@@ -273,6 +275,7 @@ public class Cooking extends JavaPlugin {
         pizzaConfig.load(new File(getDataFolder(), "pizzas.yml"));
         condimentConfig.load(new File(getDataFolder(), "condiments.yml"));
         saladConfig.load(new File(getDataFolder(), "salads.yml"));
+        potConfig.load(new File(getDataFolder(), "pot.yml"));
         millingRecipeLoader.load(new File(getDataFolder(), "milling-recipes.yml"));
         stationLoader.load(new File(getDataFolder(), "crafting-stations.yml"));
         trackLoader.load(new File(getDataFolder(), "tags.yml"));
@@ -437,6 +440,7 @@ public class Cooking extends JavaPlugin {
                 "pizzas.yml",
                 "condiments.yml",
                 "salads.yml",
+                "pot.yml",
                 "milling-recipes.yml",
                 "cookware.yml",
                 "tags.yml",

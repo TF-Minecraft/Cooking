@@ -280,3 +280,11 @@ crisp:
     name: "#8fd16aCrisp"
     value: 0
     nutrition-mult: 1.10
+
+# Soup started with a pot.yml liquid (stock) instead of a water bucket.
+rich:
+  rich:
+    name: "#b5651dRich"
+    value: 0
+    food-mult: 1.15
+    nutrition-mult: 1.15

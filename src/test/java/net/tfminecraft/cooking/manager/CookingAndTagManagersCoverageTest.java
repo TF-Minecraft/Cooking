@@ -177,6 +177,17 @@ class CookingAndTagManagersCoverageTest {
     }
 
     @Test
+    void cauldronsEmptyALadleOfMashToo() {
+        ItemStack mash = env.stack(kitchen.food("mashed_potatoes", "mash"), Material.PAPER, 1);
+        var meta = mash.getItemMeta();
+        meta.getPersistentDataContainer().set(Keys.LADLED, PersistentDataType.BYTE, (byte) 1);
+        mash.setItemMeta(meta);
+        env.hold(mash);
+        var valid = cauldron(Action.RIGHT_CLICK_BLOCK, Material.CAULDRON); cooking.empty(valid); assertTrue(valid.isCancelled());
+        assertEquals(Material.STICK, env.player.getInventory().getItemInMainHand().getType());
+    }
+
+    @Test
     void emptyingOneOfAStackOfFilledLadlesKeepsTheRestAndGivesTheEmptyLadle() {
         env.hold(env.stack(kitchen.food("soup", "soup"), Material.PAPER, 3));
         cooking.empty(cauldron(Action.RIGHT_CLICK_BLOCK, Material.CAULDRON));
