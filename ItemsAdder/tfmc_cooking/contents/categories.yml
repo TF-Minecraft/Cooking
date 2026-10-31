@@ -319,6 +319,9 @@ categories:
       - tfmc_cooking:popcorn
       - tfmc_cooking:popcorn_burnt
       - tfmc_cooking:popcorn_rotten
+      - tfmc_cooking:popcorn_caramel
+      - tfmc_cooking:popcorn_buttered
+      - tfmc_cooking:popcorn_machine
       - tfmc_cooking:rice
       - tfmc_cooking:stock
       - tfmc_cooking:sunflower_seeds

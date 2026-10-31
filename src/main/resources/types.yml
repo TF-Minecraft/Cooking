@@ -711,8 +711,9 @@ grilled_mushroom:
 
 ###Popcorn: chopped corn popped in the frying pan (vegetable_chopped_2 output). Burnt, it stays popcorn.
 # A light snack, a little less filling than the chopped corn it came from; dry, it keeps three times as long.
+# Toppings put in a popcorn machine (popcorn-machines.yml) name it: Salted Caramel Popcorn (naming.yml prefix-tracks).
 popcorn:
-  name: "#f3e3a6Popcorn"
+  name: "#f3e3a6{prefixes}Popcorn"
   model: popcorn
   food: 10
   nutrition: 6
@@ -723,3 +724,13 @@ popcorn:
     freshness:
       stale: "#c3db81Stale"
       rotten: "#8B7355Mouldy"
+
+###Caramel: sugar and butter boiled in a cup of water in the saucepan and bottled (condiments.yml caramel). One
+# bottle is a popcorn topping (popcorn-machines.yml).
+caramel:
+  name: "#d99a3eCaramel"
+  model: caramel
+  food: 6
+  nutrition: 2
+  age:
+    freshness: 30

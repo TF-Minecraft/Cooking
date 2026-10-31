@@ -3,6 +3,11 @@ prefix-tracks:
   - sweet
   - butter_salted
   - butter_spiced
+  # Popcorn machine toppings, in this order: Buttered Sugared Salted Caramel Popcorn.
+  - topping_butter
+  - topping_sugar
+  - topping_salt
+  - topping_caramel
 
 # Max filler origins shown in a composed name
 fillers:

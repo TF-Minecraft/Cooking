@@ -306,3 +306,38 @@ poison:
     name: "#6b3a7dDeadly"
     value: 2
     nutrition-mult: 0
+
+# Popcorn machine toppings (popcorn-machines.yml): each caramel, sugar, butter or salt put in tops every piece. They name
+# it (naming.yml prefix-tracks: Buttered Salted Caramel Popcorn); its look comes from popcorn_look below.
+topping_caramel:
+  topping_caramel:
+    name: "#d99a3eCaramel"
+    value: 0
+    food-mult: 1.15
+    nutrition-mult: 1.05
+topping_sugar:
+  topping_sugar:
+    name: "#f5e6e8Sugared"
+    value: 0
+    food-mult: 1.05
+topping_butter:
+  topping_butter:
+    name: "#f3e08aButtered"
+    value: 0
+    food-mult: 1.05
+    nutrition-mult: 1.10
+topping_salt:
+  topping_salt:
+    name: "#f0f0f0Salted"
+    value: 0
+    nutrition-mult: 1.05
+
+# The look of popped popcorn (popcorn-machines.yml look-track): the first topping put in with a look sets it. No name
+# and no multipliers, so it shows nowhere in the lore; models.yml popcorn picks the buttered or caramel icon from it.
+popcorn_look:
+  look_buttered:
+    name: ""
+    value: 0
+  look_caramel:
+    name: ""
+    value: 1

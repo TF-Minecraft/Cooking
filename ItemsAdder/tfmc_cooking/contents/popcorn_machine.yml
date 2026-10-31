@@ -1,0 +1,110 @@
+# Popcorn machine (Cooking popcorn-machines.yml, InteractibleFurniture popcorn_machine): the cabinet, its kettle
+# (empty and with kernels) and the heap of popcorn at four heights, plain, caramel and buttered (bin/machine.py).
+# Caramel popcorn (models.yml popcorn caramel) uses tfmc_pack's existing food/caramelcorn texture; buttered popcorn
+# is the popcorn icon glazed yellow (bin/buttered.py). Caramel itself
+# uses the existing tfmc_cooking:caramel item.
+info:
+  namespace: tfmc_cooking
+items:
+  popcorn_machine:
+    display_name: "Popcorn Machine"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: furniture/popcorn_machine
+  popcorn_machine_kettle:
+    display_name: "Popcorn Machine Kettle"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/kettle
+  popcorn_machine_kettle_loaded:
+    display_name: "Popcorn Machine Kettle"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/kettle_loaded
+  popcorn_machine_heap_1:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_1
+  popcorn_machine_heap_2:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_2
+  popcorn_machine_heap_3:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_3
+  popcorn_machine_heap_4:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_4
+  popcorn_machine_heap_caramel_1:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_caramel_1
+  popcorn_machine_heap_caramel_2:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_caramel_2
+  popcorn_machine_heap_caramel_3:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_caramel_3
+  popcorn_machine_heap_caramel_4:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_caramel_4
+  popcorn_caramel:
+    display_name: "Caramel Popcorn"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/popcorn_caramel
+  popcorn_machine_heap_buttered_1:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_buttered_1
+  popcorn_machine_heap_buttered_2:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_buttered_2
+  popcorn_machine_heap_buttered_3:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_buttered_3
+  popcorn_machine_heap_buttered_4:
+    display_name: "Popcorn Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/popcorn_machine/heap_buttered_4
+  popcorn_buttered:
+    display_name: "Buttered Popcorn"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/popcorn_buttered

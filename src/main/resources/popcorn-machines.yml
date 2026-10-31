@@ -1,0 +1,72 @@
+# Popcorn machines: furniture that pops corn into popcorn.
+#   1. Right-click it with corn: one goes in per click, up to max-input.
+#   2. Right-click it with toppings: one at a time, up to max-toppings, each kind once.
+#   3. Right-click it with an empty hand: it pops (the kettle rattles, kernels fly about, the heap rises).
+#   4. Once it stops, right-click it to take the popcorn (what doesn't fit in the inventory drops at your feet).
+# Breaking it gives back what went in, or the popcorn once it has popped.
+#
+# furniture:     the InteractibleFurniture type id.
+# input:         the Cooking food paths that go in (whole corn); input-name is how players read them.
+# max-input:     how many go in; yield: pieces each one pops into (16 corn x 4 = 64 popcorn).
+# output:        the food string of a piece; its stars are the corn's.
+# max-toppings:  how many toppings go in. Each topping's track (tags.yml) goes on every piece; they name it
+#                (Salted Caramel Popcorn, naming.yml prefix-tracks) and change its food and nutrition.
+# look-track:    the tags.yml track that gives popcorn its look. A topping's look is a step of it: the first
+#                topping put in that has a look colours the popcorn (models.yml popcorn) and the heap (heap-looks), so
+#                butter then caramel makes buttered-looking Buttered Caramel Popcorn.
+# models:        the kettle (empty, and with kernels in it), and the heap: {level} is 1 to the number of
+#                animation.heap-heights; heap-looks gives the heap of popcorn with a tag ("<tag> <item>") its own look.
+# slots:         the furniture's slots for the kettle, the heap and the toppings (one each).
+# animation:     seconds it pops; kettle-rim, floor and walls (blocks from the furniture's centre) are where kernels
+#                start, land and bounce; heap-heights is how high each heap level reaches above the floor.
+popcorn_machine:
+  furniture: popcorn_machine
+  input:
+    - c.vegetable(type=vegetable_2;origin=Corn)
+  input-name: corn
+  max-input: 16
+  yield: 4
+  output: snack(type=popcorn;origin=Corn;tags=cooked.1:freshness.0:warmth.0)
+  max-toppings: 2
+  look-track: popcorn_look
+  toppings:
+    caramel:
+      item: c.condiment(type=caramel)
+      track: topping_caramel
+      name: Caramel
+      look: look_caramel
+    sugar:
+      item: c.sweetener(origin=Sugar)
+      track: topping_sugar
+      name: Sugar
+    butter:
+      # Butter from the churn is dairy; butter picked up is an ingredient.
+      items:
+        - c.dairy(type=butter)
+        - c.ingredient(type=butter)
+      track: topping_butter
+      name: Butter
+      look: look_buttered
+    salt:
+      item: c.salt
+      track: topping_salt
+      name: Salt
+  models:
+    kettle: ia.tfmc_cooking:popcorn_machine_kettle
+    kettle-loaded: ia.tfmc_cooking:popcorn_machine_kettle_loaded
+    heap: ia.tfmc_cooking:popcorn_machine_heap_{level}
+    heap-looks:
+      - look_caramel ia.tfmc_cooking:popcorn_machine_heap_caramel_{level}
+      - look_buttered ia.tfmc_cooking:popcorn_machine_heap_buttered_{level}
+  slots:
+    kettle: kettle
+    heap: heap
+    toppings:
+      - topping_1
+      - topping_2
+  animation:
+    seconds: 8
+    kettle-rim: 0.59
+    floor: -0.25
+    walls: 0.36
+    heap-heights: [0.125, 0.25, 0.375, 0.5]

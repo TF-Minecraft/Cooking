@@ -3739,8 +3739,32 @@ popcorn:
     display-data:
       rotation:
         x: 90
-  burnt:
+  # Popped with caramel or butter first in a popcorn machine (popcorn-machines.yml, tags.yml popcorn_look); a piece
+  # only ever has one of the two. Burnt or rotten looks win.
+  caramel:
     weight: 2
+    tags:
+      - look_caramel
+    gui:
+      item: ia.tfmc_cooking:popcorn_caramel
+    display:
+      item: ia.tfmc_cooking:popcorn_caramel
+    display-data:
+      rotation:
+        x: 90
+  buttered:
+    weight: 2
+    tags:
+      - look_buttered
+    gui:
+      item: ia.tfmc_cooking:popcorn_buttered
+    display:
+      item: ia.tfmc_cooking:popcorn_buttered
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 3
     tags:
       - burnt
     gui:
@@ -3751,7 +3775,7 @@ popcorn:
       rotation:
         x: 90
   rotten:
-    weight: 3
+    weight: 4
     tags:
       - rotten
     gui:
@@ -3761,3 +3785,13 @@ popcorn:
     display-data:
       rotation:
         x: 90
+
+# Caramel, bottled from the saucepan (condiments.yml caramel): the pack's caramel item.
+caramel:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:caramel
+    display:
+      item: ia.tfmc_cooking:caramel
