@@ -409,7 +409,7 @@ class HusbandryRemainingCoverageTest {
     void corruptNbtRootsMakeTheScanIncompleteInsteadOfDeclaringAnimalsMissing(String kind) throws Exception {
         Path entities = Files.createDirectory(directory.resolve("entities")), players = Files.createDirectory(directory.resolve("players"));
         if (kind.equals("entity")) region(entities, new byte[]{1}, 3);
-        else Files.write(players.resolve("owner.dat"), gzip(new byte[]{1}));
+        else Files.write(players.resolve(UUID.randomUUID() + ".dat"), gzip(new byte[]{1}));
         var result = HusbandryEntityScan.scan(List.of(new HusbandryEntityScan.WorldDir("farm", entities.toFile())), players.toFile(), Set.of(UUID.randomUUID()));
         assertFalse(result.complete(), "Unreadable save data must not authorize removal of missing animal records");
     }
@@ -467,7 +467,7 @@ class HusbandryRemainingCoverageTest {
             out.writeByte(3); out.writeUTF(key); out.writeInt(1);
             if (key.equals("Passengers") || key.equals("Entity")) out.writeByte(0);
         });
-        if (key.equals("RootVehicle") || key.equals("Entity")) Files.write(players.resolve("owner.dat"), gzip(data));
+        if (key.equals("RootVehicle") || key.equals("Entity")) Files.write(players.resolve(UUID.randomUUID() + ".dat"), gzip(data));
         else region(entities, data, 3);
         var result = HusbandryEntityScan.scan(List.of(new HusbandryEntityScan.WorldDir("farm", entities.toFile())), players.toFile(), Set.of(target));
         assertFalse(result.complete(), "A malformed " + key + " tag cannot prove an animal is absent");

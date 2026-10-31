@@ -18,6 +18,7 @@ import net.tfminecraft.cooking.carve.CarvableRoastUtils;
 import net.tfminecraft.cooking.carve.CarveHandler;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurniturePunchEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -92,10 +93,7 @@ public final class MeatHookHandler implements Listener {
     }
 
     private void resumeHooksInChunk(Chunk chunk) {
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!furniture.getLoc().getChunk().equals(chunk)) {
-                continue;
-            }
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
             resumeHook(furniture);
         }
     }

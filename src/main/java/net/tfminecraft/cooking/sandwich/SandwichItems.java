@@ -43,6 +43,7 @@ public final class SandwichItems {
         CompositionApplier.apply(sandwich, composed);
         CompositionFreshnessApplier.keepOwnAgeing(sandwich);
         applyTotals(sandwich, layers);
+        DishBonus.apply(sandwich, layers, SandwichConfig::layerFor, layer -> !layer.isBread(), SandwichConfig.bonuses());
         boolean marked = false;
         for (FoodItem food : layers) {
             SandwichLayer layer = SandwichConfig.layerFor(food);

@@ -104,9 +104,7 @@ public final class SandwichHandler implements Listener {
         Chunk chunk = event.getChunk();
         // InteractibleFurniture restores the chunk's furniture first.
         Bukkit.getScheduler().runTaskLater(Cooking.plugin, () -> {
-            for (Furniture f : placed()) {
-                if (StationChunks.isIn(f, chunk)) relayout(f);
-            }
+            for (Furniture f : StationChunks.furnitureIn(chunk)) relayout(f);
         }, 2L);
     }
 

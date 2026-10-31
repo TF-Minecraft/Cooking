@@ -72,10 +72,7 @@ public class CookingManager implements Listener {
     }
 
     private void resumeStationsInChunk(Chunk chunk) {
-        for (Furniture furniture : InteractibleFurniture.getInstance().getFurnitureManager().getPlacedFurniture().values()) {
-            if (!furniture.getLoc().getChunk().equals(chunk)) {
-                continue;
-            }
+        for (Furniture furniture : StationChunks.furnitureIn(chunk)) {
             resumeStation(furniture);
         }
     }

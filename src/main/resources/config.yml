@@ -191,11 +191,11 @@ sauce-dict:
 
 nutrition:
   max-food: 200
-  respawn-food: 80
+  respawn-food: 200
   max-diet: 40
   attribute-name: nutrition
   drain-amount: 1
-  drain-interval: 120
+  drain-interval: 240
   lerp-step-rate: 1.0
   diet-tiers:
     - id: terrible

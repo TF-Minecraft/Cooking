@@ -33,6 +33,38 @@ bake:
   cook-seconds: 20
   burn-seconds: 60
 
+# Tags a pizza earns from its layers, written like sandwiches.yml's bonuses. count: fillings counts the toppings;
+# count: seasonings counts different salts and peppers among them.
+bonuses:
+  size:
+    track: dish_size
+    count: fillings
+    steps:
+      3: hearty
+      5: loaded
+  saucy:
+    track: saucy
+    layers: [sauce]
+  extra_cheesy:
+    track: extra_cheesy
+    layers: [cheese]
+    min: 2
+  seasoning:
+    track: seasoning
+    count: seasonings
+    steps:
+      1: seasoned
+      2: well_seasoned
+  rounded:
+    track: rounded
+    addons: rounded
+  aromatic:
+    track: aromatic
+    addons: aromatic
+  sweet_and_savoury:
+    track: sweet_and_savoury
+    layers: [fruit, sausage]
+
 # Layers, matched by types.yml type, written like sandwiches.yml's:
 #   name         the topping's part of the pizza's name; {origin} is the food's origin (Pineapple)
 #   names        a name per origin instead (goat: Goat Cheese)
