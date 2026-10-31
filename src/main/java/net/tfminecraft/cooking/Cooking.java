@@ -66,6 +66,8 @@ import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.cooking.pizza.PizzaHandler;
 import net.tfminecraft.cooking.condiment.CondimentConfig;
 import net.tfminecraft.cooking.condiment.SapTapListener;
+import net.tfminecraft.cooking.pie.PieConfig;
+import net.tfminecraft.cooking.pie.PieHandler;
 import net.tfminecraft.cooking.salad.SaladConfig;
 import net.tfminecraft.cooking.pot.PotConfig;
 import net.tfminecraft.cooking.salad.SaladHandler;
@@ -148,6 +150,8 @@ public class Cooking extends JavaPlugin {
     private final SaladConfig saladConfig = new SaladConfig();
     private final PotConfig potConfig = new PotConfig();
     private final SaladHandler saladHandler = new SaladHandler();
+    private final PieConfig pieConfig = new PieConfig();
+    private final PieHandler pieHandler = new PieHandler();
     private final MillingStoneHandler millingStoneHandler = new MillingStoneHandler();
     private final TroughHandler troughHandler = new TroughHandler();
     private final TroughAging troughAging = new TroughAging();
@@ -276,6 +280,7 @@ public class Cooking extends JavaPlugin {
         condimentConfig.load(new File(getDataFolder(), "condiments.yml"));
         saladConfig.load(new File(getDataFolder(), "salads.yml"));
         potConfig.load(new File(getDataFolder(), "pot.yml"));
+        pieConfig.load(new File(getDataFolder(), "pies.yml"));
         millingRecipeLoader.load(new File(getDataFolder(), "milling-recipes.yml"));
         stationLoader.load(new File(getDataFolder(), "crafting-stations.yml"));
         trackLoader.load(new File(getDataFolder(), "tags.yml"));
@@ -343,6 +348,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(pizzaHandler, this);
         getServer().getPluginManager().registerEvents(new SapTapListener(), this);
         getServer().getPluginManager().registerEvents(saladHandler, this);
+        getServer().getPluginManager().registerEvents(pieHandler, this);
         getServer().getPluginManager().registerEvents(millingStoneHandler, this);
         getServer().getPluginManager().registerEvents(troughHandler, this);
         getServer().getPluginManager().registerEvents(ovenLifecycleHandler, this);
@@ -441,6 +447,7 @@ public class Cooking extends JavaPlugin {
                 "condiments.yml",
                 "salads.yml",
                 "pot.yml",
+                "pies.yml",
                 "milling-recipes.yml",
                 "cookware.yml",
                 "tags.yml",

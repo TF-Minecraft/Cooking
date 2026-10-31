@@ -101,6 +101,7 @@ public class CraftingStationCoverageTest {
         assertFalse(defaults.isProcessed());
         assertEquals(1, defaults.getYield());
         assertFalse(defaults.inherits());
+        assertFalse(defaults.sharesFood());
         assertFalse(defaults.canAdd(new ItemStack(Material.STONE)));
         MemoryConfiguration config = env.config(2, true, "tool:knife");
         CraftingStation template = new CraftingStation("board", config);
@@ -785,6 +786,32 @@ public class CraftingStationCoverageTest {
         env.add(failed, "input_1", loaf);
         failed.craft();
         assertSame(loaf, failed.getSlots().get("input_1"), "A loaf that can't be cut stays whole");
+    }
+
+    @Test
+    void aSharingRecipeGivesEachSliceItsShareOfTheWholeFood() {
+        env.parser.when(() -> FoodParser.parse(anyString())).thenAnswer(inv -> {
+            FoodParser.Result result = new FoodParser.Result(); result.template = env.food(inv.getArgument(0), "");
+            return result;
+        });
+        MemoryConfiguration config = env.config(1, false, "tool:knife");
+        config.set("recipes.cut.yield", 4);
+        config.set("recipes.cut.inherit", true);
+        config.set("recipes.cut.share-food", true);
+        config.set("recipes.cut.output", "slice");
+        assertTrue(new CraftingRecipe("cut", config.getConfigurationSection("recipes.cut")).sharesFood());
+        CraftingStation board = new CraftingStation(env.furniture, new CraftingStation("board", config));
+        FoodItem pie = env.food("raw", "Apple");
+        pie.setBaseFood(36);
+        pie.setBaseNutrition(7.5);
+        env.add(board, "input_1", env.stack(pie, Material.PUMPKIN_PIE, 1));
+        board.craft(env.player);
+        FoodItem slice = env.resolve(board.getSlots().get("input_1"));
+        assertEquals("slice", slice.getId());
+        assertEquals(4, board.getSlots().get("input_1").getAmount());
+        assertEquals(9, slice.getBaseFood(), 1e-9);
+        assertEquals(7.5, slice.getBaseNutrition(), 1e-9);
+        assertEquals("Apple", slice.getOrigin());
     }
 
     @Test

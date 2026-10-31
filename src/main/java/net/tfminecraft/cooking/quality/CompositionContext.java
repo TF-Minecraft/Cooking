@@ -12,6 +12,7 @@ public enum CompositionContext {
     SANDWICH(true),
     PIZZA(true),
     SALAD(true),
+    PIE(true),
     MILLING(false),
     BAKING(false);
 

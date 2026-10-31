@@ -374,7 +374,10 @@ public class CraftingStation {
         Map<String, Integer> ownAge = recipe.keepsOutputAge() ? ageOf(item) : null;
         CompositionApplier.apply(item, composed);
         if (ownAge != null) restoreAge(item, ownAge);
-        if (recipe.inherits() && !inputs.isEmpty()) inherit(item, inputs.get(0));
+        if (recipe.inherits() && !inputs.isEmpty()) {
+            inherit(item, inputs.get(0));
+            if (recipe.sharesFood()) share(item, inputs.get(0), recipe.getYield());
+        }
         ItemStack output = ItemBuilder.buildSingleWithQuality(item, null, composed.getFinalQuality());
         if (output == null || output.getType().isAir()) return null;
         return new Built(item, output);
@@ -519,6 +522,12 @@ public class CraftingStation {
         for (TagTrack track : input.getTagTracks()) {
             if (!output.hasTagTrack(track.getId())) output.addOrModifyTrack(track);
         }
+    }
+
+    /** A pie's slice holds its share of the pie: its food over the slices it's cut into, at the pie's nutrition. */
+    private static void share(FoodItem output, FoodItem input, int pieces) {
+        output.setBaseFood(input.getBaseFood() / pieces);
+        output.setBaseNutrition(input.getBaseNutrition());
     }
 
     private static Map<String, Integer> ageOf(FoodItem item) {
