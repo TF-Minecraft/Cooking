@@ -4,6 +4,7 @@
 roast:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -62,6 +63,7 @@ roast:
 meat_poultry:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5{inherit}"
   overrides:
     CHICKEN:
@@ -84,6 +86,7 @@ meat_poultry:
 meat_poultry_leg:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5{inherit} Leg"
   overrides:
     CHICKEN:
@@ -101,6 +104,7 @@ meat_poultry_leg:
 meat_red_meat:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5Steak"
   overrides:
     BEEF:
@@ -126,6 +130,7 @@ meat_red_meat:
 meat_pork:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5Pork"
   model: meat_pork
   food: 20
@@ -139,6 +144,7 @@ meat_pork:
 sausage:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5Sausage"
   model: sausage
   food: 20
@@ -152,6 +158,7 @@ sausage:
 sausage_chain:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9baa5Sausage Chain"
   model: sausage_chain
   food: 20
@@ -175,7 +182,7 @@ vegetable_1:
   nutrition: 4.5
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Veggies — raw CustomCrops
 vegetable_2:
@@ -197,7 +204,7 @@ vegetable_2:
   nutrition: 7.5
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Veggies — raw (chop only, no cut step; excludes from cut_vegetables recipe)
 vegetable_chop_only:
@@ -216,7 +223,7 @@ vegetable_chop_only:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Veggies — cut vanilla (pan + pot)
 vegetable_cut:
@@ -245,7 +252,7 @@ vegetable_cut:
       burn: 30
   age:
     warmth: 450
-    freshness: 5
+    freshness: 10
 
 ###Veggies — cut CustomCrops (pan + pot)
 vegetable_cut_2:
@@ -277,7 +284,7 @@ vegetable_cut_2:
       burn: 30
   age:
     warmth: 450
-    freshness: 5
+    freshness: 10
 
 ###Veggies — chopped garnish vanilla (no cooking; cook on cut stage)
 vegetable_chopped:
@@ -296,7 +303,7 @@ vegetable_chopped:
   nutrition: 4.5
   age:
     warmth: 450
-    freshness: 4
+    freshness: 8
 
 ###Veggies — chopped garnish CustomCrops (chopped corn pops into popcorn in the frying pan)
 vegetable_chopped_2:
@@ -329,7 +336,7 @@ vegetable_chopped_2:
       output: snack(type=popcorn;origin=Corn)
   age:
     warmth: 450
-    freshness: 4
+    freshness: 8
 
 ###Seasoning — does not spoil
 seasoning_1:
@@ -378,7 +385,7 @@ spice_1:
   nutrition: 0
   age:
     warmth: 450
-    freshness: 14
+    freshness: 28
 
 ###Garnish — chopped (no cooking yet)
 garnish_chopped:
@@ -397,12 +404,13 @@ garnish_chopped:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 4
+    freshness: 8
 
 ###Baked goods
 bread:
   age:
     warmth: 450
+    freshness: 2
   name: "#d9c4a5{prefixes}{fillers}Bread"
   model: bread
   food: 26
@@ -418,7 +426,7 @@ dry_ration:
   nutrition: 5
   age:
     warmth: 450
-    freshness: 10
+    freshness: 20
 
 ###Fruits — raw vanilla (no cut step)
 fruit_1:
@@ -435,7 +443,7 @@ fruit_1:
   nutrition: 5.25
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Fruits — raw CustomCrops
 fruit_2:
@@ -467,7 +475,7 @@ fruit_2:
   nutrition: 8.75
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ##Crops
 wheat:
@@ -477,7 +485,7 @@ wheat:
   nutrition: 4
   age:
     warmth: 450
-    freshness: 10
+    freshness: 20
 
 flour:
   name: "#f5f0e8Flour"
@@ -486,7 +494,7 @@ flour:
   nutrition: 4
   age:
     warmth: 450
-    freshness: 10
+    freshness: 20
   tag-labels:
     freshness:
       rotten: "#8B7355Musty"
@@ -498,7 +506,7 @@ yeast:
   nutrition: 4
   age:
     warmth: 450
-    freshness: 2
+    freshness: 4
   tag-labels:
     freshness:
       rotten: "#8B7355Mouldy"
@@ -510,7 +518,7 @@ dough:
   nutrition: 4
   age:
     warmth: 450
-    freshness: 0.5
+    freshness: 1
     rising: 1
   tag-labels:
     freshness:
@@ -520,6 +528,7 @@ dough:
 sauce:
   age:
     warmth: 450
+    freshness: 2
   name: "{colour}{prefixes}{fillers}Sauce"
   food: 6
   nutrition: 5
@@ -528,6 +537,7 @@ sauce:
 soup:
   age:
     warmth: 450
+    freshness: 2
   name: "{colour}{prefixes}{fillers}Soup"
   food: 26
   nutrition: 8
@@ -540,7 +550,7 @@ cup_of_milk:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 0.25
+    freshness: 0.5
   tag-labels:
     freshness:
       stale: "#c3db81Sour"
@@ -553,7 +563,7 @@ milk_bucket:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 0.25
+    freshness: 0.5
   tag-labels:
     freshness:
       stale: "#c3db81Sour"
@@ -565,7 +575,7 @@ seafood_whole:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 4.67
 
 seafood_fish_filet:
   name: "#6fa8dc{inherit} Filet"
@@ -584,7 +594,7 @@ seafood_fish_filet:
       burn: 30
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 4.67
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -607,7 +617,7 @@ seafood_jellyfish:
       burn: 30
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 4.67
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -630,7 +640,7 @@ seafood_octopus:
       burn: 30
   age:
     warmth: 450
-    freshness: 2.33
+    freshness: 4.67
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -644,7 +654,7 @@ butter:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
   tag-labels:
     freshness:
       stale: "#c3db81Rancid"
@@ -663,7 +673,7 @@ egg:
       burn: 25
   age:
     warmth: 450
-    freshness: 1
+    freshness: 2
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -697,7 +707,7 @@ mushroom:
       raw-in-cookware: true
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Grilled mushroom: what a mushroom becomes in the frying pan; keeps its origin (Brown or Red Mushroom).
 grilled_mushroom:
@@ -707,7 +717,7 @@ grilled_mushroom:
   nutrition: 4.5
   age:
     warmth: 450
-    freshness: 7
+    freshness: 14
 
 ###Popcorn: chopped corn popped in the frying pan (vegetable_chopped_2 output). Burnt, it stays popcorn.
 # A light snack, a little less filling than the chopped corn it came from; dry, it keeps three times as long.
@@ -719,7 +729,7 @@ popcorn:
   nutrition: 6
   age:
     warmth: 450
-    freshness: 12
+    freshness: 24
   tag-labels:
     freshness:
       stale: "#c3db81Stale"
@@ -733,4 +743,4 @@ caramel:
   food: 6
   nutrition: 2
   age:
-    freshness: 30
+    freshness: 60
