@@ -11,9 +11,13 @@ import net.tfminecraft.cooking.item.FoodItem;
 
 /**
  * A saucepan bottling from condiments.yml: what the saucepan holds (its liquid and exactly these ingredients) and the
- * food an empty glass bottle takes out once it has boiled long enough. Paths are Cooking food paths (c.paste(origin=Tomato)).
+ * food an empty glass bottle takes out once it has boiled long enough. Paths are Cooking food paths (c.paste(origin=Tomato));
+ * the liquid {@value #WATER} is a cup of water, which isn't food.
  */
 public final class BottleRecipe {
+    /** The liquid line for a saucepan filled with a cup of water (bone stock). */
+    public static final String WATER = "water";
+
     private final String id;
     private final String liquid;
     private final List<String> ingredients;
@@ -41,7 +45,9 @@ public final class BottleRecipe {
         return output;
     }
 
-    public boolean usesLiquid(FoodItem liquidFood) {
+    /** True when the saucepan's liquid is this recipe's: the poured food, or a cup of water for {@value #WATER}. */
+    public boolean usesLiquid(FoodItem liquidFood, boolean water) {
+        if (WATER.equalsIgnoreCase(liquid.trim())) return water;
         return CookingPathHandler.matches(liquidFood, liquid);
     }
 
@@ -56,8 +62,8 @@ public final class BottleRecipe {
     }
 
     /** The saucepan holds this liquid and exactly these ingredients, each once. */
-    public boolean matches(FoodItem liquidFood, Collection<FoodItem> present) {
-        if (!usesLiquid(liquidFood)) return false;
+    public boolean matches(FoodItem liquidFood, boolean water, Collection<FoodItem> present) {
+        if (!usesLiquid(liquidFood, water)) return false;
         List<String> open = unmatched(present);
         return open != null && open.isEmpty();
     }

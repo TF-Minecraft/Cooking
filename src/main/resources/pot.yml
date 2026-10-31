@@ -1,0 +1,47 @@
+# The soup pot (pot furniture): what it takes besides a water bucket, and the dishes it mashes without water.
+# Paths are Cooking food paths: c.<category>(type=...;origin=...;tags=<track>.<value>).
+
+# Bottled foods that fill an empty pot instead of a water bucket. The pot then heats and makes soup as with water,
+# and that soup gets the liquid's tags.yml track at its first step.
+#   input: the food poured.
+#   track: the soup's bonus track.
+#   colour: the liquid's part of the soup's colour (water is 3d85c6).
+#   returns: what the player gets back for the bottle (an item path; empty for nothing).
+liquids:
+  stock:
+    input: c.stock
+    track: rich
+    colour: c9a66b
+    returns: v.glass_bottle
+
+# Dishes made in an empty pot: no water and no heat. Put in exactly the ingredients, then any extras, mash them with
+# the masher and serve them with the ladle; a ladle of mash goes onto a plate as one of its foods and the ladle comes
+# back empty. An empty hand takes the last thing back out until it's mashed. Water or a liquid above is refused while
+# a mash is in the pot, and a pot of water refuses a mash's ingredients that can't boil (butter, milk).
+#   ingredients: what it needs, each <amount> times (default 1), and nothing else.
+#   extras: optional, once each, after an ingredient is in. Each gives the dish its tags.yml track at its first step;
+#     returns is what the player gets back for it (an item path; empty for nothing).
+#   servings: ladles one pot serves. The dish's food is its ingredients' and extras' summed (as a sandwich sums its
+#     layers) and split between them; quality, freshness and warmth come from all of them.
+#   output: the dish's food line. display: what the mashed pot shows. hint: what it needs, told to a player who mashes
+#     too early ("It needs exactly <hint> to mash.").
+mashes:
+  mashed_potatoes:
+    ingredients:
+      potato:
+        path: c.vegetable(type=vegetable_cut;origin=Potato;tags=cooked.3)
+        amount: 4
+      butter:
+        path: c.ingredient(type=butter)
+    extras:
+      milk:
+        path: c.ingredient(type=cup_of_milk)
+        track: sauce_creamy
+        returns: ia.tfmc_cooking:empty_cup
+      salt:
+        path: c.salt
+        track: seasoning
+    servings: 2
+    output: mash(type=mashed_potatoes;origin=Potato;tags=freshness.0)
+    display: ia.tfmc_cooking:gray
+    hint: 4 boiled cut potatoes and a butter

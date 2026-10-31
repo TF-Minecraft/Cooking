@@ -57,6 +57,7 @@ import net.tfminecraft.cooking.quality.CompositionResult;
 
 import net.tfminecraft.cooking.utils.DisplayUtils;
 
+import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -84,11 +85,14 @@ public class SauceReference extends CookingReference {
     private static final String VAR_LIQUID = "sauce.liquid";
     private static final String VAR_BREW = "sauce.brew";
     private static final String VAR_BOILED = "sauce.boiled";
+    private static final String VAR_WATER = "sauce.water";
 
     private FoodItem liquidSource;
     private BrewLiquid brew;
     /** Seconds the saucepan has boiled since its last liquid or ingredient went in (condiments.yml bottling). */
     private int boiled;
+    /** Filled from a cup of water, which leaves no food as its liquid (a {@code liquid: water} bottling, bone stock). */
+    private boolean water;
 
     public SauceReference(Furniture f, Method m) {
 
@@ -427,6 +431,8 @@ public class SauceReference extends CookingReference {
                 liquidSource = new FoodItem(poured);
             }
             saveLiquid(poured != null ? item : null);
+            water = ItemCache.isCupOfWater(item);
+            if (water) f.getVariables().put(VAR_WATER, true);
 
             PlacedSlot slot = f.getOrCreatePlacedSlot("liquid");
 
@@ -452,6 +458,8 @@ public class SauceReference extends CookingReference {
             return;
 
         }
+
+        item = convertForBottling(p, item);
 
         if(canAdd(p, item)) {
 
@@ -540,9 +548,11 @@ public class SauceReference extends CookingReference {
         liquidSource = null;
         brew = null;
         boiled = 0;
+        water = false;
         super.clear();
         if (f == null) return;
         f.getVariables().remove(VAR_BOILED);
+        f.getVariables().remove(VAR_WATER);
         f.getVariables().remove(VAR_COLOURS);
         f.getVariables().remove(VAR_LIQUID);
         f.getVariables().remove(VAR_BREW);
@@ -565,6 +575,7 @@ public class SauceReference extends CookingReference {
         brew = restoreBrew(stringVariable(VAR_BREW));
         if (brew != null) liquidSource = brewIngredient(brew);
         boiled = f.getVariables().get(VAR_BOILED) instanceof Number seconds ? seconds.intValue() : 0;
+        water = Boolean.TRUE.equals(f.getVariables().get(VAR_WATER));
         restoreColours();
     }
 
@@ -586,19 +597,31 @@ public class SauceReference extends CookingReference {
 
     /** The bottling recipe this saucepan holds exactly (vinegar, tomato paste and sugar make catsup), or null. */
     BottleRecipe matchingBottle() {
-        if (liquidSource == null) return null;
         for (BottleRecipe recipe : CondimentConfig.bottles()) {
-            if (recipe.matches(liquidSource, slots.values())) return recipe;
+            if (recipe.matches(liquidSource, water, slots.values())) return recipe;
         }
         return null;
     }
 
     private boolean bottlingTakes(FoodItem candidate) {
-        if (liquidSource == null) return false;
         for (BottleRecipe recipe : CondimentConfig.bottles()) {
-            if (recipe.usesLiquid(liquidSource) && recipe.takes(candidate, slots.values())) return true;
+            if (recipe.usesLiquid(liquidSource, water) && recipe.takes(candidate, slots.values())) return true;
         }
         return false;
+    }
+
+    /**
+     * Carving hands out vanilla bones. One that a bottling recipe needs becomes its Cooking food first
+     * (conversions.yml), as picking it up would have made it.
+     */
+    private ItemStack convertForBottling(Player p, ItemStack item) {
+        if (!secondaries.containsKey("liquid") || FoodItem.fromItem(item) != null) return item;
+        ItemStack converted = IngredientConverter.convertIfNeeded(p, item);
+        FoodItem food = FoodItem.fromItem(converted);
+        if (food == null || !bottlingTakes(food)) return item;
+        p.getInventory().setItemInMainHand(converted);
+        // setItemInMainHand stores a copy, so take from the hand itself or nothing is used up.
+        return p.getInventory().getItemInMainHand();
     }
 
     /** An empty glass bottle takes what the saucepan made (catsup, mustard, syrup) once it has boiled long enough. */
@@ -620,7 +643,8 @@ public class SauceReference extends CookingReference {
         ItemStack output = null;
         if (parsed != null && parsed.template != null) {
             List<FoodItem> inputs = new ArrayList<>();
-            inputs.add(liquidSource);
+            // A cup of water adds nothing to the stock's quality; only its bones do.
+            if (liquidSource != null) inputs.add(liquidSource);
             inputs.addAll(slots.values());
             CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SAUCE_SCOOP);
             CompositionApplier.apply(parsed.template, composed);

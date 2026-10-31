@@ -3,9 +3,13 @@ package net.tfminecraft.cooking.cooking;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,6 +38,10 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.data.CookData;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
+import net.tfminecraft.cooking.pot.MashItems;
+import net.tfminecraft.cooking.pot.MashRecipe;
+import net.tfminecraft.cooking.pot.PotConfig;
+import net.tfminecraft.cooking.pot.PotLiquid;
 import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
@@ -54,12 +62,28 @@ import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
 import net.tfminecraft.interactiblefurniture.furniture.SlotDefinition;
 import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
+/**
+ * The soup pot. Filled with a water bucket (or a pot.yml liquid such as stock) and heated, it boils pieces that the
+ * masher turns into soup. Empty, it takes a pot.yml mash's ingredients instead, which the masher mashes without water
+ * or heat and the ladle serves.
+ */
 public class PotReference extends CookingReference {
     private static final String VAR_SOUP_SERVINGS = "pot.soupServings";
     private static final String VAR_EXTRAS = "pot.extras";
+    private static final String VAR_LIQUID = "pot.liquid";
+    private static final String VAR_LIQUID_FOOD = "pot.liquidFood";
+    private static final String VAR_MASH = "pot.mash";
+    private static final String VAR_MASHED = "pot.mashed";
+    private static final String VAR_MASH_SERVINGS = "pot.mashServings";
+    private static final String WATER_COLOUR = "3d85c6";
+    static final String MASH_NOT_WATER =
+            "§cThere's a mash in this pot. Take it back out with an empty hand or ladle it out before adding water.";
     static final int MAX_MAINS = 5;
 
     private final Map<String, ItemStack> extraItems = new HashMap<>();
+    /** The pot.yml liquid poured in instead of water (stock) and that bottle's food, or null for water. */
+    private PotLiquid liquid;
+    private FoodItem liquidFood;
 
     private int temperature = 0;          // 0–20
     private final int MAX_TEMPERATURE = 20;
@@ -82,7 +106,8 @@ public class PotReference extends CookingReference {
             }
         }
 
-        if (heated) {
+        // A mash needs no heat, and its boiled potatoes must not cook on.
+        if (heated && !isMashing()) {
             handleCookingSlots();
         }
 
@@ -206,6 +231,7 @@ public class PotReference extends CookingReference {
         StationAddonRules.applySeasoningTag(soup, slots);
         StationAddonRules.applyAddonTags(soup, slots);
         StationAddonRules.applyFlavourfulTag(soup, slots);
+        if (liquid != null) MashItems.addTrack(soup, liquid.track());
         FoodItem mi = getMain();
         if(mi != null && mi.hasTagTrack("soup_thickness")) {
             soup.addOrModifyTrack(mi.getTagTrack("soup_thickness"));
@@ -213,7 +239,9 @@ public class PotReference extends CookingReference {
         }
 
         // ---------- BUILD RESULT ----------
-        CompositionResult composed = CompositionQualityResolver.compose(p, slots.values(), CompositionContext.SOUP_SCOOP);
+        List<FoodItem> inputs = new ArrayList<>(slots.values());
+        if (liquidFood != null) inputs.add(liquidFood);
+        CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SOUP_SCOOP);
         CompositionApplier.apply(soup, composed);
         soup.setBaseFood(scoopFood(soup.getBaseFood()));
         int quality = composed.getFinalQuality();
@@ -395,6 +423,10 @@ public class PotReference extends CookingReference {
         Player p = e.getPlayer();
         if(p.getInventory().getItemInMainHand().getType().equals(Material.AIR)) {
             if(isEmpty()) return;
+            if (isMashing()) {
+                if (!isMashed()) takeBackFromMash(p);
+                return;
+            }
             take(p);
             return;
         }
@@ -407,35 +439,53 @@ public class PotReference extends CookingReference {
             if (isSoup()) {
                 scoop(p, item);
                 e.setCancelled(true);
+            } else if (isMashed()) {
+                scoopMash(p, item);
+                e.setCancelled(true);
             }
             return;
         }
         if(ItemCache.isMasher(item)) {
-            mash(p);
+            if (isMashing()) mashDish(p);
+            else mash(p);
             e.setCancelled(true);
             return;
         }
         if (!secondaries.containsKey("liquid")) {
+            FoodItem held = FoodItem.fromItem(item);
+            if (addToMash(p, item, held)) {
+                e.setCancelled(true);
+                return;
+            }
+            PotLiquid pouring = held == null ? null : PotConfig.liquidFor(held);
+            if (isMashing()) {
+                boolean water = pouring != null || ItemCache.isPotWaterInput(item) || isWrongPotWaterSource(item);
+                p.sendMessage(water ? MASH_NOT_WATER : "§cThat doesn't go in this mash.");
+                e.setCancelled(true);
+                return;
+            }
             if (isWrongPotWaterSource(item)) {
                 p.sendMessage("Use a water bucket to fill the pot.");
                 return;
             }
             if (ItemCache.isPotWaterInput(item)) {
-                if (f.getType() == null || f.getType().getSlot("liquid") == null) return;
-                PlacedSlot slot = f.getOrCreatePlacedSlot("liquid");
-                secondaries.put("liquid", -1);
-                slot.forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.potLiquidDisplay));
-                addColour("3d85c6");
+                if (!fill(WATER_COLOUR)) return;
                 p.getInventory().setItemInMainHand(BucketItems.empty());
                 p.updateInventory();
                 p.swingMainHand();
-                updateModel();
-                danger = 0;
-                temperature = 0;
                 f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
                 e.setCancelled(true);
                 return;
             }
+            if (pouring != null) {
+                pour(p, item, held, pouring);
+                e.setCancelled(true);
+                return;
+            }
+        } else if (goesInMashOnly(item)) {
+            p.sendMessage("§cThat goes in a mash, which is made in an empty pot without water.");
+            e.setCancelled(true);
+            return;
         }
         if(canAdd(p, item)) {
             FoodItem incoming = FoodItem.fromItem(item);
@@ -457,8 +507,9 @@ public class PotReference extends CookingReference {
         }
     }
 
-    /** Scooped soup keeps the ladle's paper item, so it must not be used as a ladle. */
+    /** Scooped soup or mash keeps the ladle's place in the hand, so it must not be used as a ladle. */
     private static boolean isHeldSoup(ItemStack item) {
+        if (MashItems.isLadled(item)) return true;
         FoodItem food = FoodItem.fromItem(item);
         if (food == null) {
             return false;
@@ -466,20 +517,235 @@ public class PotReference extends CookingReference {
         return "soup".equalsIgnoreCase(food.getId()) || "soup".equalsIgnoreCase(food.getCategory());
     }
 
+    /** Fills the empty pot with water or a pot.yml liquid of this colour; false when it has no liquid slot. */
+    private boolean fill(String colour) {
+        if (f.getType() == null || f.getType().getSlot("liquid") == null) return false;
+        PlacedSlot slot = f.getOrCreatePlacedSlot("liquid");
+        secondaries.put("liquid", -1);
+        slot.forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.potLiquidDisplay));
+        addColour(colour);
+        updateModel();
+        danger = 0;
+        temperature = 0;
+        return true;
+    }
+
+    /** A bottle of stock fills the pot like a water bucket; the soup made from it earns the liquid's track (Rich). */
+    private void pour(Player p, ItemStack item, FoodItem food, PotLiquid poured) {
+        if (!fill(poured.colour())) return;
+        liquid = poured;
+        liquidFood = new FoodItem(food);
+        ItemStack single = item.clone();
+        single.setAmount(1);
+        f.getVariables().put(VAR_LIQUID, poured.id());
+        String payload = encodeStack(single);
+        if (payload != null) f.getVariables().put(VAR_LIQUID_FOOD, payload);
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+        useOneGivingBack(p, item, poured.returns());
+        p.swingMainHand();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BOTTLE_EMPTY, 1f, 1f);
+    }
+
+    /** Uses one of the held item; the player gets the item at that path back for it (an empty bottle or cup), if any. */
+    private static void useOneGivingBack(Player p, ItemStack item, String returns) {
+        ItemStack back = returns == null || returns.isBlank() ? null : TLibs.getItemAPI().getCreator().getItemFromPath(returns);
+        if (back == null || back.getType().isAir()) item.setAmount(item.getAmount() - 1);
+        else HeldStack.useOneKeepStack(p, back);
+    }
+
+    /** Butter or milk held over water: it belongs in a mash, which the pot makes without water. */
+    private boolean goesInMashOnly(ItemStack item) {
+        FoodItem food = FoodItem.fromItem(item);
+        if (food == null || !PotConfig.isMashIngredient(food) || extraSlotKey(food.getCategory()) != null) return false;
+        return !food.canBeCooked() || !food.getCookData().hasMethod(method);
+    }
+
+    /** True while the empty pot holds a mash's ingredients, mashed or not. */
+    public boolean isMashing() {
+        return f != null && f.getVariables().containsKey(VAR_MASH);
+    }
+
+    /** True once the masher has mashed them; the ladle serves it. */
+    public boolean isMashed() {
+        return mashedId() != null;
+    }
+
+    private String mashedId() {
+        return f != null && f.getVariables().get(VAR_MASHED) instanceof String id ? id : null;
+    }
+
+    /** The pieces in the pot (not its extras). */
+    private List<FoodItem> mashIngredients() {
+        List<FoodItem> pieces = new ArrayList<>();
+        for (Map.Entry<String, FoodItem> entry : slots.entrySet()) {
+            if (!isExtraSlot(entry.getKey())) pieces.add(entry.getValue());
+        }
+        return pieces;
+    }
+
+    /** The pot.yml extra ids in the pot (milk, salt). */
+    private Set<String> mashExtras() {
+        Set<String> ids = new LinkedHashSet<>();
+        for (String key : slots.keySet()) {
+            if (isExtraSlot(key)) ids.add(key.substring("extra_".length()));
+        }
+        return ids;
+    }
+
+    /**
+     * An empty pot takes a mash's ingredients without water or heat, and its extras once a piece is in. True when it
+     * took the item, or refused it because the mash is already mashed.
+     */
+    private boolean addToMash(Player p, ItemStack item, FoodItem food) {
+        if (food == null) return false;
+        if (isMashed()) {
+            p.sendMessage("§cLadle the mash out first.");
+            return true;
+        }
+        List<FoodItem> pieces = mashIngredients();
+        Set<String> extras = mashExtras();
+        for (MashRecipe recipe : PotConfig.mashes()) {
+            if (!recipe.holds(pieces, extras)) continue;
+            if (recipe.takesIngredient(food, pieces)) {
+                addMashPiece(p, item);
+                return true;
+            }
+            MashRecipe.Extra extra = recipe.extraFor(food);
+            if (extra != null && !pieces.isEmpty() && !extras.contains(extra.id())) {
+                addMashExtra(p, item, extra);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void addMashPiece(Player p, ItemStack item) {
+        for (String slot : f.getType().getSlots().keySet()) {
+            if (add(slot, item)) {
+                f.getVariables().put(VAR_MASH, true);
+                InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+                p.swingMainHand();
+                return;
+            }
+        }
+        p.sendMessage("§cThe pot is full.");
+    }
+
+    private void addMashExtra(Player p, ItemStack item, MashRecipe.Extra extra) {
+        if (!storeExtra(item, "extra_" + extra.id())) return;
+        useOneGivingBack(p, item, extra.returns());
+        p.swingMainHand();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+    }
+
+    /** Until it's mashed, an empty hand takes back the last piece, then the extras, and an empty pot is a pot again. */
+    private void takeBackFromMash(Player p) {
+        String key = null;
+        for (String slotId : f.getType().getSlots().keySet()) {
+            if (slots.containsKey(slotId) && f.hasActiveSlot(slotId)) key = slotId;
+        }
+        ItemStack back;
+        if (key != null) {
+            PlacedSlot placed = f.getActiveSlot(key).get();
+            back = ItemUpdater.applyItemUpdate(placed.getCurrentItem(), slots.get(key), null);
+            placed.clearModel();
+        } else {
+            key = extraItems.keySet().iterator().next();
+            back = extraItems.remove(key);
+            saveExtras(extraItems);
+        }
+        slots.remove(key);
+        p.getInventory().setItemInMainHand(back);
+        if (slots.isEmpty()) {
+            f.getVariables().remove(VAR_MASH);
+            f.getVariables().remove(VAR_EXTRAS);
+        }
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+    }
+
+    /** The masher mashes a pot that holds exactly a mash's ingredients; otherwise it says what's needed. */
+    private void mashDish(Player p) {
+        if (isMashed()) {
+            p.sendMessage("§7It's mashed. Serve it with a ladle.");
+            return;
+        }
+        List<FoodItem> pieces = mashIngredients();
+        Set<String> extras = mashExtras();
+        MashRecipe holding = null;
+        for (MashRecipe recipe : PotConfig.mashes()) {
+            if (!recipe.holds(pieces, extras)) continue;
+            if (recipe.complete(pieces)) {
+                f.getVariables().put(VAR_MASHED, recipe.getId());
+                f.getVariables().put(VAR_MASH_SERVINGS, recipe.getServings());
+                InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+                showMash(recipe);
+                p.swingMainHand();
+                f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+                return;
+            }
+            if (holding == null) holding = recipe;
+        }
+        p.sendMessage(holding == null ? "§cThere's nothing here to mash." : "§cIt needs exactly " + holding.getHint() + " to mash.");
+    }
+
+    /** The pieces sink out of sight and the pot shows the mash, as low as the servings taken. */
+    private void showMash(MashRecipe recipe) {
+        for (String key : slots.keySet()) {
+            f.getActiveSlot(key).ifPresent(placed -> placed.applyDisplayData(mashedDisplay()));
+        }
+        if (f.getType().getSlot("liquid") == null) return;
+        f.getOrCreatePlacedSlot("liquid").forceModel(TLibs.getItemAPI().getCreator().getItemFromPath(recipe.getDisplay()));
+        applyLevel(recipe.getServings(), remainingMashServings(recipe));
+    }
+
+    /** The ladle takes one serving of the mash; the last one empties the pot. */
+    private void scoopMash(Player p, ItemStack ladle) {
+        MashRecipe recipe = PotConfig.mash(mashedId());
+        ItemStack output = recipe == null ? null : MashItems.serve(p, recipe, slots.values(), mashExtras(), ladle);
+        if (output == null) {
+            p.sendMessage("§cThis can't be served right now.");
+            return;
+        }
+        HeldStack.useOneIntoHand(p, output);
+        p.swingMainHand();
+        f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
+        org.bukkit.Bukkit.getPluginManager().callEvent(
+                new net.tfminecraft.cooking.events.DishCookedEvent(p, output, "pot"));
+        int remaining = remainingMashServings(recipe) - 1;
+        if (remaining <= 0) {
+            clear();
+            return;
+        }
+        f.getVariables().put(VAR_MASH_SERVINGS, remaining);
+        InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
+        applyLevel(recipe.getServings(), remaining);
+    }
+
+    private int remainingMashServings(MashRecipe recipe) {
+        return f.getVariables().get(VAR_MASH_SERVINGS) instanceof Number number ? number.intValue() : recipe.getServings();
+    }
+
     private void acceptExtra(Player p, ItemStack item, String extraKey) {
-        ItemStack stored = item.clone();
-        stored.setAmount(1);
-        FoodItem food = FoodItem.fromItem(stored);
-        if (food == null) return;
-        Map<String, ItemStack> updated = new HashMap<>(extraItems);
-        updated.put(extraKey, stored);
-        if (!saveExtras(updated)) return;
-        extraItems.put(extraKey, stored);
-        slots.put(extraKey, food);
+        if (!storeExtra(item, extraKey)) return;
         item.setAmount(item.getAmount() - 1);
         p.swingMainHand();
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.ITEM_BUCKET_FILL, 1f, 1f);
         thickenSoup();
+    }
+
+    /** Keeps one of the held item as this extra, saved on the pot; false when it isn't food or can't be saved. */
+    private boolean storeExtra(ItemStack item, String extraKey) {
+        ItemStack stored = item.clone();
+        stored.setAmount(1);
+        FoodItem food = FoodItem.fromItem(stored);
+        if (food == null) return false;
+        Map<String, ItemStack> updated = new HashMap<>(extraItems);
+        updated.put(extraKey, stored);
+        if (!saveExtras(updated)) return false;
+        extraItems.put(extraKey, stored);
+        slots.put(extraKey, food);
+        return true;
     }
 
     private void thickenSoup() {
@@ -603,11 +869,36 @@ public class PotReference extends CookingReference {
         super.rebuildFromFurniture();
         restoreMains();
         restoreExtras();
+        restoreLiquid();
+        if (isMashing()) {
+            restoreMash();
+            return;
+        }
         if (f != null && f.hasActiveSlot("liquid")) {
             secondaries.put("liquid", -1);
         }
         restoreColours();
         applySoupLevel();
+    }
+
+    /** The stock a pot was filled with, so its soup is still Rich after a reload. */
+    private void restoreLiquid() {
+        if (f == null) return;
+        liquid = f.getVariables().get(VAR_LIQUID) instanceof String id ? PotConfig.liquid(id) : null;
+        ItemStack poured = decodeStack(f.getVariables().get(VAR_LIQUID_FOOD) instanceof String text ? text : null);
+        liquidFood = poured == null ? null : FoodItem.fromItem(poured);
+    }
+
+    /** Butter and the like aren't kept by the base rebuild; a mashed pot shows its mash again. Its slot isn't water. */
+    private void restoreMash() {
+        if (f.getType() == null) return;
+        for (String slotId : f.getType().getSlots().keySet()) {
+            if (!slotId.contains("input") || slots.containsKey(slotId)) continue;
+            FoodItem fi = f.getActiveSlot(slotId).map(placed -> FoodItem.fromItem(placed.getCurrentItem())).orElse(null);
+            if (fi != null) slots.put(slotId, fi);
+        }
+        MashRecipe recipe = PotConfig.mash(mashedId());
+        if (recipe != null) showMash(recipe);
     }
 
     /**
@@ -636,10 +927,10 @@ public class PotReference extends CookingReference {
         return fi.canBeCooked() && fi.getCookData().hasMethod(Method.POT);
     }
 
-    /** Colours are not saved, so rebuild them in the order the pot was filled: water first. */
+    /** Colours are not saved, so rebuild them in the order the pot was filled: water (or stock) first. */
     private void restoreColours() {
         if (f == null || f.getType() == null || !secondaries.containsKey("liquid")) return;
-        addColour("3d85c6");
+        addColour(liquid != null ? liquid.colour() : WATER_COLOUR);
         for (String slotId : f.getType().getSlots().keySet()) {
             if (!slots.containsKey(slotId) || isExtraSlot(slotId)) continue;
             f.getActiveSlot(slotId).ifPresent(placed -> addColour(ItemCache.getColour(placed.getCurrentItem())));
@@ -690,11 +981,15 @@ public class PotReference extends CookingReference {
     }
 
     private void applySoupLevel() {
-        if (f == null || f.getType() == null) {
+        if (f != null) applyLevel(soupScoops(), remainingSoupServings());
+    }
+
+    /** Lowers the liquid slot a step for each serving taken out of the total. */
+    private void applyLevel(int total, int remaining) {
+        if (f.getType() == null) {
             return;
         }
-        int remaining = remainingSoupServings();
-        int scoopsTaken = soupScoops() - remaining;
+        int scoopsTaken = total - remaining;
         if (scoopsTaken <= 0) {
             return;
         }
@@ -716,11 +1011,18 @@ public class PotReference extends CookingReference {
     
     @Override
     public void clear() {
+        // A mashed pot's pieces are the mash: like soup, they go with it rather than drop when the pot breaks.
+        boolean mashed = isMashed();
         extraItems.clear();
-        f.getVariables().remove(VAR_SOUP_SERVINGS);
-        f.getVariables().remove(VAR_EXTRAS);
+        liquid = null;
+        liquidFood = null;
+        for (String key : List.of(VAR_SOUP_SERVINGS, VAR_EXTRAS, VAR_LIQUID, VAR_LIQUID_FOOD, VAR_MASH, VAR_MASHED,
+                VAR_MASH_SERVINGS)) {
+            f.getVariables().remove(key);
+        }
         InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
-        if(isSoup()) super.clear();
+        if (mashed) f.getActiveSlot("liquid").ifPresent(PlacedSlot::clearModel);
+        if(isSoup() || mashed) super.clear();
         else super.remove();
     }
 }

@@ -52,6 +52,9 @@ public class Keys {
             new NamespacedKey(Cooking.plugin, "carve_remaining");
     public static final NamespacedKey SLOT_DATA =
             new NamespacedKey(Cooking.plugin, "slot_data");
+    /** On a serving still in the ladle that scooped it (mashed potatoes); plating it gives the ladle back. */
+    public static final NamespacedKey LADLED =
+            new NamespacedKey(Cooking.plugin, "ladled");
 
     public static final NamespacedKey INGREDIENTS =
             new NamespacedKey(Cooking.plugin, "food_ingredients");

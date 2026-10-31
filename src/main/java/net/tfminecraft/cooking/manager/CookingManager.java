@@ -27,6 +27,7 @@ import net.tfminecraft.cooking.cooking.CookingReference;
 import net.tfminecraft.cooking.cooking.FryingReference;
 import net.tfminecraft.cooking.cooking.PotReference;
 import net.tfminecraft.cooking.cooking.SauceReference;
+import net.tfminecraft.cooking.pot.MashItems;
 import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.StationChunks;
@@ -139,7 +140,7 @@ public class CookingManager implements Listener {
         if(e.getClickedBlock() == null || !e.getClickedBlock().getType().equals(Material.CAULDRON)) return;
         FoodItem fi = FoodItem.fromItem(item);
         if(fi == null) return;
-        if(fi.getCategory().equalsIgnoreCase("sauce") || fi.getCategory().equalsIgnoreCase("soup")) {
+        if(fi.getCategory().equalsIgnoreCase("sauce") || fi.getCategory().equalsIgnoreCase("soup") || MashItems.isLadled(item)) {
             ItemStack empty = TLibs.getItemAPI().getCreator().getItemFromPath(ItemCache.ladle);
             if (empty == null || empty.getType().isAir()) return;
             e.setCancelled(true);
