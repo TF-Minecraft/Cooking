@@ -107,6 +107,11 @@ public class ModelData {
         return copy;
     }
 
+    /** True when this state has its own model for that furniture (display.furniture). */
+    public boolean hasFurnitureModel(String furniture) {
+        return furniture != null && overrides.containsKey(furniture);
+    }
+
     public ItemStack apply(String furniture, ItemStack source) {
         if (directItem != null) {
             ItemStack out = directItem.clone();
