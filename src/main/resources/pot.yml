@@ -45,6 +45,31 @@ mashes:
     output: mash(type=mashed_potatoes;origin=Potato;tags=freshness.0)
     display: ia.tfmc_cooking:gray
     hint: 4 boiled cut potatoes and a butter
+  # Two boiled rice, a cup of milk and a sweetener (sugar, maple syrup), stirred with the masher: rice pudding.
+  # Cinnamon, vanilla or nutmeg make it Aromatic. Boiled rice, milk and sugar over a pot of water get the mash hint.
+  rice_pudding:
+    ingredients:
+      rice:
+        path: c.grain(type=boiled_rice;tags=cooked.3)
+        amount: 2
+      milk:
+        path: c.ingredient(type=cup_of_milk)
+      sweetener:
+        path: c.sweetener
+    extras:
+      cinnamon:
+        path: c.spice(origin=Cinnamon)
+        track: aromatic
+      vanilla:
+        path: c.spice(origin=Vanilla)
+        track: aromatic
+      nutmeg:
+        path: c.spice(origin=Nutmeg)
+        track: aromatic
+    servings: 2
+    output: mash(type=rice_pudding;origin=Rice;tags=freshness.0)
+    display: ia.tfmc_cooking:milk
+    hint: 2 boiled rice, a cup of milk and a sweetener
 
 # Tags a soup earns from what's in the pot when it's ladled, written like sandwiches.yml's bonuses. The pot has no
 # layers, so only count: origin applies, over everything in it (pieces, extras and stock).

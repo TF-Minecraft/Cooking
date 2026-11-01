@@ -524,6 +524,78 @@ dough:
     freshness:
       rotten: "#8B7355Mouldy"
 
+###Rice — the rice crop (crops.yml rice; conversions.yml makes the harvest this). It boils in the soup pot into
+# boiled rice (its pot option's output, as chopped corn pops into popcorn in the pan): a type whose only option has an
+# output isn't Raw in hand, only once it's in the water. Taken out before it's done, it's rice again.
+rice:
+  name: "#e8dcb5Rice"
+  model: rice
+  food: 8
+  nutrition: 5
+  cooking-options:
+    pot:
+      tag: 3
+      time: 15
+      burn: 30
+      output: grain(type=boiled_rice)
+  age:
+    warmth: 450
+    freshness: 28
+
+###Boiled rice: rice boiled in the pot (Boiled; left in, it burns as boiled rice). It fries into fried rice in the
+# frying pan, rolls into sushi with a raw fish filet on the cutting board (crafting-stations.yml sushi) and makes rice
+# pudding in an empty pot (pot.yml rice_pudding).
+boiled_rice:
+  name: "#f2eee0Boiled Rice"
+  model: boiled_rice
+  food: 10
+  nutrition: 5
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 15
+      burn: 30
+      output: grain(type=fried_rice)
+  age:
+    warmth: 450
+    freshness: 4
+
+###Fried rice: boiled rice fried in the frying pan. Taken out, it stirs in the other fried pieces in the pan (a fried
+# egg, cut vegetables, mushrooms, meat or fish; frying-pan.yml stir-ins), which name it: Egg Fried Rice.
+fried_rice:
+  name: "#e0b062{fillers}Fried Rice"
+  model: fried_rice
+  food: 12
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 4
+
+###Rice pudding: two boiled rice, a cup of milk and a sweetener stirred with the masher in an empty pot (pot.yml
+# rice_pudding). Its food and nutrition are set from its ingredients; these are only defaults.
+rice_pudding:
+  name: "#f3e6c4Rice Pudding"
+  model: rice_pudding
+  food: 20
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 2
+  tag-labels:
+    freshness:
+      rotten: "#8B7355Spoiled"
+
+###Sushi: a boiled rice and a raw fish filet rolled on the cutting board, two pieces a pair (crafting-stations.yml
+# sushi). The fish names it: Salmon Sushi.
+sushi:
+  name: "#f0e8dc{inherit} Sushi"
+  model: sushi
+  food: 10
+  nutrition: 7
+  age:
+    warmth: 450
+    freshness: 2
+
 ##SAUCE
 sauce:
   age:

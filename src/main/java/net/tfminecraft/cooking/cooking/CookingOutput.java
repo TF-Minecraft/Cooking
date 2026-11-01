@@ -14,7 +14,7 @@ import net.tfminecraft.cooking.utils.FoodParser;
 
 /**
  * A cooking option that names an output (types.yml cooking-options.&lt;method&gt;.output) turns the piece into that
- * food once it's done: chopped corn in the frying pan pops into popcorn. The piece cooks raw, then becomes the output,
+ * food once it's done: chopped corn in the frying pan pops into popcorn, and rice boils into boiled rice in the pot. The piece cooks raw, then becomes the output,
  * cooked (or burnt, if it burnt first), and keeps cooking by the same clock, so popcorn left too long burns as popcorn.
  */
 public final class CookingOutput {
@@ -36,17 +36,26 @@ public final class CookingOutput {
     }
 
     /**
-     * A piece taken off before it turned is still what went in: drops the raw track {@link #startRaw} gave it.
-     * True when the piece is such an unturned input.
+     * A piece already cooked another way still goes into cookware whose option turns it into its output (boiled rice
+     * into the frying pan, where it fries into fried rice); burnt, it doesn't.
+     */
+    static boolean turnsHere(FoodItem piece, Method method) {
+        return output(piece, method) != null && !piece.hasTag(Tag.BURNT);
+    }
+
+    /**
+     * A piece taken off before it turned is still what went in: drops the raw track {@link #startRaw} gave it, and a
+     * piece that came in cooked (boiled rice) keeps its step. True when the piece is such an unturned input.
      */
     static boolean restoreInput(FoodItem piece, Method method) {
-        if (output(piece, method) == null || piece.getCookData().cooksInPlace()) {
+        CookParameter parameter = piece.getCookData().getParameters().get(method);
+        if (parameter == null || parameter.getOutput() == null || piece.getCookData().cooksInPlace()
+                || piece.getCookData().getCurrentTime() >= parameter.getTime()) {
             return false;
         }
-        if (piece.hasTagTrack(COOKED_TRACK) && !piece.hasTag(Tag.RAW)) {
-            return false;
+        if (piece.hasTag(Tag.RAW)) {
+            piece.removeTrack(COOKED_TRACK);
         }
-        piece.removeTrack(COOKED_TRACK);
         return true;
     }
 

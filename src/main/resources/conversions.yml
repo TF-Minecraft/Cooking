@@ -45,7 +45,7 @@ conversions:
   - ia.tfmc_cooking:pineapple fruit(type=fruit_2;origin=Pineapple;tags=freshness.0)
   - ia.tfmc_cooking:cherry fruit(type=fruit_2;origin=Cherry;tags=freshness.0)
   - ia.tfmc_cooking:cactus_fruit fruit(type=fruit_2;origin=Cactus Fruit;tags=freshness.0)
-  - ia.tfmc_cooking:rice vegetable(type=vegetable_2;origin=Rice;tags=freshness.0)
+  - ia.tfmc_cooking:rice grain(type=rice;origin=Rice;tags=freshness.0)
   - ia.tfmc_cooking:mustard_seeds spice(type=spice_1;origin=Mustard;tags=freshness.0)
   - ia.tfmc_cooking:cup_of_milk ingredient(type=cup_of_milk;origin=Cow;tags=freshness.0)
   - v.milk_bucket ingredient(type=milk_bucket;origin=Cow;tags=freshness.0)
