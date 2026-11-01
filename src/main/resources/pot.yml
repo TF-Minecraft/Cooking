@@ -56,6 +56,18 @@ kinds:
   Borscht:
     name: Borscht
     mostly: Beetroot
+  # Boiled seafood (fish filets, octopus, jellyfish) with a potato, and other vegetables or mushrooms if you like.
+  Seafood Chowder:
+    name: Seafood Chowder
+    layers: [seafood]
+    only: [seafood, vegetable]
+    any-origin: [Potato]
+  # Seafood with other vegetables, or two kinds of seafood. One seafood alone stays an "Octopus Soup".
+  Seafood Stew:
+    name: Seafood Stew
+    layers: [seafood]
+    only: [seafood, vegetable]
+    min-origins: 2
 
 # Tags a soup earns from what's in the pot when it's ladled, written like sandwiches.yml's bonuses. The pot has no
 # layers, so only count: origin applies, over everything in it (pieces, extras and stock).
