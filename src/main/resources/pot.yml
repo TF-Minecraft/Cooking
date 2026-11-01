@@ -56,6 +56,10 @@ kinds:
   Borscht:
     name: Borscht
     mostly: Beetroot
+  # Mostly pumpkin, boiled and mashed (cut pumpkin boils in the pot like any cut vegetable).
+  Pumpkin:
+    name: Pumpkin Soup
+    mostly: Pumpkin
   # Boiled seafood (fish filets, octopus, jellyfish) with a potato, and other vegetables or mushrooms if you like.
   Seafood Chowder:
     name: Seafood Chowder

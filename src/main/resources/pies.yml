@@ -123,6 +123,10 @@ kinds:
     name: Mixed Berry
     only-origins: [Strawberry, Cherry, Grape, Blueberry, Blackberry, Raspberry, Cranberry, Sweet Berries]
     min-origins: 2
+  # Cut or chopped pumpkin, raw or cooked: the bake cooks it.
+  Pumpkin:
+    name: Pumpkin
+    only-origins: [Pumpkin]
   Mixed: {}
 
 # Tags a pie earns from its fillings, written like sandwiches.yml's bonuses. count: fillings counts the fillings.
