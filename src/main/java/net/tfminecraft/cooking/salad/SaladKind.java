@@ -12,7 +12,8 @@ import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.sandwich.SandwichLayer;
 
 /**
- * One kind of dish from salads.yml, sandwiches.yml or pies.yml kinds (a Greek salad, a Hamburger, a Key Lime Pie):
+ * One kind of dish from salads.yml, sandwiches.yml, pies.yml or pot.yml kinds (a Greek salad, a Hamburger, a Key Lime
+ * Pie, Borscht):
  * what its ingredients must be. A dish of this kind takes the kind's name as its origin, so types.yml overrides give it
  * its own look and name.
  *
@@ -80,10 +81,26 @@ public final class SaladKind {
 
     /** Whether these ingredients, with the layers they make, are this kind of dish. */
     public boolean matches(List<FoodItem> foods, List<SandwichLayer> made) {
+        List<String> ids = new ArrayList<>();
+        for (SandwichLayer layer : made) ids.add(layer.getId());
+        return matchesLayers(foods, ids);
+    }
+
+    /**
+     * Whether these foods are this kind of dish when each one's category is its layer (pot.yml kinds: the soup pot has
+     * no layers, so {@code only: [vegetable]} means nothing but vegetables).
+     */
+    public boolean matches(List<FoodItem> foods) {
+        List<String> ids = new ArrayList<>();
+        for (FoodItem food : foods) ids.add(food.getCategory() == null ? "" : food.getCategory());
+        return matchesLayers(foods, ids);
+    }
+
+    private boolean matchesLayers(List<FoodItem> foods, List<String> made) {
         Map<String, Integer> byOrigin = new HashMap<>();
         List<String> layerIds = new ArrayList<>();
         for (int i = 0; i < foods.size(); i++) {
-            String id = made.get(i).getId().toLowerCase(Locale.ROOT);
+            String id = made.get(i).toLowerCase(Locale.ROOT);
             if (!only.isEmpty() && !only.contains(id)) return false;
             if (tags.containsKey(id) && !hasAny(foods.get(i), tags.get(id))) return false;
             layerIds.add(id);
