@@ -24,8 +24,6 @@ class OctopusJellyfishAssetsTest {
         assertNull(types.getString("seafood_octopus.cooking-options.pot.output"), "boiled octopus stays octopus");
         assertEquals("grilled_octopus", types.getString("grilled_octopus.model"));
         assertEquals("jellyfish_strips", types.getString("jellyfish_strips.model"));
-        assertEquals("{colour}{prefixes}Seafood Chowder", types.getString("soup.overrides.SEAFOOD CHOWDER.name"));
-        assertEquals("{colour}{prefixes}Seafood Stew", types.getString("soup.overrides.SEAFOOD STEW.name"));
 
         YamlConfiguration stations = YamlConfiguration.loadConfiguration(new File("src/main/resources/crafting-stations.yml"));
         String recipe = "cutting_board.recipes.slice_jellyfish.";

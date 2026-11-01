@@ -46,44 +46,6 @@ mashes:
     display: ia.tfmc_cooking:gray
     hint: 4 boiled cut potatoes and a butter
 
-# Kinds of soup: what the pieces boiled and mashed in the pot (not its extras or stock) make, written like salads.yml
-# kinds. The first kind that matches wins; a pot holding a piece that's no ingredient below makes no kind. A soup of a
-# kind takes the kind as its origin, so a types.yml soup override names it ("Seafood Chowder" instead of "Octopus and
-# Potato Soup"). Soups of no kind are named by their pieces as before.
-#   ingredients  what each piece counts as, by types.yml type (as salads.yml ingredients; name and models unused)
-#   kinds        layers, only, origins, any-origin, min-origins, mostly, as salads.yml kinds
-ingredients:
-  seafood:
-    types:
-      - seafood_fish_filet
-      - seafood_octopus
-      - seafood_jellyfish
-  vegetable:
-    types:
-      - vegetable_cut
-      - vegetable_cut_2
-  mushroom:
-    types:
-      - mushroom
-  meat:
-    types:
-      - meat_red_meat
-      - meat_poultry
-      - meat_poultry_leg
-      - meat_pork
-kinds:
-  # Seafood with potatoes (and other vegetables or mushrooms).
-  Seafood Chowder:
-    layers: [seafood]
-    only: [seafood, vegetable, mushroom]
-    any-origin: [Potato]
-  # Seafood with anything else that isn't meat: two kinds of seafood, or seafood and vegetables. Seafood of one kind
-  # alone stays an "Octopus Soup".
-  Seafood Stew:
-    layers: [seafood]
-    only: [seafood, vegetable, mushroom]
-    min-origins: 2
-
 # Tags a soup earns from what's in the pot when it's ladled, written like sandwiches.yml's bonuses. The pot has no
 # layers, so only count: origin applies, over everything in it (pieces, extras and stock).
 bonuses:

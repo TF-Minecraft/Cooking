@@ -539,12 +539,6 @@ soup:
     warmth: 450
     freshness: 2
   name: "{colour}{prefixes}{fillers}Soup"
-  # Kinds of soup (pot.yml kinds) take their kind as origin and their name from here.
-  overrides:
-    SEAFOOD CHOWDER:
-      name: "{colour}{prefixes}Seafood Chowder"
-    SEAFOOD STEW:
-      name: "{colour}{prefixes}Seafood Stew"
   food: 26
   nutrition: 8
 

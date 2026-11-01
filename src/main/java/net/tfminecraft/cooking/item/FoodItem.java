@@ -392,18 +392,6 @@ public class FoodItem {
     }
 
     public Map<String, OverrideData> getOverrides() { return overrides; }
-
-    /**
-     * The name a food is built from: its origin's types.yml override name when it has one (a sandwich of origin
-     * Hamburger is "{prefixes}Hamburger", a soup of origin Seafood Chowder "{colour}Seafood Chowder"), else its type's.
-     */
-    public String getNameTemplate() {
-        if (origin != null) {
-            OverrideData od = overrides.get(origin.toUpperCase(Locale.ROOT));
-            if (od != null && od.getName() != null) return od.getName();
-        }
-        return getName();
-    }
     public List<String> getIngredients() { return ingredients; }
     public IngredientLineage getLineage() {
         return lineage == null ? IngredientLineage.empty() : lineage;

@@ -331,9 +331,8 @@ public class CookingReference {
         return NameComposer.formatFillerPhrase(getIngredients(), type);
     }
 
-    /** The product's name, from its origin's override name (a soup kind: Seafood Chowder) or else its type's. */
     protected String applyNameTemplate(FoodItem product, String colour, String typeLabel) {
-        String displayName = product.getNameTemplate();
+        String displayName = product.getName();
         String fillers = NameComposer.formatFillerPhrase(getIngredients());
         if (fillers.isEmpty()) {
             fillers = "Mixed ";

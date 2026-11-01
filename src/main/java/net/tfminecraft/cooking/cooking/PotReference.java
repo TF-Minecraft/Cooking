@@ -46,7 +46,6 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
-import net.tfminecraft.cooking.salad.SaladKind;
 import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
@@ -239,14 +238,6 @@ public class PotReference extends CookingReference {
             soup.addOrModifyTrack(mi.getTagTrack("soup_thickness"));
             setMain(mi);
         }
-
-        // Its kind (pot.yml kinds) names it through its origin's types.yml override: a Seafood Chowder.
-        List<FoodItem> pieces = new ArrayList<>();
-        for (Map.Entry<String, FoodItem> entry : slots.entrySet()) {
-            if (!isExtraSlot(entry.getKey())) pieces.add(entry.getValue());
-        }
-        SaladKind kind = PotConfig.kindFor(pieces);
-        if (kind != null) soup.setOrigin(kind.getOrigin());
 
         // ---------- BUILD RESULT ----------
         List<FoodItem> inputs = new ArrayList<>(slots.values());
