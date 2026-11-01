@@ -311,7 +311,7 @@ class PopcornMachineCoverageTest {
         assertEquals(16, machine.getMaxInput());
         assertEquals(4, machine.getYield());
         assertEquals(2, machine.getMaxToppings());
-        assertEquals(List.of("caramel", "sugar", "butter", "salt"), machine.getToppings().stream().map(Topping::id).toList());
+        assertEquals(List.of("caramel", "sugar", "butter", "salt", "cinnamon", "vanilla"), machine.getToppings().stream().map(Topping::id).toList());
         assertEquals(160, machine.getPopTicks());
         assertEquals("ia.tfmc_cooking:popcorn_machine_kettle", machine.kettleFor(false));
         assertEquals("ia.tfmc_cooking:popcorn_machine_kettle_loaded", machine.kettleFor(true));
@@ -332,7 +332,10 @@ class PopcornMachineCoverageTest {
         assertEquals("butter", machine.toppingFor(FoodItem.fromItem(piece("butter", "dairy", "Cow", 3, 1))).id());
         assertEquals("butter", machine.toppingFor(FoodItem.fromItem(piece("butter", "ingredient", "Cow", 3, 1))).id());
         assertNull(machine.toppingFor(FoodItem.fromItem(corn(3, 1))));
-        assertEquals("caramel, sugar, butter or salt", PopcornMachineHandler.toppingNames(machine));
+        assertEquals("caramel, sugar, butter, salt, cinnamon or vanilla", PopcornMachineHandler.toppingNames(machine));
+        // The shipped flavourings name popcorn by their tags.yml flavour tracks (Cinnamon Sugared Popcorn).
+        assertEquals("cinnamon", machine.toppingFor(FoodItem.fromItem(piece("sweetener_1", "spice", "Cinnamon", 3, 1))).id());
+        assertNull(machine.toppingFor(FoodItem.fromItem(piece("sweetener_1", "spice", "Nutmeg", 3, 1))));
 
         Machine m = new Machine();
         assertSame(machine, PopcornMachineConfig.machineFor(m.furniture));
@@ -418,7 +421,7 @@ class PopcornMachineCoverageTest {
         assertEquals("§cIt already has 2 toppings.", player.nextMessage());
 
         m.click(new ItemStack(Material.STONE));
-        assertEquals("§cOnly corn and caramel, sugar, butter or salt go in.", player.nextMessage());
+        assertEquals("§cOnly corn and caramel, sugar, butter, salt, cinnamon or vanilla go in.", player.nextMessage());
 
         ItemStack rotten = corn(5, 1);
         FoodItem food = FoodItem.fromItem(rotten);

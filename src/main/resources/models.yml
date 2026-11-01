@@ -3795,3 +3795,111 @@ caramel:
       item: ia.tfmc_cooking:caramel
     display:
       item: ia.tfmc_cooking:caramel
+
+# Chocolate (types.yml cocoa_beans to chocolate_bar). Cocoa beans keep the vanilla look (they still plant on jungle
+# logs); in the frying pan beans lie flat on the pan floor like chopped corn.
+cocoa_beans:
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.7
+        y: 0.7
+        z: 0.7
+      position:
+        y: -0.26
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: v.cocoa_beans
+    display:
+      item: v.cocoa_beans
+
+roasted_cocoa_beans:
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.7
+        y: 0.7
+        z: 0.7
+      position:
+        y: -0.26
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:roasted_cocoa_beans
+    display:
+      item: ia.tfmc_cooking:roasted_cocoa_beans
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:roasted_cocoa_beans_burnt
+    display:
+      item: ia.tfmc_cooking:roasted_cocoa_beans_burnt
+
+cocoa_powder:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:cocoa_powder
+    display:
+      item: ia.tfmc_cooking:cocoa_powder_pile
+
+# A cup of hot chocolate (a potion, so it's drunk; types.yml returns gives the cup back).
+hot_chocolate:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:hot_chocolate
+    display:
+      item: ia.tfmc_cooking:hot_chocolate
+
+# A bowl of melted chocolate. Poured into a chocolate mould it shows as the mould's fill instead
+# (crafting-stations.yml fill-models), and the bars cut from it lie in the mould as one set slab cut in four.
+melted_milk_chocolate:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:cooking_chocolate
+    display:
+      item: ia.tfmc_cooking:cooking_chocolate
+
+melted_dark_chocolate:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:melted_dark_chocolate
+    display:
+      item: ia.tfmc_cooking:melted_dark_chocolate
+
+milk_chocolate_bar:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:milk_chocolate_bar
+    display:
+      item: ia.tfmc_cooking:milk_chocolate_bar
+      furniture:
+        - chocolate_mould ia.tfmc_cooking:chocolate_mould_bars_milk_chocolate
+
+dark_chocolate_bar:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: ia.tfmc_cooking:dark_chocolate_bar
+    display:
+      item: ia.tfmc_cooking:dark_chocolate_bar
+      furniture:
+        - chocolate_mould ia.tfmc_cooking:chocolate_mould_bars_dark_chocolate

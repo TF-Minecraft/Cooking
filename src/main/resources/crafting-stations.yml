@@ -69,3 +69,25 @@ cutting_board:
       inputs:
         - c.seafood(type=seafood_whole)
       output: seafood(type=seafood_fish_filet;origin={origin};tags=freshness.0)
+# Chocolate mould: right-click it with a bowl of melted chocolate (condiments.yml) to pour it in (you keep the bowl);
+# it lies in the mould as one slab, in its own colour per kind ({origin}: milk_chocolate, dark_chocolate). Hit the mould
+# with the cutting knife to cut it into 4 bars, which keep its kind and flavourings (Vanilla Milk Chocolate Bar) and
+# share its food; take them out with an empty hand. The furniture (InteractibleFurniture) has one slot, input_1, at
+# its centre and unscaled, so the slab and the bars are drawn in the mould's coordinates.
+chocolate_mould:
+  furniture: chocolate_mould
+  single-origin: true
+  max-slots: 1
+  tool: ia.tfmc_cooking:cutting_knife
+  fill-models:
+    - ia.tfmc_cooking:chocolate_mould_fill_{origin}
+  pour-return: v.bowl
+  recipes:
+    cut_chocolate:
+      ratio: 1
+      yield: 4
+      inherit: true
+      share-food: true
+      inputs:
+        - c.condiment(type=melted_chocolate)
+      output: snack(type=chocolate_bar)
