@@ -13,6 +13,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import net.tfminecraft.cooking.item.FoodItem;
+import net.tfminecraft.cooking.manager.BowlIngredientLayout;
 import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.sandwich.SandwichLayer;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -25,6 +26,7 @@ public final class SaladConfig {
     private static int maxIngredients = 5;
     private static int minIngredients = 2;
     private static int maxExtras = 3;
+    private static float spreadRadius = BowlIngredientLayout.RADIUS;
     private static String output = "meal(type=salad;origin=Mixed)";
     private static String outputType = "salad";
     private static List<SandwichLayer> ingredients = List.of();
@@ -42,6 +44,7 @@ public final class SaladConfig {
         maxIngredients = Math.max(1, config.getInt("max-ingredients", 5));
         minIngredients = Math.max(1, Math.min(maxIngredients, config.getInt("min-ingredients", 2)));
         maxExtras = Math.max(0, config.getInt("max-extras", 3));
+        spreadRadius = (float) config.getDouble("spread-radius", BowlIngredientLayout.RADIUS);
         output = config.getString("output", "meal(type=salad;origin=Mixed)");
         Matcher type = TYPE.matcher(output);
         outputType = type.find() ? type.group(1).trim().toLowerCase(Locale.ROOT) : "salad";
@@ -139,6 +142,14 @@ public final class SaladConfig {
 
     public static int maxExtras() {
         return maxExtras;
+    }
+
+    /**
+     * How far from the bowl's middle an ingredient's bowl model (its layer's models) lies, in blocks. An ingredient
+     * without one shows as it looks in hand, at the soup's spread (BowlIngredientLayout).
+     */
+    public static float spreadRadius() {
+        return spreadRadius;
     }
 
     public static String output() {
