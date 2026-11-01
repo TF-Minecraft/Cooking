@@ -325,6 +325,38 @@ class NutritionListenersCoverageTest {
         server.getScheduler().performOneTick(); assertEquals(Material.GLASS_BOTTLE,player.getInventory().getItemInMainHand().getType());
     }
 
+    @Test void aDrinkServedInACupGivesTheCupBackWhereVanillaLeavesTheBottle() {
+        MockBukkit.createMockPlugin("RPCharacters"); DrinkConsumeListener listener=new DrinkConsumeListener();
+        listener.onServedDrink(mock(PlayerItemConsumeEvent.class));
+        listener.onServedDrink(consume(new ItemStack(Material.APPLE),EquipmentSlot.HAND));
+        // A cup of milk is DrinkConsumeListener.onDrink's; food with no returns keeps vanilla's bottle.
+        listener.onServedDrink(consume(stack("cup_of_milk",true,"drink",Material.POTION),EquipmentSlot.HAND));
+        listener.onServedDrink(consume(stack("stock",true,"stock",Material.POTION),EquipmentSlot.HAND));
+        ItemStack blank=served("blank_drink"," ");
+        listener.onServedDrink(consume(blank,EquipmentSlot.HAND));
+        server.getScheduler().performOneTick();
+        assertNull(player.getInventory().getItem(0));
+
+        ItemStack cocoa=served("hot_chocolate","cup.empty");
+        player.getInventory().setHeldItemSlot(2); listener.onServedDrink(consume(cocoa,EquipmentSlot.HAND));
+        player.getInventory().setItem(2,new ItemStack(Material.GLASS_BOTTLE)); player.getInventory().setHeldItemSlot(5);
+        server.getScheduler().performOneTick(); assertEquals(Material.BOWL,player.getInventory().getItem(2).getType());
+        listener.onServedDrink(consume(cocoa,EquipmentSlot.OFF_HAND));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        server.getScheduler().performOneTick(); assertEquals(Material.BOWL,player.getInventory().getItemInOffHand().getType());
+
+        // A cup that can't be built leaves the bottle; so does a drink with no character to drink it.
+        ItemStack lost=served("lost_drink","cup.missing");
+        when(api.getCreator().getItemFromPath("cup.missing")).thenReturn(null);
+        listener.onServedDrink(consume(lost,EquipmentSlot.OFF_HAND));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        server.getScheduler().performOneTick(); assertEquals(Material.GLASS_BOTTLE,player.getInventory().getItemInOffHand().getType());
+        characters.set(player,null);
+        listener.onServedDrink(consume(cocoa,EquipmentSlot.OFF_HAND));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.GLASS_BOTTLE));
+        server.getScheduler().performOneTick(); assertEquals(Material.GLASS_BOTTLE,player.getInventory().getItemInOffHand().getType());
+    }
+
     @Test void staleStartCannotInitializeAReplacementGenerationOfTheSameCharacter() {
         MockBukkit.createMockPlugin("RPCharacters");
         NutritionLifecycleListener listener = new NutritionLifecycleListener();
@@ -771,6 +803,12 @@ class NutritionListenersCoverageTest {
         ItemStack stack=new ItemStack(material); var meta=stack.getItemMeta();
         meta.getPersistentDataContainer().set(Keys.FOOD_ID,PersistentDataType.STRING,id);
         stack.setItemMeta(meta); return stack;
+    }
+    private ItemStack served(String id,String returns) {
+        ItemStack stack=stack(id,true,"drink",Material.POTION);
+        YamlConfiguration config=new YamlConfiguration(); config.set("food",10); config.set("returns",returns);
+        FoodItem food=new FoodItem(id,config); food.setCategory("drink"); FoodLoader.oList.removeIf(f->f.getId().equals(id)); FoodLoader.oList.add(food);
+        return stack;
     }
     private PlayerItemConsumeEvent consume(ItemStack stack,EquipmentSlot hand) {
         return new PlayerItemConsumeEvent(player,stack,hand);

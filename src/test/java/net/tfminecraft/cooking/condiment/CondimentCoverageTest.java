@@ -124,6 +124,74 @@ class CondimentCoverageTest {
     }
 
     @Test
+    void extrasGoInOnceEachAndTagTheOutputWhileAContainerTakesItOut() throws Exception {
+        YamlConfiguration config = new YamlConfiguration();
+        config.loadFromString("""
+                liquid: c.ingredient(type=cup_of_milk)
+                ingredients: [c.ingredient(type=cocoa_powder), c.sweetener]
+                extras:
+                  vanilla: {path: c.spice(origin=Vanilla), track: sweet}
+                  cinnamon: {path: c.spice(origin=Cinnamon), track: no_such_track}
+                  pathless: {track: sweet}
+                  flat: 3
+                container: test.cup
+                output: drink(type=hot_chocolate)
+                """);
+        BottleRecipe cocoa = new BottleRecipe("cocoa", config);
+        FoodItem milk = food("cup_of_milk", "ingredient", "Cow");
+        FoodItem powder = food("cocoa_powder", "ingredient", "Cocoa");
+        FoodItem sugar = food("sweetener_1", "sweetener", "Sugar");
+        FoodItem vanilla = food("spice_1", "spice", "Vanilla");
+        FoodItem cinnamon = food("spice_1", "spice", "Cinnamon");
+        FoodItem nutmeg = food("spice_1", "spice", "Nutmeg");
+
+        assertTrue(cocoa.takes(vanilla, List.of(powder)));
+        assertFalse(cocoa.takes(vanilla, List.of(powder, vanilla)), "each extra goes in once");
+        assertTrue(cocoa.takes(cinnamon, List.of(vanilla)));
+        assertFalse(cocoa.takes(nutmeg, List.of()));
+        assertFalse(cocoa.takes(powder, List.of(nutmeg)), "a pan holding what the recipe doesn't take fits nothing");
+        assertTrue(cocoa.matches(milk, false, List.of(vanilla, powder, sugar, cinnamon)));
+        assertTrue(cocoa.matches(milk, false, List.of(powder, sugar)));
+        assertFalse(cocoa.matches(milk, false, List.of(powder, vanilla, vanilla, sugar)));
+        assertFalse(cocoa.matches(milk, false, List.of(powder, vanilla)));
+
+        List<net.tfminecraft.cooking.item.tag.TagTrack> tracks = new java.util.ArrayList<>(net.tfminecraft.cooking.loader.TrackLoader.oList);
+        try (MockedStatic<net.tfminecraft.tlibs.TLibs> tlibs = mockStatic(net.tfminecraft.tlibs.TLibs.class)) {
+            net.tfminecraft.cooking.loader.TrackLoader.oList = new java.util.ArrayList<>();
+            new net.tfminecraft.cooking.loader.TrackLoader().load(new java.io.File("src/main/resources/tags.yml"));
+            FoodItem output = food("hot_chocolate", "drink", "Cocoa");
+            cocoa.applyExtras(output, List.of(powder, vanilla, sugar, cinnamon));
+            assertEquals(List.of("sweet"), output.getTagTracks().stream().map(t -> t.getId()).toList());
+
+            net.tfminecraft.tlibs.objects.api.ItemAPI api = mock(net.tfminecraft.tlibs.objects.api.ItemAPI.class, RETURNS_DEEP_STUBS);
+            tlibs.when(net.tfminecraft.tlibs.TLibs::getItemAPI).thenReturn(api);
+            ItemStack cup = new ItemStack(Material.BOWL);
+            when(api.getChecker().checkItemWithPath(cup, "test.cup")).thenReturn(true);
+            assertEquals("an empty cup", cocoa.getContainerName());
+            assertTrue(cocoa.takesContainer(cup));
+            assertTrue(cocoa.isContainer(cup));
+            assertFalse(cocoa.takesContainer(new ItemStack(Material.GLASS_BOTTLE)));
+            assertFalse(cocoa.takesContainer(null));
+
+            BottleRecipe bottled = new BottleRecipe("plain", new MemoryConfiguration());
+            assertEquals("an empty glass bottle", bottled.getContainerName());
+            assertTrue(bottled.takesContainer(new ItemStack(Material.GLASS_BOTTLE)));
+            assertFalse(bottled.takesContainer(cup));
+            assertFalse(bottled.isContainer(new ItemStack(Material.GLASS_BOTTLE)));
+            MemoryConfiguration bowl = new MemoryConfiguration();
+            bowl.set("container", "v.bowl");
+            bowl.set("container-name", "a bowl");
+            assertEquals("a bowl", new BottleRecipe("melted", bowl).getContainerName());
+
+            load(CONFIG.replace("    broken: 3", "    cocoa:\n      container: test.cup\n    broken: 3"));
+            assertTrue(CondimentConfig.isBottlingContainer(cup));
+            assertFalse(CondimentConfig.isBottlingContainer(new ItemStack(Material.GLASS_BOTTLE)));
+        } finally {
+            net.tfminecraft.cooking.loader.TrackLoader.oList = tracks;
+        }
+    }
+
+    @Test
     void aRecipeTakesEachOfItsIngredientsOnceAndMatchesOnlyItsExactPan() throws Exception {
         YamlConfiguration config = new YamlConfiguration();
         config.loadFromString(CONFIG);
