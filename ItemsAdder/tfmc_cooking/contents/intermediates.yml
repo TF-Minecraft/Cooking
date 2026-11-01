@@ -43,6 +43,42 @@ items:
       generate: false
       model_path: item/intermediate/flour_rotten
 
+  # Thick sauce: the heap flour shows as in the frying pan, and the roux it cooks into there.
+  flour_heap:
+    display_name: "Flour Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/flour_heap
+
+  flour_heap_rotten:
+    display_name: "Flour Heap Musty"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/flour_heap_rotten
+
+  roux:
+    display_name: "Roux"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/roux
+
+  roux_burnt:
+    display_name: "Roux Burnt"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/roux_burnt
+
+  roux_rotten:
+    display_name: "Roux Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/roux_rotten
+
   yeast:
     display_name: "Yeast"
     resource:

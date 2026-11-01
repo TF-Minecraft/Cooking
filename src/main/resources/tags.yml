@@ -124,6 +124,7 @@ sauce_creamy:
     value: 0
     nutrition-mult: 1.1
     food-mult: 1.05
+# A sauce with a roux in it (SauceReference) is Thick; without one it gets no thickness tag. Thin is kept for food strings.
 sauce_thickness:
   thin:
     name: "#bfb999Thin"

@@ -164,6 +164,7 @@ colours:
     - origin.pistachio 93c47d
     - origin.rhubarb c45c6a
     - origin.garlic f5f0e6
+    - origin.roux d9a95b
 
 
 dictionary:
@@ -180,6 +181,7 @@ dictionary:
   sauce: "#997950Sauce"
   garnish: "#0b5394Garnish"
   liquid: "#3d85c6Liquid"
+  thickener: "#d9a95bThickener"
   snack: "#e8c56bSnack"
 
 sauce-dict:

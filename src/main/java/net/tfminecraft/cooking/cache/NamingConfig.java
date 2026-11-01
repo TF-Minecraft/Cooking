@@ -25,6 +25,7 @@ public final class NamingConfig {
         map.put("sweetener", Set.of("sweetener"));
         map.put("addon", Set.of("garnish", "spice"));
         map.put("dough-filler", Set.of("fruit"));
+        map.put("thickener", Set.of("thickener"));
         return map;
     }
 

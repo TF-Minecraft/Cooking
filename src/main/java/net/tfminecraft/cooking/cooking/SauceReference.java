@@ -216,12 +216,26 @@ public class SauceReference extends CookingReference {
 
 
 
+        if (StationAddonRules.isThickenerCategory(category)) {
+
+            return StationAddonRules.canAcceptThickener(slots, fi, player);
+
+        }
+
+
+
         if (category.equals("alcohol")) return true;
 
 
 
         // What a bottling recipe for this liquid still needs (tomato paste in vinegar for catsup).
-        return bottlingTakes(fi);
+        if (bottlingTakes(fi)) return true;
+
+        // Raw flour doesn't thicken a sauce; a roux does.
+        if (ItemCache.isFlour(i) && player != null) {
+            player.sendMessage("§7Cook the flour in a buttered frying pan first: a roux thickens the sauce.");
+        }
+        return false;
 
     }
 
@@ -241,23 +255,7 @@ public class SauceReference extends CookingReference {
 
 
 
-        int flourCount = 0;
-
         boolean hasMilk = false;
-
-
-
-        for (FoodItem fi : slots.values()) {
-
-            String category = fi.getCategory().toLowerCase();
-
-            if (category.equals("flour")) {
-
-                flourCount++;
-
-            }
-
-        }
 
 
 
@@ -284,21 +282,8 @@ public class SauceReference extends CookingReference {
 
         StationAddonRules.applySweetTag(sauce, slots);
 
-
-
-        TagTrack thickTrack = new TagTrack(TrackLoader.getByString("sauce_thickness"));
-
-        if (flourCount >= 1) {
-
-            thickTrack.setValue(1);
-
-        } else {
-
-            thickTrack.setValue(0);
-
-        }
-
-        sauce.addOrModifyTrack(thickTrack);
+        // A roux makes it Thick, which also names it (naming.yml prefix-tracks), so dishes it's ladled onto say so.
+        StationAddonRules.applyThickTag(sauce, slots);
 
 
 
