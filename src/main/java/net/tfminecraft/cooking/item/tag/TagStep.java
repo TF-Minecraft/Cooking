@@ -1,5 +1,8 @@
 package net.tfminecraft.cooking.item.tag;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.configuration.ConfigurationSection;
 import net.tfminecraft.cooking.enums.Tag;
 
@@ -16,6 +19,7 @@ public class TagStep {
     private final double qualityReduce;
     private final double craftQualityPct;
     private final int stars;
+    private final List<TagEffect> effects = new ArrayList<>();
 
     public TagStep(String key, ConfigurationSection config) {
         this(
@@ -27,6 +31,10 @@ public class TagStep {
                 config.getDouble("quality-reduce", 0.0),
                 config.getDouble("craft-quality-pct", 0.0),
                 config.getInt("stars", 0));
+        for (String line : config.getStringList("effects")) {
+            TagEffect effect = TagEffect.parse(line, config.getCurrentPath());
+            if (effect != null) effects.add(effect);
+        }
     }
 
     public TagStep(String key, String name, long requiredValue, double foodMultiplier, double nutritionMultiplier) {
@@ -75,5 +83,7 @@ public class TagStep {
     public double getQualityReduce() { return qualityReduce; }
     public double getCraftQualityPct() { return craftQualityPct; }
     public int getStars() { return stars; }
+    /** The status effects eating a food at this step gives (tags.yml effects), hidden or not. */
+    public List<TagEffect> getEffects() { return List.copyOf(effects); }
 }
 

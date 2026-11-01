@@ -1,10 +1,13 @@
 package net.tfminecraft.cooking.nutrition;
 
+import java.util.List;
+
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.rpcharacters.objects.RPCharacter;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.IngredientLineage;
+import net.tfminecraft.cooking.item.tag.TagEffect;
 
 public final class NutritionService {
 
@@ -15,6 +18,8 @@ public final class NutritionService {
             NutritionLog.append("EAT_SKIP", player, null, "cause=null-input");
             return;
         }
+        // The food is eaten whatever it gives in nutrition, so its effects (a hidden poison's too) always apply.
+        giveEatEffects(player, food);
         NutritionContext context = NutritionContext.capture(player);
         if (context == null) {
             NutritionLog.append("EAT_SKIP", player, null,
@@ -75,6 +80,20 @@ public final class NutritionService {
         NutritionLog.append("SAVE", player, character, "reason=eat");
         NutritionDisplayService.sync(context, "eat");
         NutritionAttributeBridge.apply(context);
+    }
+
+    /** Gives the player the status effects of the food's tag steps (tags.yml effects), hidden tracks included. */
+    static void giveEatEffects(Player player, FoodItem food) {
+        List<TagEffect> effects = food.getEatEffects();
+        if (effects.isEmpty()) return;
+        StringBuilder given = new StringBuilder();
+        for (TagEffect effect : effects) {
+            player.addPotionEffect(effect.toPotionEffect());
+            if (given.length() > 0) given.append(',');
+            given.append(effect.type().getKey().getKey()).append(':').append(effect.seconds()).append("s:")
+                    .append(effect.level());
+        }
+        NutritionLog.append("EAT_EFFECTS", player, null, "food=" + food.getId() + " effects=" + given);
     }
 
     private static int applyFoodGain(RPCharacter character, int gained) {
