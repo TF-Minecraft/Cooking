@@ -2,6 +2,8 @@
 #########Do not change these unless you know
 # craft-quality-pct: upward star-roll bonus when this step is active on an extra ingredient (e.g. 0.05 = +5% craft quality)
 # stars: added to inherited quality while this step is active. Negative lowers the star rating.
+# effects: status effects eating a food at this step gives, as "<effect> <seconds> [level]" (Minecraft effect ids,
+#   level 1 = I), e.g. - "poison 10 1". They apply even when the track is hidden.
 # Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 1.25 days).
 # Per-type duration is types.yml age.freshness (higher = lasts longer).
 freshness:
@@ -293,19 +295,29 @@ rich:
 # each one. Food is left alone on purpose: eating moves Nutrition toward the meal's, weighted by the food it gives, so a
 # filling meal with no nutrition drags a diet down hardest. A dish made well (the bonus's hide-at-stars and hide-tags)
 # keeps it secret: no line in the lore, and the Food and Nutrition shown leave it out; eating still applies it.
+# Each step also makes the eater ill (effects), hidden or not.
 poison:
   tainted:
     name: "#a3a04aTainted"
     value: 0
     nutrition-mult: 0.4
+    effects:
+      - "nausea 10"
   poisoned:
     name: "#7d9a3aPoisoned"
     value: 1
     nutrition-mult: 0.15
+    effects:
+      - "nausea 15"
+      - "poison 10 1"
   deadly:
     name: "#6b3a7dDeadly"
     value: 2
     nutrition-mult: 0
+    effects:
+      - "nausea 20"
+      - "poison 15 2"
+      - "weakness 60"
 
 # Popcorn machine toppings (popcorn-machines.yml): each caramel, sugar, butter or salt put in tops every piece. They name
 # it (naming.yml prefix-tracks: Buttered Salted Caramel Popcorn); its look comes from popcorn_look below.

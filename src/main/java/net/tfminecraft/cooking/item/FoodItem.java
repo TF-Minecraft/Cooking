@@ -12,6 +12,7 @@ import net.tfminecraft.cooking.item.data.OverrideData;
 import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.item.model.ModelData;
 import net.tfminecraft.cooking.item.tag.AgeScale;
+import net.tfminecraft.cooking.item.tag.TagEffect;
 import net.tfminecraft.cooking.item.tag.TagQuality;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
@@ -677,6 +678,19 @@ public class FoodItem {
             return 0;
         }
         return getSauce().finalValue(type, withHidden);
+    }
+
+    /**
+     * The status effects eating this food gives: those of every track's current step (tags.yml effects), hidden tracks
+     * included, so a well-hidden poison still strikes.
+     */
+    public List<TagEffect> getEatEffects() {
+        List<TagEffect> effects = new ArrayList<>();
+        for (TagTrack track : tags.values()) {
+            TagStep step = track.getCurrentStep();
+            if (step != null) effects.addAll(step.getEffects());
+        }
+        return effects;
     }
 
     private double applyMultipliers(double base, int type, boolean withHidden) {
