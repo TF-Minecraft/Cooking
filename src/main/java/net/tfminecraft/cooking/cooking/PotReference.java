@@ -46,6 +46,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.salad.SaladKind;
 import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
@@ -54,6 +55,7 @@ import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.NameComposer;
 import net.tfminecraft.cooking.utils.WarmthUtils;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.cooking.utils.StationAddonRules;
@@ -247,6 +249,9 @@ public class PotReference extends CookingReference {
         soup.setBaseFood(scoopFood(soup.getBaseFood()));
         // The pot has no layers: only bonuses that count origins (a poison) apply, over everything in it.
         DishBonus.apply(soup, inputs, food -> null, layer -> false, PotConfig.bonuses());
+        // A named soup (pot.yml kinds) takes the kind as its origin and is called by its name: Borscht.
+        SaladKind kind = PotConfig.kindFor(mashIngredients());
+        if (kind != null) soup.setOrigin(kind.getOrigin());
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
@@ -255,7 +260,10 @@ public class PotReference extends CookingReference {
             return;
         }
 
-        String displayName = applyNameTemplate(soup, DisplayUtils.getMergedColour(colours), "Soup");
+        String colour = DisplayUtils.getMergedColour(colours);
+        String displayName = kind != null && kind.getName() != null
+                ? DisplayUtils.getNameColour(colour) + NameComposer.formatPrefixes(soup) + kind.getName()
+                : applyNameTemplate(soup, colour, "Soup");
         ItemMeta m = output.getItemMeta();
         m.setDisplayName(StringFormatter.formatHex(displayName));
         m.getPersistentDataContainer().set(Keys.SLOT_DATA, PersistentDataType.STRING, Encoder.getEncodedSlots(f));

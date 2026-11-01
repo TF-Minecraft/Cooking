@@ -1,0 +1,30 @@
+# Sweet berries, sugar cane and beetroot (Cooking feat/berries-cane-beet). Made by
+# scratch/new-foods/berries-cane-beet/bin/gen.py. Its juicer piles and salad bowl heap go with the juicer and salad
+# bowl items, which are Dev-only.
+info:
+  namespace: tfmc_cooking
+items:
+  sweet_berries_rotten:
+    display_name: "Mouldy Sweet Berries"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/vanilla/sweet_berries_rotten
+  sweet_berries_jam:
+    display_name: "Sweet Berry Jam"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/sweet_berries_jam
+  sweet_berries_jam_rotten:
+    display_name: "Mouldy Sweet Berry Jam"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/sweet_berries_jam_rotten
+  sugar_pile:
+    display_name: "Sugar (Milling Stone)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/bulk/sugar

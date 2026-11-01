@@ -1,0 +1,6 @@
+{
+ "parent": "minecraft:item/generated",
+ "textures": {
+  "layer0": "tfmc_cooking:item/intermediate/sweet_berries_jam"
+ }
+}

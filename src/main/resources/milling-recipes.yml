@@ -1,3 +1,13 @@
+# The milling stone (config.yml milling-stone). A stone can grind several things: the first recipe whose input matches
+# the stack in hand loads it (input-count of them), and an empty hand grinds and then takes the result.
+#   input-food / input / vanilla-fallback: a types.yml food id, a food path, or a vanilla item (its quality rolled as
+#     on pickup) it takes.
+#   output-food: the types.yml type it grinds into; category and origin: the result's (default grain, Wheat).
+#   input-name: "You need 8 <input-name> to fill the mill." (default wheat).
+#   input-display / output-display: what the stone shows loaded and ground (default wheat, and the output's
+#     config.yml mixing model or the flour heap).
+#   output-amount: how many it grinds into (default 1).
+#   refund: an item given back when a loaded stone is broken (default the input-food, or wheat, as food).
 flour:
   furniture: milling_stone
   input-count: 8
@@ -5,5 +15,22 @@ flour:
   input: c.grain(type=wheat)
   vanilla-fallback: v.wheat
   output-food: flour
+  revolutions: 4
+  duration-ticks: 60
+
+# Sugar cane ground into sugar, one for each cane as at the crafting table: the same sweetener vanilla sugar becomes
+# on pickup (conversions.yml v.sugar), with the cane's rolled quality.
+sugar:
+  furniture: milling_stone
+  input-count: 8
+  vanilla-fallback: v.sugar_cane
+  input-name: sugar cane
+  input-display: v.sugar_cane
+  refund: v.sugar_cane
+  output-food: sweetener_1
+  category: sweetener
+  origin: Sugar
+  output-display: ia.tfmc_cooking:sugar_pile
+  output-amount: 8
   revolutions: 4
   duration-ticks: 60
