@@ -25,17 +25,35 @@ public final class MillingStoneDisplay {
     }
 
     public static void showWheat(Furniture furniture) {
-        ItemStack wheat = new ItemStack(Material.WHEAT);
+        showWheat(furniture, null);
+    }
+
+    /** The recipe's input on the loaded stone: its input-display item, or wheat. */
+    public static void showWheat(Furniture furniture, MillingRecipe recipe) {
+        ItemStack input = recipe == null || recipe.getInputDisplay() == null
+                ? new ItemStack(Material.WHEAT)
+                : TLibs.getItemAPI().getCreator().getItemFromPath(recipe.getInputDisplay());
+        if (input == null) {
+            return;
+        }
         for (String slotId : MillingStoneSlots.WHEAT) {
             if (furniture.getType() == null || furniture.getType().getSlot(slotId) == null) {
                 continue;
             }
-            furniture.getOrCreatePlacedSlot(slotId).forceModel(wheat);
+            furniture.getOrCreatePlacedSlot(slotId).forceModel(input);
         }
     }
 
     public static void showFlour(Furniture furniture) {
-        String modelPath = ItemCache.getMixingModel("flour");
+        showFlour(furniture, null);
+    }
+
+    /** The ground pile: the recipe's output-display, else its output's mixing model, else the flour model. */
+    public static void showFlour(Furniture furniture, MillingRecipe recipe) {
+        String modelPath = recipe == null ? null : recipe.getOutputDisplay();
+        if (modelPath == null) {
+            modelPath = ItemCache.getMixingModel(recipe == null ? "flour" : recipe.getOutputFood());
+        }
         if (modelPath == null) {
             modelPath = "ia.tfmc_cooking:flour_model";
         }
@@ -65,15 +83,19 @@ public final class MillingStoneDisplay {
     }
 
     public static void syncVisuals(Furniture furniture, MillingStoneStage stage) {
+        syncVisuals(furniture, stage, null);
+    }
+
+    public static void syncVisuals(Furniture furniture, MillingStoneStage stage, MillingRecipe recipe) {
         showTop(furniture);
         switch (stage) {
             case LOADED -> {
                 clearFlour(furniture);
-                showWheat(furniture);
+                showWheat(furniture, recipe);
             }
             case READY -> {
                 clearWheat(furniture);
-                showFlour(furniture);
+                showFlour(furniture, recipe);
             }
             default -> clearAll(furniture);
         }
