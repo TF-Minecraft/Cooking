@@ -539,6 +539,12 @@ soup:
     warmth: 450
     freshness: 2
   name: "{colour}{prefixes}{fillers}Soup"
+  # Kinds of soup (pot.yml kinds) take their kind as origin and their name from here.
+  overrides:
+    SEAFOOD CHOWDER:
+      name: "{colour}{prefixes}Seafood Chowder"
+    SEAFOOD STEW:
+      name: "{colour}{prefixes}Seafood Stew"
   food: 26
   nutrition: 8
 
@@ -629,15 +635,46 @@ seafood_octopus:
   food: 11
   nutrition: 7
   mashable: true
+  # Grilled in the frying pan it becomes grilled octopus (and burns as that); boiled in the pot it stays octopus.
   cooking-options:
     frying_pan:
       tag: 1
       time: 15
       burn: 30
+      output: seafood(type=grilled_octopus)
     pot:
       tag: 3
       time: 15
       burn: 30
+  age:
+    warmth: 450
+    freshness: 9.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+###Grilled octopus: what octopus becomes in the frying pan; keeps its origin (Octopus). Salads take it (salads.yml).
+grilled_octopus:
+  name: "#c8642aGrilled {inherit}"
+  model: grilled_octopus
+  food: 11
+  nutrition: 7
+  age:
+    warmth: 450
+    freshness: 9.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+###Jellyfish strips: jellyfish cubes cut into strips on the cutting board (crafting-stations.yml slice_jellyfish). They
+# stay as raw, fried or boiled as the cubes were; boiled (blanched) is how jellyfish goes into a salad (salads.yml).
+jellyfish_strips:
+  name: "#87cefa{inherit} Strips"
+  model: jellyfish_strips
+  food: 9
+  nutrition: 5
   age:
     warmth: 450
     freshness: 9.33

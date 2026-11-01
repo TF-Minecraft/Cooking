@@ -9,7 +9,6 @@ import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.item.model.ModelData;
 import net.tfminecraft.cooking.item.tag.TagStep;
 import net.tfminecraft.cooking.item.tag.TagTrack;
-import net.tfminecraft.cooking.item.data.OverrideData;
 
 import org.apache.commons.lang.WordUtils;
 import org.bukkit.Material;
@@ -77,12 +76,7 @@ public class ItemBuilder {
      * Hamburger is "{prefixes}Hamburger"), else its type's name.
      */
     static String nameTemplate(FoodItem item) {
-        String origin = item.getOrigin();
-        if (origin != null) {
-            OverrideData od = item.getOverrides().get(origin.toUpperCase(Locale.ROOT));
-            if (od != null && od.getName() != null) return od.getName();
-        }
-        return item.getName();
+        return item.getNameTemplate();
     }
 
     public static ItemStack buildSingleWithQuality(FoodItem template, ItemStack base, int quality) {

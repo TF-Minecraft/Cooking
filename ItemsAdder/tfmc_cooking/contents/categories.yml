@@ -344,3 +344,9 @@ categories:
       - tfmc_cooking:octopus_burnt
       - tfmc_cooking:octopus_boiled
       - tfmc_cooking:octopus_rotten
+      - tfmc_cooking:grilled_octopus
+      - tfmc_cooking:jellyfish_strips_raw
+      - tfmc_cooking:jellyfish_strips_cooked
+      - tfmc_cooking:jellyfish_strips_boiled
+      - tfmc_cooking:jellyfish_strips_burnt
+      - tfmc_cooking:jellyfish_strips_rotten
