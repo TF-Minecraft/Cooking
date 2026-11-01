@@ -52,7 +52,14 @@ public final class MillingRecipeLoader {
                     section.getString("vanilla-fallback"),
                     outputFood,
                     section.getInt("revolutions", 4),
-                    durationTicks));
+                    durationTicks,
+                    section.getString("origin"),
+                    section.getString("category"),
+                    section.getString("input-name"),
+                    section.getString("input-display"),
+                    section.getString("output-display"),
+                    section.getString("refund"),
+                    section.getInt("output-amount", 1)));
         }
 
         MillingRecipeRegistry.load(recipes);
