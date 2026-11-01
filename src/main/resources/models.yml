@@ -925,6 +925,53 @@ garlic:
       position:
         y: -0.25
 
+sweet_berries:
+  fresh:
+    weight: 1
+    tags:
+      - fresh
+    gui:
+      item: v.sweet_berries
+    display:
+      item: v.sweet_berries
+    display-data:
+      rotation:
+        x: 90
+        y: 0
+        z: 90
+      position:
+        y: -0.25
+  stale:
+    weight: 1
+    tags:
+      - stale
+    gui:
+      item: v.sweet_berries
+    display:
+      item: v.sweet_berries
+    display-data:
+      rotation:
+        x: 90
+        y: 0
+        z: 90
+      position:
+        y: -0.25
+  rotten:
+    weight: 1
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:sweet_berries_rotten
+    display:
+      item: ia.tfmc_cooking:sweet_berries_rotten
+    display-data:
+      rotation:
+        x: 90
+        y: 0
+        z: 90
+      position:
+        y: -0.25
+
 strawberry:
   fresh:
     weight: 1

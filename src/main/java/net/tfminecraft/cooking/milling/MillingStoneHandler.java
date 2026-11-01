@@ -1,5 +1,7 @@
 package net.tfminecraft.cooking.milling;
 
+import java.util.List;
+
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -40,13 +42,14 @@ public final class MillingStoneHandler implements Listener {
             return;
         }
 
-        MillingRecipe recipe = MillingRecipeRegistry.getByFurnitureId(furniture.getId());
-        if (recipe == null) {
+        List<MillingRecipe> recipes = MillingRecipeRegistry.getAllForFurniture(furniture.getId());
+        if (recipes.isEmpty()) {
             return;
         }
 
         MillingStoneStage stage = resolveStage(furniture);
-        syncIfNeeded(furniture, stage);
+        MillingRecipe recipe = loadedRecipe(furniture);
+        syncIfNeeded(furniture, stage, recipe);
 
         Player player = event.getPlayer();
         ItemStack hand = player.getInventory().getItemInMainHand();
@@ -54,7 +57,7 @@ public final class MillingStoneHandler implements Listener {
 
         if (!emptyHand) {
             if (stage == MillingStoneStage.EMPTY) {
-                handleLoad(furniture, recipe, player, hand, event);
+                handleLoad(furniture, recipes, player, hand, event);
             } else {
                 event.setCancelled(true);
             }
@@ -77,7 +80,7 @@ public final class MillingStoneHandler implements Listener {
             return;
         }
 
-        MillingRecipe recipe = MillingRecipeRegistry.getByFurnitureId(furniture.getId());
+        MillingRecipe recipe = loadedRecipe(furniture);
         MillingStoneStage stage = resolveStage(furniture);
         if (stage != MillingStoneStage.EMPTY && (recipe == null
                 || (stage == MillingStoneStage.READY && !dropFlour(furniture, recipe))
@@ -96,26 +99,36 @@ public final class MillingStoneHandler implements Listener {
         MillingStoneState.clear(furniture);
     }
 
-    private void handleLoad(Furniture furniture, MillingRecipe recipe, Player player, ItemStack hand,
+    private void handleLoad(Furniture furniture, List<MillingRecipe> recipes, Player player, ItemStack hand,
             FurnitureInteractEvent event) {
-        if (hand.getAmount() < recipe.getInputCount()) {
+        MillingRecipe recipe = null;
+        InputMatch match = null;
+        for (MillingRecipe candidate : recipes) {
+            match = resolveInput(hand, candidate, player);
+            if (match.accepted) {
+                recipe = candidate;
+                break;
+            }
+        }
+        if (recipe == null) {
             event.setCancelled(true);
-            player.sendMessage("§cYou need " + recipe.getInputCount() + " wheat to fill the mill.");
+            player.sendMessage("§cThat doesn't go in the mill.");
             return;
         }
 
-        InputMatch match = resolveInput(hand, recipe, player);
-        if (!match.accepted) {
+        if (hand.getAmount() < recipe.getInputCount()) {
             event.setCancelled(true);
-            player.sendMessage("§cThat doesn't go in the mill.");
+            player.sendMessage("§cYou need " + recipe.getInputCount() + " " + recipe.getInputName()
+                    + " to fill the mill.");
             return;
         }
 
         hand.setAmount(hand.getAmount() - recipe.getInputCount());
         MillingStoneState.setOutputQuality(furniture, match.quality);
         MillingStoneState.setLineage(furniture, match.lineage);
+        MillingStoneState.setRecipe(furniture, recipe.getId());
         MillingStoneState.setStage(furniture, MillingStoneStage.LOADED);
-        MillingStoneDisplay.syncVisuals(furniture, MillingStoneStage.LOADED);
+        MillingStoneDisplay.syncVisuals(furniture, MillingStoneStage.LOADED, recipe);
 
         player.swingMainHand();
         furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.ITEM_CROP_PLANT, 1f, 1f);
@@ -132,7 +145,7 @@ public final class MillingStoneHandler implements Listener {
         furniture.getLoc().getWorld().playSound(furniture.getLoc(), Sound.BLOCK_GRINDSTONE_USE, 1f, 1f);
         MillingStoneAnimation.playMill(furniture, recipe.getRevolutions(), recipe.getDurationTicks(), () -> {
             MillingStoneState.setStage(furniture, MillingStoneStage.READY);
-            MillingStoneDisplay.syncVisuals(furniture, MillingStoneStage.READY);
+            MillingStoneDisplay.syncVisuals(furniture, MillingStoneStage.READY, recipe);
             markDirty(furniture);
         });
     }
@@ -141,7 +154,7 @@ public final class MillingStoneHandler implements Listener {
         ItemStack flour = buildFlour(recipe, MillingStoneState.getOutputQuality(furniture),
                 MillingStoneState.getLineage(furniture));
         if (flour == null || flour.getType().isAir()) {
-            player.sendMessage("§cFailed to create flour.");
+            player.sendMessage("§cFailed to create " + recipe.getOutputFood().replace('_', ' ') + ".");
             return;
         }
 
@@ -168,7 +181,7 @@ public final class MillingStoneHandler implements Listener {
     }
 
     private boolean dropWheatRefund(Furniture furniture, MillingRecipe recipe) {
-        ItemStack wheat = buildWheat(MillingStoneState.getOutputQuality(furniture),
+        ItemStack wheat = buildWheat(recipe, MillingStoneState.getOutputQuality(furniture),
                 MillingStoneState.getLineage(furniture));
         if (wheat == null || wheat.getType().isAir()) {
             return false;
@@ -184,21 +197,28 @@ public final class MillingStoneHandler implements Listener {
             return null;
         }
         FoodItem flour = new FoodItem(template);
-        flour.setCategory("grain");
-        flour.setOrigin("Wheat");
-        flour.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain("Wheat") : lineage);
-        return ItemBuilder.buildSingleWithQuality(flour, quality);
+        flour.setCategory(recipe.getCategory());
+        flour.setOrigin(recipe.getOrigin());
+        flour.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain(recipe.getOrigin()) : lineage);
+        ItemStack built = ItemBuilder.buildSingleWithQuality(flour, quality);
+        if (built != null && !built.getType().isAir()) built.setAmount(recipe.getOutputAmount());
+        return built;
     }
 
-    private static ItemStack buildWheat(int quality, IngredientLineage lineage) {
-        FoodItem template = FoodLoader.getByString("wheat");
+    /** What a loaded stone gives back: the recipe's refund item (sugar cane), or its input as food (wheat). */
+    private static ItemStack buildWheat(MillingRecipe recipe, int quality, IngredientLineage lineage) {
+        if (recipe.getRefund() != null) {
+            ItemStack refund = TLibs.getItemAPI().getCreator().getItemFromPath(recipe.getRefund());
+            return refund == null ? null : refund.clone();
+        }
+        FoodItem template = FoodLoader.getByString(recipe.getRefundFood());
         if (template == null) {
             return null;
         }
         FoodItem wheat = new FoodItem(template);
-        wheat.setCategory("grain");
-        wheat.setOrigin("Wheat");
-        wheat.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain("Wheat") : lineage);
+        wheat.setCategory(MillingRecipe.DEFAULT_CATEGORY);
+        wheat.setOrigin(recipe.getOrigin());
+        wheat.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain(recipe.getOrigin()) : lineage);
         return ItemBuilder.buildSingleWithQuality(wheat, quality);
     }
 
@@ -212,15 +232,20 @@ public final class MillingStoneHandler implements Listener {
         return stored;
     }
 
-    private static void syncIfNeeded(Furniture furniture, MillingStoneStage stage) {
+    /** The recipe this stone was loaded with, or its first recipe (an empty stone, or one loaded before ids were saved). */
+    private static MillingRecipe loadedRecipe(Furniture furniture) {
+        return MillingRecipeRegistry.getForFurniture(furniture.getId(), MillingStoneState.getRecipe(furniture));
+    }
+
+    private static void syncIfNeeded(Furniture furniture, MillingStoneStage stage, MillingRecipe recipe) {
         if (stage == MillingStoneStage.EMPTY) {
             MillingStoneDisplay.showTop(furniture);
             return;
         }
         if (stage == MillingStoneStage.LOADED && !furniture.hasActiveSlot(MillingStoneSlots.WHEAT[0])) {
-            MillingStoneDisplay.syncVisuals(furniture, stage);
+            MillingStoneDisplay.syncVisuals(furniture, stage, recipe);
         } else if (stage == MillingStoneStage.READY && !furniture.hasActiveSlot(MillingStoneSlots.FLOUR)) {
-            MillingStoneDisplay.syncVisuals(furniture, stage);
+            MillingStoneDisplay.syncVisuals(furniture, stage, recipe);
         } else {
             MillingStoneDisplay.showTop(furniture);
         }
@@ -231,33 +256,33 @@ public final class MillingStoneHandler implements Listener {
         if (foodItem != null) {
             if (recipe.getInputFood() != null
                     && foodItem.getId().equalsIgnoreCase(recipe.getInputFood())) {
-                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem));
+                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem, recipe));
             }
             if (recipe.getInputMatcher() != null
                     && TLibs.getItemAPI().getChecker().checkItemWithPath(hand, recipe.getInputMatcher())) {
-                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem));
+                return new InputMatch(true, foodItem.getQualityMin(), lineageOf(foodItem, recipe));
             }
         }
 
         if (recipe.getVanillaFallback() != null
                 && TLibs.getItemAPI().getChecker().checkItemWithPath(hand, recipe.getVanillaFallback())) {
-            FoodItem wheatTemplate = FoodLoader.getByString("wheat");
+            FoodItem wheatTemplate = FoodLoader.getByString(recipe.getRefundFood());
             int quality = wheatTemplate != null
                     ? OriginQualityResolver.resolve(player, wheatTemplate)
                     : OriginQualityResolver.resolve(player, null);
-            return new InputMatch(true, quality, IngredientLineage.ofMain("Wheat"));
+            return new InputMatch(true, quality, IngredientLineage.ofMain(recipe.getOrigin()));
         }
 
         return new InputMatch(false, 1, IngredientLineage.empty());
     }
 
-    private static IngredientLineage lineageOf(FoodItem foodItem) {
+    private static IngredientLineage lineageOf(FoodItem foodItem, MillingRecipe recipe) {
         if (foodItem.getLineage() != null && !foodItem.getLineage().isEmpty()) {
             return foodItem.getLineage();
         }
         String origin = foodItem.getOrigin();
         if (origin == null || origin.isBlank()) {
-            origin = "Wheat";
+            origin = recipe.getOrigin();
         }
         return IngredientLineage.ofMain(origin);
     }

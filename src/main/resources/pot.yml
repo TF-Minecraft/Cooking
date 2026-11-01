@@ -46,6 +46,21 @@ mashes:
     display: ia.tfmc_cooking:gray
     hint: 4 boiled cut potatoes and a butter
 
+# Named soups: a soup whose boiled pieces make one of these kinds is called by its name instead of its pieces, and
+# takes the kind as its origin. Rules as in pies.yml / salads.yml kinds (cooking SaladKind), where a piece's layer is
+# its category (vegetable, meat, fruit); seasonings and add-ons (salt, pepper, spices) don't count. The first that
+# matches wins; with none, the soup is named by its pieces ("Carrot and Potato Soup").
+#   name: the soup's whole name after its colour and prefixes (Seasoned Borscht).
+kinds:
+  # Beetroot soup: at least half the pieces beetroot (with potato, carrot, onion...).
+  Borscht:
+    name: Borscht
+    mostly: Beetroot
+  # Mostly pumpkin, boiled and mashed (cut pumpkin boils in the pot like any cut vegetable).
+  Pumpkin:
+    name: Pumpkin Soup
+    mostly: Pumpkin
+
 # Tags a soup earns from what's in the pot when it's ladled, written like sandwiches.yml's bonuses. The pot has no
 # layers, so only count: origin applies, over everything in it (pieces, extras and stock).
 bonuses:

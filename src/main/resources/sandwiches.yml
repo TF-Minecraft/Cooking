@@ -116,6 +116,7 @@ layers:
     name: "{origin} Jam"
     names:
       melon slice: Melon Jam
+      sweet berries: Sweet Berry Jam
     sandwich-origin: Jam
     thickness: 0.3
     models:

@@ -9,6 +9,7 @@ public final class MillingStoneState {
     public static final String VAR_STAGE = "milling.stage";
     public static final String VAR_OUTPUT_QUALITY = "milling.outputQuality";
     public static final String VAR_LINEAGE = "milling.lineage";
+    public static final String VAR_RECIPE = "milling.recipe";
 
     private MillingStoneState() {}
 
@@ -51,7 +52,18 @@ public final class MillingStoneState {
         return IngredientLineage.empty();
     }
 
+    /** The id of the recipe the stone was loaded with, or null for a stone loaded before ids were saved. */
+    public static String getRecipe(Furniture furniture) {
+        Object value = furniture.getVariables().get(VAR_RECIPE);
+        return value instanceof String id ? id : null;
+    }
+
+    public static void setRecipe(Furniture furniture, String recipeId) {
+        furniture.getVariables().put(VAR_RECIPE, recipeId);
+    }
+
     public static void clear(Furniture furniture) {
+        furniture.getVariables().remove(VAR_RECIPE);
         furniture.getVariables().remove(VAR_STAGE);
         furniture.getVariables().remove(VAR_OUTPUT_QUALITY);
         furniture.getVariables().remove(VAR_LINEAGE);
