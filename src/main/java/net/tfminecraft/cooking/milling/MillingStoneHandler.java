@@ -17,6 +17,7 @@ import net.tfminecraft.cooking.item.IngredientLineage;
 import net.tfminecraft.cooking.loader.FoodLoader;
 import net.tfminecraft.cooking.quality.OriginQualityResolver;
 import net.tfminecraft.cooking.utils.InventoryAdder;
+import net.tfminecraft.cooking.utils.FoodParser;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.interactiblefurniture.events.FurnitureBreakEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
@@ -205,11 +206,22 @@ public final class MillingStoneHandler implements Listener {
         return built;
     }
 
-    /** What a loaded stone gives back: the recipe's refund item (sugar cane), or its input as food (wheat). */
+    /**
+     * What a loaded stone gives back: the recipe's refund item (sugar cane), its input food path rebuilt (roasted cocoa
+     * beans), or its input as food (wheat).
+     */
     private static ItemStack buildWheat(MillingRecipe recipe, int quality, IngredientLineage lineage) {
         if (recipe.getRefund() != null) {
             ItemStack refund = TLibs.getItemAPI().getCreator().getItemFromPath(recipe.getRefund());
             return refund == null ? null : refund.clone();
+        }
+        if (recipe.getRefundPath() != null) {
+            FoodParser.Result parsed = FoodParser.parse(recipe.getRefundPath());
+            if (parsed == null || parsed.template == null) return null;
+            FoodItem input = new FoodItem(parsed.template);
+            input.setOrigin(recipe.getOrigin());
+            input.setLineage(lineage == null || lineage.isEmpty() ? IngredientLineage.ofMain(recipe.getOrigin()) : lineage);
+            return ItemBuilder.buildSingleWithQuality(input, quality);
         }
         FoodItem template = FoodLoader.getByString(recipe.getRefundFood());
         if (template == null) {

@@ -153,4 +153,17 @@ public final class MillingRecipe {
     public String getRefundFood() {
         return inputFood == null || inputFood.isBlank() ? DEFAULT_REFUND_FOOD : inputFood;
     }
+
+    /**
+     * The food line a broken stone rebuilds its input from when the recipe loads by a food path and names no
+     * input-food: that path without its c. prefix (ingredient(type=roasted_cocoa_beans;tags=cooked.1)), so the
+     * refund keeps the category and tags that let it load again. Null otherwise.
+     */
+    public String getRefundPath() {
+        if (inputFood != null && !inputFood.isBlank()) return null;
+        if (inputMatcher == null) return null;
+        String path = inputMatcher.trim();
+        if (!path.regionMatches(true, 0, "c.", 0, 2) || !path.contains("(")) return null;
+        return path.substring(2);
+    }
 }

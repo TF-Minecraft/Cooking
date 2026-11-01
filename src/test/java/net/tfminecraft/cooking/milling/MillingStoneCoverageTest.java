@@ -408,6 +408,48 @@ class MillingStoneCoverageTest {
         assertEquals(3, callbacks.get());
     }
 
+    @Test
+    void aRecipeLoadedByAFoodPathRefundsThatFood() {
+        java.util.function.BiFunction<String, String, String> refund = (food, matcher) ->
+                new MillingRecipe("r", "milling_stone", 2, food, matcher, null, "cocoa_powder", 1, 8).getRefundPath();
+        assertEquals("ingredient(type=roasted_cocoa_beans;tags=cooked.1)",
+                refund.apply(null, " C.ingredient(type=roasted_cocoa_beans;tags=cooked.1)"));
+        assertEquals("ingredient(type=roasted_cocoa_beans)", refund.apply(" ", "c.ingredient(type=roasted_cocoa_beans)"));
+        assertNull(refund.apply("roasted_cocoa_beans", "c.ingredient(type=roasted_cocoa_beans)"));
+        assertNull(refund.apply(null, null));
+        assertNull(refund.apply(null, "c.ingredient"));
+        assertNull(refund.apply(null, "ia.tfmc_cooking:roasted_cocoa_beans"));
+
+        // Two roasted beans load the cocoa recipe; breaking the loaded stone gives them back as roasted beans.
+        MillingRecipe cocoa = new MillingRecipe("cocoa_powder", "milling_stone", 2, null, "c.ingredient(type=roasted_cocoa_beans)",
+                null, "cocoa_powder", 1, 8, "Cocoa", "ingredient", "roasted cocoa beans", null, null, null, 1);
+        MillingRecipeRegistry.load(Map.of("cocoa_powder", cocoa));
+        env.templates.put("roasted_cocoa_beans", env.food("roasted_cocoa_beans", "Cocoa", 3));
+        when(env.api.getChecker().checkItemWithPath(any(), eq("c.ingredient(type=roasted_cocoa_beans)"))).thenAnswer(inv -> {
+            ItemStack stack = inv.getArgument(0);
+            return stack != null && stack.getType() == Material.COCOA_BEANS;
+        });
+        ItemStack beans = env.hold(env.stack(env.food("roasted_cocoa_beans", "Cocoa", 4), Material.COCOA_BEANS, 3));
+        handler.onInteract(station.interact());
+        assertEquals(1, beans.getAmount());
+        env.hold(null);
+        handler.onBreak(new FurnitureBreakEvent(station.furniture, env.player));
+        FoodItem back = env.resolve(env.dropped.get(env.dropped.size() - 1));
+        assertEquals("roasted_cocoa_beans", back.getId());
+        assertEquals("ingredient", back.getCategory());
+        assertEquals("Cocoa", back.getOrigin());
+        assertEquals(2, env.dropped.get(env.dropped.size() - 1).getAmount());
+
+        // A refund food that no longer exists keeps the stone and its beans.
+        env.hold(env.stack(env.food("roasted_cocoa_beans", "Cocoa", 4), Material.COCOA_BEANS, 2));
+        handler.onInteract(station.interact()); env.hold(null);
+        assertEquals(MillingStoneStage.LOADED, MillingStoneState.getStage(station.furniture));
+        env.templates.remove("roasted_cocoa_beans");
+        FurnitureBreakEvent event = new FurnitureBreakEvent(station.furniture, env.player);
+        handler.onBreak(event);
+        assertTrue(event.isCancelled());
+    }
+
     // ---------- a second recipe on the same stone: sugar cane into sugar ----------
     MillingRecipe sugar(String refund) {
         MillingRecipe flour = new MillingRecipe("flour", "milling_stone", 8, "wheat", "food:grain", "v.wheat", "flour", 1, 8);
@@ -544,10 +586,16 @@ class MillingStoneCoverageTest {
     void theShippedRecipesGrindWheatIntoFlourAndSugarCaneIntoSugar() {
         new MillingRecipeLoader().load(new java.io.File("src/main/resources/milling-recipes.yml"));
         List<MillingRecipe> recipes = MillingRecipeRegistry.getAllForFurniture("milling_stone");
-        assertEquals(List.of("flour", "sugar"), recipes.stream().map(MillingRecipe::getId).toList());
+        assertEquals(List.of("flour", "sugar", "cocoa_powder"), recipes.stream().map(MillingRecipe::getId).toList());
         MillingRecipe sugar = recipes.get(1);
         assertEquals("v.sugar_cane", sugar.getVanillaFallback()); assertEquals("sweetener_1", sugar.getOutputFood());
         assertEquals("Sugar", sugar.getOrigin()); assertEquals("sweetener", sugar.getCategory());
         assertEquals(8, sugar.getInputCount()); assertEquals(8, sugar.getOutputAmount());
+        // Two roasted (not burnt) cocoa beans, one pan's worth, grind into one cocoa powder; a broken stone gives them back.
+        MillingRecipe cocoa = recipes.get(2);
+        assertEquals("c.ingredient(type=roasted_cocoa_beans;tags=cooked.1)", cocoa.getInputMatcher());
+        assertEquals("ingredient(type=roasted_cocoa_beans;tags=cooked.1)", cocoa.getRefundPath());
+        assertEquals("cocoa_powder", cocoa.getOutputFood()); assertEquals("ingredient", cocoa.getCategory());
+        assertEquals("Cocoa", cocoa.getOrigin()); assertEquals(2, cocoa.getInputCount()); assertEquals(1, cocoa.getOutputAmount());
     }
 }
