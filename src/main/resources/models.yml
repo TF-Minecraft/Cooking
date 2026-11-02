@@ -3651,6 +3651,187 @@ egg:
       position:
         y: 0.05
 
+# Rice (types.yml rice, boiled_rice, fried_rice, rice_pudding, sushi). Held, rice is its sheaf and the dishes are
+# tfmc_pack's bowl and sushi icons; in the pot, the frying pan and on the cutting board rice is a loose heap of grains
+# lying flat (the *_heap and rice_grains items), the pan's drawn at 70% just above its floor as popcorn is.
+rice:
+  plain:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:rice
+    display:
+      item: ia.tfmc_cooking:rice
+      furniture:
+        - pot ia.tfmc_cooking:rice_grains
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:rice_rotten
+    display:
+      item: ia.tfmc_cooking:rice_rotten
+    display-data:
+      rotation:
+        x: 90
+
+boiled_rice:
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.7
+        y: 0.7
+        z: 0.7
+      position:
+        y: -0.26
+  boiled:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:boiled_rice
+    display:
+      item: ia.tfmc_cooking:boiled_rice
+      furniture:
+        - pot ia.tfmc_cooking:boiled_rice_heap
+        - frying_pan ia.tfmc_cooking:boiled_rice_heap
+        - cutting_board ia.tfmc_cooking:boiled_rice_heap
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:boiled_rice_burnt
+    display:
+      item: ia.tfmc_cooking:boiled_rice_burnt
+      furniture:
+        - pot ia.tfmc_cooking:boiled_rice_heap_burnt
+        - frying_pan ia.tfmc_cooking:boiled_rice_heap_burnt
+        - cutting_board ia.tfmc_cooking:boiled_rice_heap_burnt
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:boiled_rice_rotten
+    display:
+      item: ia.tfmc_cooking:boiled_rice_rotten
+      furniture:
+        - pot ia.tfmc_cooking:boiled_rice_heap_rotten
+        - frying_pan ia.tfmc_cooking:boiled_rice_heap_rotten
+        - cutting_board ia.tfmc_cooking:boiled_rice_heap_rotten
+    display-data:
+      rotation:
+        x: 90
+
+fried_rice:
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.7
+        y: 0.7
+        z: 0.7
+      position:
+        y: -0.26
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:fried_rice
+    display:
+      item: ia.tfmc_cooking:fried_rice
+      furniture:
+        - frying_pan ia.tfmc_cooking:fried_rice_heap
+    display-data:
+      rotation:
+        x: 90
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:fried_rice_burnt
+    display:
+      item: ia.tfmc_cooking:fried_rice_burnt
+      furniture:
+        - frying_pan ia.tfmc_cooking:fried_rice_heap_burnt
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:fried_rice_rotten
+    display:
+      item: ia.tfmc_cooking:fried_rice_rotten
+    display-data:
+      rotation:
+        x: 90
+
+rice_pudding:
+  plain:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:rice_pudding
+    display:
+      item: ia.tfmc_cooking:rice_pudding
+    display-data:
+      rotation:
+        x: 90
+        y: 0
+        z: 90
+      position:
+        y: -0.25
+  rotten:
+    weight: 2
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:rice_pudding_rotten
+    display:
+      item: ia.tfmc_cooking:rice_pudding_rotten
+    display-data:
+      rotation:
+        x: 90
+        y: 0
+        z: 90
+      position:
+        y: -0.25
+
+sushi:
+  plain:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:sushi
+    display:
+      item: ia.tfmc_cooking:sushi
+    display-data:
+      rotation:
+        x: 90
+  rotten:
+    weight: 2
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:sushi_rotten
+    display:
+      item: ia.tfmc_cooking:sushi_rotten
+    display-data:
+      rotation:
+        x: 90
+
 # Pan foods: vanilla mushrooms, grilled mushrooms and popcorn (types.yml mushroom, grilled_mushroom, popcorn).
 # Their items are flat, so in furniture they're turned to lie down (rotation x 90), as chopped corn is in the pan.
 brown_mushroom:

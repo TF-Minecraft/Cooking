@@ -176,6 +176,125 @@ items:
       generate: false
       model_path: item/intermediate/rice
 
+  rice_rotten:
+    display_name: "Rice Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/rice_rotten
+
+  rice_grains:
+    display_name: "Rice Grains"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/rice_grains
+
+  boiled_rice:
+    display_name: "Boiled Rice"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/boiled_rice
+
+  boiled_rice_burnt:
+    display_name: "Boiled Rice Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/boiled_rice_burnt
+
+  boiled_rice_rotten:
+    display_name: "Boiled Rice Rotten"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/boiled_rice_rotten
+
+  boiled_rice_heap:
+    display_name: "Boiled Rice Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/boiled_rice_heap
+
+  boiled_rice_heap_burnt:
+    display_name: "Boiled Rice Heap Burnt"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/boiled_rice_heap_burnt
+
+  boiled_rice_heap_rotten:
+    display_name: "Boiled Rice Heap Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/boiled_rice_heap_rotten
+
+  fried_rice:
+    display_name: "Fried Rice"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/fried_rice
+
+  fried_rice_burnt:
+    display_name: "Fried Rice Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/fried_rice_burnt
+
+  fried_rice_rotten:
+    display_name: "Fried Rice Rotten"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/fried_rice_rotten
+
+  fried_rice_heap:
+    display_name: "Fried Rice Heap"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/fried_rice_heap
+
+  fried_rice_heap_burnt:
+    display_name: "Fried Rice Heap Burnt"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/fried_rice_heap_burnt
+
+  rice_pudding:
+    display_name: "Rice Pudding"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/rice_pudding
+
+  rice_pudding_rotten:
+    display_name: "Rice Pudding Rotten"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/intermediate/rice_pudding_rotten
+
+  sushi:
+    display_name: "Sushi"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/sushi
+
+  sushi_rotten:
+    display_name: "Sushi Rotten"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/intermediate/sushi_rotten
+
   stock:
     display_name: "Stock"
     resource:

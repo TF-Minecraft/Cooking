@@ -305,12 +305,20 @@ public class PotReference extends CookingReference {
                 if (data.isBeingCooked()) data.stop();
                 continue;
             }
+            // Rice, whose pot option only names an output (boiled rice), is raw once it's in the water.
+            CookingOutput.startRaw(item, method);
             if (!data.isBeingCooked()) {
                 data.start(Method.POT);
             }
             boolean progressed = data.tick();
             if (!progressed) continue;
-            applySlotUpdate(slot, item);
+            FoodItem turned = CookingOutput.turn(item, method);
+            if (turned == item) {
+                applySlotUpdate(slot, item);
+                continue;
+            }
+            entry.setValue(turned);
+            applySlotUpdate(slot, turned, ItemBuilder.displayName(turned));
         }
     }
 
@@ -374,6 +382,8 @@ public class PotReference extends CookingReference {
             if(slot.getCurrentItem() == null) continue;
             ItemStack stack = slot.getCurrentItem();
             FoodItem fi = slots.get(key);
+            // Rice taken out before it has boiled is still rice.
+            CookingOutput.restoreInput(fi, method);
             if (WarmthUtils.isHeated(fi, 3)) {
                 WarmthUtils.applyHot(fi);
             }
@@ -931,10 +941,14 @@ public class PotReference extends CookingReference {
         }
     }
 
-    /** True for food the pot holds as a main: soup pieces and anything that boils. */
+    /**
+     * True for food the pot holds as a main: soup pieces, anything that boils, and what a piece boiled into (boiled
+     * rice, which only fries from then on).
+     */
     public static boolean keepsOnRebuild(FoodItem fi) {
         if (fi == null) return false;
         if (fi.hasTag(Tag.MASHED)) return true;
+        if (WarmthUtils.isHeated(fi, 3)) return true;
         return fi.canBeCooked() && fi.getCookData().hasMethod(Method.POT);
     }
 
