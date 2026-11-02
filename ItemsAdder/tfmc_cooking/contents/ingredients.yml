@@ -280,6 +280,42 @@ items:
       material: APPLE
       generate: false
       model_path: item/ingredients/seafood/octopus_boiled
+  grilled_octopus:
+    display_name: "Grilled Octopus"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/grilled_octopus
+  jellyfish_strips_raw:
+    display_name: "Jellyfish Strips Raw"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_strips_raw
+  jellyfish_strips_cooked:
+    display_name: "Jellyfish Strips Cooked"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_strips_cooked
+  jellyfish_strips_boiled:
+    display_name: "Jellyfish Strips Boiled"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_strips_boiled
+  jellyfish_strips_burnt:
+    display_name: "Jellyfish Strips Burnt"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_strips_burnt
+  jellyfish_strips_rotten:
+    display_name: "Jellyfish Strips Rotten"
+    resource:
+      material: APPLE
+      generate: false
+      model_path: item/ingredients/seafood/jellyfish_strips_rotten
   red_meat_steak_boiled:
     display_name: "Red Meat Steak boiled"
     resource:

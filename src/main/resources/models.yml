@@ -3605,6 +3605,82 @@ seafood_octopus:
     display:
       item: ia.tfmc_cooking:octopus_rotten
 
+# Grilled octopus (types.yml grilled_octopus): its own grilled look; burnt and rotten look like octopus gone that way.
+grilled_octopus:
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:grilled_octopus
+    display:
+      item: ia.tfmc_cooking:grilled_octopus
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:octopus_burnt
+    display:
+      item: ia.tfmc_cooking:octopus_burnt
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:octopus_rotten
+    display:
+      item: ia.tfmc_cooking:octopus_rotten
+
+# Jellyfish strips (types.yml jellyfish_strips): thin strips with the cubes' textures, raw, fried, boiled, burnt, rotten.
+jellyfish_strips:
+  fresh:
+    weight: 1
+    tags:
+      - fresh
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_raw
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_raw
+  stale:
+    weight: 1
+    tags:
+      - stale
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_raw
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_raw
+  cooked:
+    weight: 2
+    tags:
+      - cooked
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_cooked
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_cooked
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_burnt
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_burnt
+  boiled:
+    weight: 2
+    tags:
+      - boiled
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_boiled
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_boiled
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:jellyfish_strips_rotten
+    display:
+      item: ia.tfmc_cooking:jellyfish_strips_rotten
+
 egg:
   raw:
     weight: 1

@@ -109,6 +109,22 @@ ingredients:
       - rotten ia.tfmc_cooking:salad_bowl_mushroom_rotten
       - burnt ia.tfmc_cooking:salad_bowl_mushroom_burnt
       - ia.tfmc_cooking:salad_bowl_mushroom
+  seafood:
+    # Grilled octopus (frying pan) and jellyfish strips (cutting board), both Jellyfish whatever their colour.
+    types:
+      - grilled_octopus
+      - jellyfish_strips
+    name: "{origin}"
+    names:
+      blue jellyfish: Jellyfish
+      pink jellyfish: Jellyfish
+    # Rounds of grilled tentacle; thin translucent strips of jellyfish, raw, fried or boiled as they were cut.
+    models:
+      - rotten ia.tfmc_cooking:salad_bowl_{type}_rotten
+      - burnt ia.tfmc_cooking:salad_bowl_{type}_burnt
+      - boiled ia.tfmc_cooking:salad_bowl_{type}_boiled
+      - cooked ia.tfmc_cooking:salad_bowl_{type}_cooked
+      - ia.tfmc_cooking:salad_bowl_{type}_raw
 # What goes in unseen and doesn't name the salad.
 #   once            only one food of this extra per salad (one dressing)
 #   returns-bottle  the player keeps the empty glass bottle
