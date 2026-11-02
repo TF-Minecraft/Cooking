@@ -24,6 +24,7 @@ context-overrides:
       - pepper
       - sweetener
       - flour
+      - thickener
   SOUP_SCOOP:
     extra:
       - salt

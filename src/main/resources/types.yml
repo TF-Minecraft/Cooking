@@ -494,6 +494,16 @@ flour:
   model: flour
   food: 4
   nutrition: 4
+  # Thick sauce: flour cooked in a buttered frying pan becomes a roux (the butter goes into it, as in any frying).
+  # Without butter it burns, and a burnt roux won't go in a sauce. Flour elsewhere keeps its values: a type whose only
+  # options have an output isn't raw until it's in the pan. The pan's slot whitelist (InteractibleFurniture) must let
+  # flour in: c.grain(type=flour).
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 12
+      burn: 30
+      output: thickener(type=roux;origin=Roux;tags=processed.0)
   age:
     warmth: 450
     freshness: 20
@@ -606,6 +616,23 @@ sauce:
   name: "{colour}{prefixes}{fillers}Sauce"
   food: 6
   nutrition: 5
+
+###Roux: flour cooked in a buttered frying pan (flour's frying_pan output). Added to a saucepan of water, milk or a brew
+# it takes one of the two ingredient places and makes the sauce Thick (naming.yml categories: thickener). It doesn't
+# name the sauce; the Thick tag does: Thick Garlic Sauce.
+roux:
+  name: "#d9a95bRoux"
+  model: roux
+  category: thickener
+  food: 6
+  nutrition: 4
+  age:
+    warmth: 450
+    freshness: 14
+  tag-labels:
+    freshness:
+      stale: "#c3db81Rancid"
+      rotten: "#8B7355Spoiled"
 
 ##SOUP
 soup:

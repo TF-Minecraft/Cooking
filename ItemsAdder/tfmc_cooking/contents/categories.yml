@@ -280,6 +280,11 @@ categories:
       - tfmc_cooking:cutting_knife
       - tfmc_cooking:flour
       - tfmc_cooking:flour_rotten
+      - tfmc_cooking:flour_heap
+      - tfmc_cooking:flour_heap_rotten
+      - tfmc_cooking:roux
+      - tfmc_cooking:roux_burnt
+      - tfmc_cooking:roux_rotten
       - tfmc_cooking:flour_model
       - tfmc_cooking:flour_rotten_model
       - tfmc_cooking:yeast

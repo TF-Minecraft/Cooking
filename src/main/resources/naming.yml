@@ -8,6 +8,8 @@ prefix-tracks:
   - topping_sugar
   - topping_salt
   - topping_caramel
+  # A sauce with a roux: Thick Garlic Sauce, which is also how a dish it's ladled onto lists it.
+  - sauce_thickness
 
 # Max filler origins shown in a composed name
 fillers:
@@ -37,6 +39,9 @@ categories:
     - spice
   dough-filler:
     - fruit
+  # What thickens a sauce in the saucepan (one per batch): a roux.
+  thickener:
+    - thickener
 
 # Per-category tag step display overrides (fallback after per-type tag-labels)
 tag-label-defaults:

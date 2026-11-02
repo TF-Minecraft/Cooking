@@ -306,7 +306,8 @@ public class CookingReference {
 
             String category = fi.getCategory().toLowerCase();
 
-            if (NamingConfig.isCategory("seasoning", category)) {
+            // A seasoning or a thickener (a roux) doesn't name the dish; Seasoned and Thick tags say it's there.
+            if (NamingConfig.isCategory("seasoning", category) || NamingConfig.isCategory("thickener", category)) {
                 continue;
             }
 

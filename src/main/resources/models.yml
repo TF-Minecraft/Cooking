@@ -3116,6 +3116,17 @@ melon_slice:
         y: -0.25
 
 flour:
+  # In the frying pan (types.yml flour's roux output) flour shows as a flat heap, placed like the roux it becomes.
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.45
+        y: 0.45
+        z: 0.45
+      position:
+        y: -0.26
   fresh:
     weight: 1
     tags:
@@ -3124,6 +3135,8 @@ flour:
       item: ia.tfmc_cooking:flour
     display:
       item: ia.tfmc_cooking:flour_model
+      furniture:
+        - frying_pan ia.tfmc_cooking:flour_heap
   stale:
     weight: 1
     tags:
@@ -3132,6 +3145,8 @@ flour:
       item: ia.tfmc_cooking:flour
     display:
       item: ia.tfmc_cooking:flour_model
+      furniture:
+        - frying_pan ia.tfmc_cooking:flour_heap
   rotten:
     weight: 1
     tags:
@@ -3140,6 +3155,44 @@ flour:
       item: ia.tfmc_cooking:flour_rotten
     display:
       item: ia.tfmc_cooking:flour_rotten_model
+      furniture:
+        - frying_pan ia.tfmc_cooking:flour_heap_rotten
+
+# Roux (types.yml roux), flour cooked in a buttered frying pan. In the pan it lies flat like popcorn, lowered to the pan
+# floor, at 45% so two round puddles fit side by side.
+roux:
+  display-data-furniture:
+    frying_pan:
+      rotation:
+        x: 90
+      scale:
+        x: 0.45
+        y: 0.45
+        z: 0.45
+      position:
+        y: -0.26
+  cooked:
+    weight: 1
+    gui:
+      item: ia.tfmc_cooking:roux
+    display:
+      item: ia.tfmc_cooking:roux
+  burnt:
+    weight: 2
+    tags:
+      - burnt
+    gui:
+      item: ia.tfmc_cooking:roux_burnt
+    display:
+      item: ia.tfmc_cooking:roux_burnt
+  rotten:
+    weight: 3
+    tags:
+      - rotten
+    gui:
+      item: ia.tfmc_cooking:roux_rotten
+    display:
+      item: ia.tfmc_cooking:roux_rotten
 
 yeast:
   fresh:
