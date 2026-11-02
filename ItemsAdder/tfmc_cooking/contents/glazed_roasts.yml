@@ -1,0 +1,88 @@
+# Honey-glazed roasts (Cooking glazes.yml): the cooked roast models under a honey glaze, one per carve stage.
+info:
+  namespace: tfmc_cooking
+items:
+  red_meat_roast_glazed_8:
+    display_name: "Red Meat Roast glazed 8"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_8
+  red_meat_roast_glazed_7:
+    display_name: "Red Meat Roast glazed 7"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_7
+  red_meat_roast_glazed_6:
+    display_name: "Red Meat Roast glazed 6"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_6
+  red_meat_roast_glazed_5:
+    display_name: "Red Meat Roast glazed 5"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_5
+  red_meat_roast_glazed_4:
+    display_name: "Red Meat Roast glazed 4"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_4
+  red_meat_roast_glazed_3:
+    display_name: "Red Meat Roast glazed 3"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_3
+  red_meat_roast_glazed_2:
+    display_name: "Red Meat Roast glazed 2"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_2
+  red_meat_roast_glazed_1:
+    display_name: "Red Meat Roast glazed 1"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/red_meat/red_meat_roast_glazed_1
+  poultry_roast_glazed_6:
+    display_name: "Poultry Roast glazed 6"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_6
+  poultry_roast_glazed_5:
+    display_name: "Poultry Roast glazed 5"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_5
+  poultry_roast_glazed_4:
+    display_name: "Poultry Roast glazed 4"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_4
+  poultry_roast_glazed_3:
+    display_name: "Poultry Roast glazed 3"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_3
+  poultry_roast_glazed_2:
+    display_name: "Poultry Roast glazed 2"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_2
+  poultry_roast_glazed_1:
+    display_name: "Poultry Roast glazed 1"
+    resource:
+      material: TROPICAL_FISH
+      generate: false
+      model_path: item/ingredients/poultry/poultry_roast_glazed_1

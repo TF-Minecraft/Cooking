@@ -6,6 +6,7 @@ import org.bukkit.inventory.ItemStack;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.interactiblefurniture.furniture.data.DisplayData;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,17 +80,33 @@ public class FoodModel {
     }
 
     public ModelData getModelByStageAndTag(int stage, String cookTagId) {
+        return getModelByStageAndTag(stage, cookTagId, List.of());
+    }
+
+    /**
+     * The state for this carve stage and cook tag. A state with more tags than the cook tag (a glazed roast's
+     * [cooked, honey_glazed]) is only picked when the food has the others too, among itemTags.
+     */
+    public ModelData getModelByStageAndTag(int stage, String cookTagId, Collection<String> itemTags) {
         ModelData bestMatch = null;
         for (ModelData data : states.values()) {
             if (data.getStage() < 0) continue;
             if (data.getStage() != stage) continue;
             if (!data.getTags().contains(cookTagId)) continue;
+            if (!hasOtherTags(data, cookTagId, itemTags)) continue;
             if (bestMatch == null || data.getWeight() > bestMatch.getWeight()) {
                 bestMatch = data;
             }
         }
         if (bestMatch != null) return bestMatch;
         return getModelByTagOnly(cookTagId);
+    }
+
+    private static boolean hasOtherTags(ModelData data, String cookTagId, Collection<String> itemTags) {
+        for (String tag : data.getTags()) {
+            if (!tag.equals(cookTagId) && !itemTags.contains(tag)) return false;
+        }
+        return true;
     }
 
     private ModelData getModelByTagOnly(String cookTagId) {

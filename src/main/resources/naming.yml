@@ -7,11 +7,12 @@ prefix-tracks:
   - flavour_cinnamon
   - flavour_nutmeg
   - flavour_vanilla
-  # Popcorn machine toppings, in this order: Buttered Sugared Salted Caramel Popcorn.
+  # Popcorn machine toppings, in this order: Buttered Sugared Salted Caramel Honey Popcorn.
   - topping_butter
   - topping_sugar
   - topping_salt
   - topping_caramel
+  - topping_honey
   # A sauce with a roux: Thick Garlic Sauce, which is also how a dish it's ladled onto lists it.
   - sauce_thickness
 

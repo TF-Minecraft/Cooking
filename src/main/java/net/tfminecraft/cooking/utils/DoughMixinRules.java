@@ -26,7 +26,7 @@ public final class DoughMixinRules {
         }
         if (hasSugar) {
             if (player != null) {
-                player.sendMessage("§cSugar is already in the bowl.");
+                player.sendMessage("§cThe bowl already has a sweetener.");
             }
             return false;
         }

@@ -55,6 +55,7 @@ import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 
 import net.tfminecraft.cooking.quality.CompositionResult;
 
+import net.tfminecraft.cooking.utils.FoodReturns;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 
 import net.tfminecraft.cooking.utils.IngredientConverter;
@@ -449,9 +450,14 @@ public class SauceReference extends CookingReference {
 
         if(canAdd(p, item)) {
 
+            FoodItem added = FoodItem.fromItem(item);
+
             for(String slot : f.getType().getSlots().keySet()) {
 
                 if(add(slot, item)) {
+
+                    // Honey's empty bottle comes back (types.yml returns).
+                    FoodReturns.giveBack(p, added);
 
                     resetBoil();
                     saveColours();

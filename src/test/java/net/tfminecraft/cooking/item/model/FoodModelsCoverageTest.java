@@ -33,6 +33,16 @@ class FoodModelsCoverageTest {
     }
     @AfterEach void cleanup() { tlibs.close(); MockBukkit.unmock(); }
 
+    @Test void aCarveStageStateWithMoreTagsThanTheCookTagIsOnlyPickedWhenTheFoodHasThem() {
+        MemoryConfiguration config=new MemoryConfiguration();
+        state(config,"cooked_1",11,1,List.of("cooked"),"v.cooked_beef");
+        state(config,"glazed_1",21,1,List.of("cooked","honey_glazed"),"v.honey_bottle");
+        FoodModel model=new FoodModel("roast",config);
+        assertEquals(Material.COOKED_BEEF,model.getModelByStageAndTag(1,"cooked").apply(null,null).getType());
+        assertEquals(Material.COOKED_BEEF,model.getModelByStageAndTag(1,"cooked",List.of("fresh","cooked")).apply(null,null).getType());
+        assertEquals(Material.HONEY_BOTTLE,model.getModelByStageAndTag(1,"cooked",List.of("cooked","honey_glazed")).apply(null,null).getType());
+    }
+
     @Test void configuredModelsSelectMostSpecificMatchingStateAndExcludeCarveStages() {
         MemoryConfiguration config=new MemoryConfiguration(); config.set("colour","ff0000"); config.set("invalid","scalar");
         state(config,"default",0,-1,List.of(),"v.bread");

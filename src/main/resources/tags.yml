@@ -320,7 +320,7 @@ poison:
       - "poison 15 2"
       - "weakness 60"
 
-# Popcorn machine toppings (popcorn-machines.yml): each caramel, sugar, butter or salt put in tops every piece. They name
+# Popcorn machine toppings (popcorn-machines.yml): each caramel, sugar, honey, butter or salt put in tops every piece. They name
 # it (naming.yml prefix-tracks: Buttered Salted Caramel Popcorn); its look comes from popcorn_look below.
 topping_caramel:
   topping_caramel:
@@ -344,6 +344,11 @@ topping_salt:
     name: "#f0f0f0Salted"
     value: 0
     nutrition-mult: 1.05
+topping_honey:
+  topping_honey:
+    name: "#e8a317Honey"
+    value: 0
+    food-mult: 1.10
 
 # The look of popped popcorn (popcorn-machines.yml look-track): the first topping put in with a look sets it. No name
 # and no multipliers, so it shows nowhere in the lore; models.yml popcorn picks the buttered or caramel icon from it.
@@ -354,6 +359,15 @@ popcorn_look:
   look_caramel:
     name: ""
     value: 1
+
+# Glazes (glazes.yml): a roast glazed on the fire pit or a meat hook. Carving passes it on to every cut, and a cooked
+# glazed roast has its own look (models.yml red_meat_roast and poultry_roast glazed_<stage>).
+honey_glazed:
+  honey_glazed:
+    name: "#e8a317Honey-Glazed"
+    value: 0
+    food-mult: 1.10
+    nutrition-mult: 1.05
 
 # Flavourings: vanilla, cinnamon and nutmeg boiled into hot chocolate or melted chocolate (condiments.yml extras), and
 # vanilla or cinnamon put in a popcorn machine (popcorn-machines.yml toppings). Each names the food (naming.yml

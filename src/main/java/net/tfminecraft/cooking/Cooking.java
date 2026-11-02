@@ -63,6 +63,8 @@ import net.tfminecraft.cooking.baking.BakingTrayAging;
 import net.tfminecraft.cooking.baking.BakingTrayHandler;
 import net.tfminecraft.cooking.baking.BakingTrayLoader;
 import net.tfminecraft.cooking.popcorn.PopcornMachineConfig;
+import net.tfminecraft.cooking.glaze.GlazeConfig;
+import net.tfminecraft.cooking.glaze.GlazeHandler;
 import net.tfminecraft.cooking.popcorn.PopcornMachineHandler;
 import net.tfminecraft.cooking.pizza.PizzaConfig;
 import net.tfminecraft.cooking.pizza.PizzaHandler;
@@ -157,6 +159,7 @@ public class Cooking extends JavaPlugin {
     private final PieConfig pieConfig = new PieConfig();
     private final PieHandler pieHandler = new PieHandler();
     private final PopcornMachineConfig popcornMachineConfig = new PopcornMachineConfig();
+    private final GlazeConfig glazeConfig = new GlazeConfig();
     private final MillingStoneHandler millingStoneHandler = new MillingStoneHandler();
     private final TroughHandler troughHandler = new TroughHandler();
     private final TroughAging troughAging = new TroughAging();
@@ -288,6 +291,7 @@ public class Cooking extends JavaPlugin {
         panConfig.load(new File(getDataFolder(), "frying-pan.yml"));
         pieConfig.load(new File(getDataFolder(), "pies.yml"));
         popcornMachineConfig.load(new File(getDataFolder(), "popcorn-machines.yml"));
+        glazeConfig.load(new File(getDataFolder(), "glazes.yml"));
         millingRecipeLoader.load(new File(getDataFolder(), "milling-recipes.yml"));
         stationLoader.load(new File(getDataFolder(), "crafting-stations.yml"));
         trackLoader.load(new File(getDataFolder(), "tags.yml"));
@@ -387,6 +391,7 @@ public class Cooking extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new ConversionManager(), this);
         getServer().getPluginManager().registerEvents(new BundleFoodStacker(), this);
         getServer().getPluginManager().registerEvents(new PopcornMachineHandler(), this);
+        getServer().getPluginManager().registerEvents(new GlazeHandler(), this);
         getServer().getPluginManager().registerEvents(new RegenBlocker(), this);
         getServer().getPluginManager().registerEvents(new SaturationGuard(), this);
         getServer().getPluginManager().registerEvents(new NutritionLifecycleListener(), this);
@@ -458,6 +463,7 @@ public class Cooking extends JavaPlugin {
                 "frying-pan.yml",
                 "pies.yml",
                 "popcorn-machines.yml",
+                "glazes.yml",
                 "milling-recipes.yml",
                 "cookware.yml",
                 "tags.yml",

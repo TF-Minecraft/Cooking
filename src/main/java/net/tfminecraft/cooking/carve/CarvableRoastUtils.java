@@ -1,11 +1,13 @@
 package net.tfminecraft.cooking.carve;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import net.tfminecraft.cooking.glaze.GlazeConfig;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.model.FoodModel;
 import net.tfminecraft.cooking.item.model.ModelData;
@@ -170,7 +172,7 @@ public final class CarvableRoastUtils {
             return model.getModel(item);
         }
         String cookTag = resolveCookTag(item);
-        return model.getModelByStageAndTag(getVisualCarveStage(item), cookTag);
+        return model.getModelByStageAndTag(getVisualCarveStage(item), cookTag, item.getCurrentTagIds());
     }
 
     public static String resolveCookTag(FoodItem item) {
@@ -230,7 +232,10 @@ public final class CarvableRoastUtils {
     }
 
     public static void copyInheritedTracks(FoodItem parent, FoodItem child) {
-        for (String trackId : new String[] { "cooked", "freshness", "warmth" }) {
+        List<String> inherited = new ArrayList<>(List.of("cooked", "freshness", "warmth"));
+        // A glazed roast's cuts are glazed too (glazes.yml).
+        inherited.addAll(GlazeConfig.trackIds());
+        for (String trackId : inherited) {
             TagTrack pt = parent.getTagTrack(trackId);
             if (pt != null) {
                 TagTrack copy = new TagTrack(pt);

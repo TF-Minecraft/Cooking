@@ -85,7 +85,7 @@ class NamingRulesCoverageTest {
         slots.put("second",food("herb","garnish",null)); assertEquals(StationAddonRules.AddonProfile.AROMATIC,StationAddonRules.classifyAddons(slots));
         assertFalse(StationAddonRules.hasDuplicateOrigin(slots,sugar)); sugar.setOrigin(" "); assertFalse(StationAddonRules.hasDuplicateOrigin(slots,sugar));
         assertTrue(StationAddonRules.canAcceptSweetener(slots,sugar,player)); slots.put("sugar",sugar);
-        assertFalse(StationAddonRules.canAcceptSweetener(slots,sugar,player)); verify(player).sendMessage("§cSugar is already in the pan.");
+        assertFalse(StationAddonRules.canAcceptSweetener(slots,sugar,player)); verify(player).sendMessage("§cThe pan already has a sweetener.");
         assertFalse(StationAddonRules.canAcceptSweetener(slots,null,player)); assertFalse(StationAddonRules.canAcceptSweetener(slots,garnish,player));
         assertFalse(StationAddonRules.hasValuable(null)); assertFalse(StationAddonRules.hasValuable(slots));
         MemoryConfiguration valuable=new MemoryConfiguration(); valuable.set("valuable",true); slots.put("valuable",new FoodItem("valuable",valuable)); assertTrue(StationAddonRules.hasValuable(slots));

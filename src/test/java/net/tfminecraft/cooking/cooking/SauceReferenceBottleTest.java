@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.bukkit.Material;
+import net.tfminecraft.cooking.item.FoodItem;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -110,6 +111,27 @@ class SauceReferenceBottleTest {
         env.composer.verify(() -> CompositionQualityResolver.compose(any(), argThat(inputs -> inputs.size() == 3), any()));
         assertTrue(sauce.isEmpty());
         assertFalse(env.variables.containsKey("sauce.boiled"));
+    }
+
+    @Test
+    void honeyGoesInLikeSugarAndGivesBackItsEmptyBottle() {
+        hold(food("vinegar", "Wine"));
+        org.bukkit.configuration.MemoryConfiguration type = new org.bukkit.configuration.MemoryConfiguration();
+        type.set("name", "Honey");
+        type.set("returns", "v.glass_bottle");
+        FoodItem honey = new FoodItem("honey", type);
+        honey.setCategory("sweetener");
+        honey.setOrigin("Honey");
+        honey.setQualityRange(4, 4);
+        hold(env.stack(honey, Material.HONEY_BOTTLE, 2));
+        assertEquals(1, sauce.getSlots().size());
+        assertEquals(1, hand().getAmount());
+        // The test's item paths all build glass.
+        assertTrue(env.player.getInventory().contains(Material.GLASS), "the empty bottle comes back");
+        // Like sugar, only one sweetener goes in.
+        hold(env.stack(honey, Material.HONEY_BOTTLE, 1));
+        assertEquals(1, sauce.getSlots().size());
+        verify(env.player).sendMessage("§cThe pan already has a sweetener.");
     }
 
     @Test

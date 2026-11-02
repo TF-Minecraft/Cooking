@@ -37,7 +37,10 @@ public class FoodItem {
     private boolean mashable = false;
     private boolean edible = true;
     private boolean edibleWhenCooked = false;
-    /** What drinking it leaves in the hand instead of a glass bottle (types.yml returns: an empty cup), or null. */
+    /**
+     * types.yml returns: the item path of what the food comes in, given back once it's drunk (hot chocolate's cup) or
+     * used up in a station (honey's glass bottle), or null.
+     */
     private String returns;
     private Integer catchSizeCm;
     private String seafoodCutType;
@@ -275,7 +278,7 @@ public class FoodItem {
     public boolean shouldUpdate() { return update; }
     public boolean isValuable() { return valuable; }
     public boolean isMashable() { return mashable; }
-    /** The item path drinking it leaves instead of a glass bottle (ia.tfmc_cooking:empty_cup), or null for vanilla's. */
+    /** What the food comes in, given back once it's drunk or used up in a station (see the returns field), or null. */
     public String getReturns() { return returns; }
     public void setMashable(boolean mashable) { this.mashable = mashable; }
     public boolean isEdible() {

@@ -42,6 +42,7 @@ import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.utils.DoughMixinRules;
+import net.tfminecraft.cooking.utils.FoodReturns;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
@@ -359,6 +360,8 @@ public class MixingBowlHandler implements Listener {
             MixingBowlState.setSugarFreshness(furniture, readFreshness(foodItem));
             MixingBowlState.setSugarOrigin(furniture, originOr(foodItem, "Sugar"));
             MixingBowlState.setSugarLineage(furniture, foodItem.getLineage());
+            // Honey's empty bottle comes back (types.yml returns).
+            FoodReturns.giveBack(player, foodItem);
 
         } else if (DoughMixinRules.isFruitCategory(category)) {
 

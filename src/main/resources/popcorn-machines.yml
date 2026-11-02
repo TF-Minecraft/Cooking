@@ -51,6 +51,10 @@ popcorn_machine:
       item: c.salt
       track: topping_salt
       name: Salt
+    honey:
+      item: c.sweetener(type=honey)
+      track: topping_honey
+      name: Honey
     # Flavourings (tags.yml flavour_*), named before the other toppings: Cinnamon Sugared Popcorn.
     cinnamon:
       item: c.spice(origin=Cinnamon)

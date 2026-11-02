@@ -104,6 +104,14 @@ class PopcornMachineCoverageTest {
         food("butter", "Butter", true);
         food("caramel", "Caramel", true);
         food("modelless", "Nothing", false);
+        food("honey", "Honey", true);
+        MemoryConfiguration honey = new MemoryConfiguration();
+        honey.set("name", "Honey");
+        honey.set("returns", "v.glass_bottle");
+        FoodLoader.oList.removeIf(f -> f.getId().equals("honey"));
+        FoodItem honeyType = new FoodItem("honey", honey);
+        honeyType.setModel(new FoodModel(new ItemStack(Material.PAPER)));
+        FoodLoader.oList.add(honeyType);
         new NamingLoader().load(new File("src/main/resources/naming.yml"));
 
         ItemAPI api = mock(ItemAPI.class, RETURNS_DEEP_STUBS);
@@ -311,7 +319,7 @@ class PopcornMachineCoverageTest {
         assertEquals(16, machine.getMaxInput());
         assertEquals(4, machine.getYield());
         assertEquals(2, machine.getMaxToppings());
-        assertEquals(List.of("caramel", "sugar", "butter", "salt", "cinnamon", "vanilla"), machine.getToppings().stream().map(Topping::id).toList());
+        assertEquals(List.of("caramel", "sugar", "butter", "salt", "honey", "cinnamon", "vanilla"), machine.getToppings().stream().map(Topping::id).toList());
         assertEquals(160, machine.getPopTicks());
         assertEquals("ia.tfmc_cooking:popcorn_machine_kettle", machine.kettleFor(false));
         assertEquals("ia.tfmc_cooking:popcorn_machine_kettle_loaded", machine.kettleFor(true));
@@ -332,7 +340,7 @@ class PopcornMachineCoverageTest {
         assertEquals("butter", machine.toppingFor(FoodItem.fromItem(piece("butter", "dairy", "Cow", 3, 1))).id());
         assertEquals("butter", machine.toppingFor(FoodItem.fromItem(piece("butter", "ingredient", "Cow", 3, 1))).id());
         assertNull(machine.toppingFor(FoodItem.fromItem(corn(3, 1))));
-        assertEquals("caramel, sugar, butter, salt, cinnamon or vanilla", PopcornMachineHandler.toppingNames(machine));
+        assertEquals("caramel, sugar, butter, salt, honey, cinnamon or vanilla", PopcornMachineHandler.toppingNames(machine));
         // The shipped flavourings name popcorn by their tags.yml flavour tracks (Cinnamon Sugared Popcorn).
         assertEquals("cinnamon", machine.toppingFor(FoodItem.fromItem(piece("sweetener_1", "spice", "Cinnamon", 3, 1))).id());
         assertNull(machine.toppingFor(FoodItem.fromItem(piece("sweetener_1", "spice", "Nutmeg", 3, 1))));
@@ -421,7 +429,7 @@ class PopcornMachineCoverageTest {
         assertEquals("§cIt already has 2 toppings.", player.nextMessage());
 
         m.click(new ItemStack(Material.STONE));
-        assertEquals("§cOnly corn and caramel, sugar, butter, salt, cinnamon or vanilla go in.", player.nextMessage());
+        assertEquals("§cOnly corn and caramel, sugar, butter, salt, honey, cinnamon or vanilla go in.", player.nextMessage());
 
         ItemStack rotten = corn(5, 1);
         FoodItem food = FoodItem.fromItem(rotten);
@@ -488,6 +496,27 @@ class PopcornMachineCoverageTest {
         assertEquals(Stage.EMPTY, m.stage());
         assertNull(m.models.get("heap"));
         assertNull(m.models.get("topping_1"));
+    }
+
+    @Test
+    void honeyIsATopping_andItsEmptyBottleComesBack() {
+        Machine m = new Machine();
+        m.fill(3, 4);
+        m.click(piece("honey", "sweetener", "Honey", 4, 2));
+        assertNull(player.nextMessage());
+        assertEquals(1, player.getInventory().getItemInMainHand().getAmount(), "one honey used");
+        assertTrue(java.util.Arrays.stream(player.getInventory().getContents())
+                .anyMatch(stack -> "v.glass_bottle".equals(marker(stack))), "the bottle comes back");
+        m.click(salt(1));
+        FoodItem popcorn = FoodItem.fromItem(PopcornMachineHandler.popcorn(machine, m.furniture).get(0));
+        assertTrue(popcorn.hasTagTrack("topping_honey"));
+        assertEquals("Salted Honey Popcorn", ItemBuilder.displayName(popcorn).replaceAll("§.", ""));
+
+        // The last honey in hand leaves the bottle in hand.
+        Machine other = new Machine();
+        other.fill(3, 1);
+        other.click(piece("honey", "sweetener", "Honey", 4, 1));
+        assertEquals("v.glass_bottle", marker(player.getInventory().getItemInMainHand()));
     }
 
     @Test

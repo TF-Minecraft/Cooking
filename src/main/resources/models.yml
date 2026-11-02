@@ -502,6 +502,16 @@ sugar:
       position:
         y: -0.25
 
+# Honey (types.yml honey): the vanilla honey bottle.
+honey:
+  plain:
+    weight: 1
+    tags: []
+    gui:
+      item: v.honey_bottle
+    display:
+      item: v.honey_bottle
+
 black_pepper:
   fresh:
     weight: 1
@@ -2462,6 +2472,87 @@ red_meat_roast:
       item: ia.tfmc_cooking:red_meat_roast_cooked_1
     display:
       item: ia.tfmc_cooking:red_meat_roast_cooked_1
+  # Honey-glazed once cooked (glazes.yml): picked over cooked_<stage> while it has the honey_glazed tag.
+  glazed_8:
+    weight: 28
+    stage: 8
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_8
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_8
+  glazed_7:
+    weight: 27
+    stage: 7
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_7
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_7
+  glazed_6:
+    weight: 26
+    stage: 6
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_6
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_6
+  glazed_5:
+    weight: 25
+    stage: 5
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_5
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_5
+  glazed_4:
+    weight: 24
+    stage: 4
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_4
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_4
+  glazed_3:
+    weight: 23
+    stage: 3
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_3
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_3
+  glazed_2:
+    weight: 22
+    stage: 2
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_2
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_2
+  glazed_1:
+    weight: 21
+    stage: 1
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_1
+    display:
+      item: ia.tfmc_cooking:red_meat_roast_glazed_1
   burnt_8:
     weight: 18
     stage: 8
@@ -2723,6 +2814,67 @@ poultry_roast:
       item: ia.tfmc_cooking:poultry_roast_cooked_1
     display:
       item: ia.tfmc_cooking:poultry_roast_cooked_1
+  # Honey-glazed once cooked (glazes.yml): picked over cooked_<stage> while it has the honey_glazed tag.
+  glazed_6:
+    weight: 26
+    stage: 6
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_6
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_6
+  glazed_5:
+    weight: 25
+    stage: 5
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_5
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_5
+  glazed_4:
+    weight: 24
+    stage: 4
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_4
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_4
+  glazed_3:
+    weight: 23
+    stage: 3
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_3
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_3
+  glazed_2:
+    weight: 22
+    stage: 2
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_2
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_2
+  glazed_1:
+    weight: 21
+    stage: 1
+    tags:
+      - cooked
+      - honey_glazed
+    gui:
+      item: ia.tfmc_cooking:poultry_roast_glazed_1
+    display:
+      item: ia.tfmc_cooking:poultry_roast_glazed_1
   burnt_6:
     weight: 16
     stage: 6
