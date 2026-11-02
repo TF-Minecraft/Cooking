@@ -15,6 +15,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
+import net.tfminecraft.tlibs.TLibs;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.FoodItem;
@@ -94,6 +95,40 @@ public final class DrinkConsumeListener implements Listener {
     }
 
     /**
+     * A drink served in something other than a glass bottle (hot chocolate in a cup, types.yml returns) gives that back
+     * once it's drunk. FoodConsumeListener feeds the drinker; this only swaps what vanilla leaves in the slot.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onServedDrink(PlayerItemConsumeEvent event) {
+        ItemStack consumed = event.getItem();
+        if (consumed == null || ItemCache.isCupOfMilk(consumed)) {
+            return;
+        }
+        FoodItem food = FoodItem.fromItem(consumed);
+        String returns = food == null ? null : food.getReturns();
+        if (returns == null || returns.isBlank()) {
+            return;
+        }
+        Player player = event.getPlayer();
+        PlayerActionContext context = PlayerActionContext.capture(player);
+        if (context == null) {
+            return;
+        }
+        int amountBefore = consumed.getAmount();
+        int slot = event.getHand() == EquipmentSlot.OFF_HAND ? -1 : player.getInventory().getHeldItemSlot();
+        Bukkit.getScheduler().runTask(Cooking.plugin, () -> {
+            if (!event.isCancelled() && context.isCurrent()) {
+                replaceWithEmptyCup(player, amountBefore, slot, () -> returned(returns), context::isCurrent);
+            }
+        });
+    }
+
+    private static ItemStack returned(String path) {
+        ItemStack item = TLibs.getItemAPI().getCreator().getItemFromPath(path);
+        return item == null ? null : item.clone();
+    }
+
+    /**
      * Swaps the glass bottle vanilla leaves in the slot the cup was drunk from for an empty cup.
      * Only that slot, and only if it still holds the bottle: switching slots within the tick
      * must neither leave the bottle and add a cup, nor overwrite whatever is held instead. Cups
@@ -114,7 +149,7 @@ public final class DrinkConsumeListener implements Listener {
             return;
         }
         ItemStack empty = emptyCup.get();
-        if (!current.getAsBoolean()) return;
+        if (empty == null || !current.getAsBoolean()) return;
         if (slot < 0) {
             inv.setItemInOffHand(empty);
         } else {

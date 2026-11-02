@@ -52,3 +52,5 @@ conversions:
   - ia.tfmc_cooking:cup_of_milk ingredient(type=cup_of_milk;origin=Cow;tags=freshness.0)
   - v.milk_bucket ingredient(type=milk_bucket;origin=Cow;tags=freshness.0)
   - ia.tfmc_cooking:butter ingredient(type=butter;origin=Cow;tags=freshness.0)
+  # Cocoa beans (vanilla cocoa pods, crops.yml cocoa) roast in the frying pan (types.yml cocoa_beans). They stay plantable.
+  - v.cocoa_beans ingredient(type=cocoa_beans;origin=Cocoa;tags=freshness.0)

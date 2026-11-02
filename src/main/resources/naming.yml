@@ -3,12 +3,18 @@ prefix-tracks:
   - sweet
   - butter_salted
   - butter_spiced
+  # Flavourings (tags.yml flavour_*), before the popcorn toppings: Cinnamon Vanilla Hot Chocolate, Vanilla Caramel Popcorn.
+  - flavour_cinnamon
+  - flavour_nutmeg
+  - flavour_vanilla
   # Popcorn machine toppings, in this order: Buttered Sugared Salted Caramel Honey Popcorn.
   - topping_butter
   - topping_sugar
   - topping_salt
   - topping_caramel
   - topping_honey
+  # A sauce with a roux: Thick Garlic Sauce, which is also how a dish it's ladled onto lists it.
+  - sauce_thickness
 
 # Max filler origins shown in a composed name
 fillers:
@@ -38,6 +44,9 @@ categories:
     - spice
   dough-filler:
     - fruit
+  # What thickens a sauce in the saucepan (one per batch): a roux.
+  thickener:
+    - thickener
 
 # Per-category tag step display overrides (fallback after per-type tag-labels)
 tag-label-defaults:

@@ -403,12 +403,12 @@ class CookingReferencesTest {
     }
 
     @Test
-    void sauceScoopCombinesQualityAndFlourMilkTagsThenClearsTheStation() {
+    void sauceScoopCombinesQualityAndRouxMilkTagsThenClearsTheStation() {
         SauceReference ref = new SauceReference(env.furniture, Method.SAUCEPAN);
         ref.scoop(env.player, new ItemStack(Material.PAPER));
         env.player.getInventory().setItemInMainHand(env.stack(env.food("milk", "milk", "Milk"), Material.WHITE_DYE, 1));
         ref.interact(env.interaction());
-        ref.slots.put("input_1", env.food("flour", "flour", "Wheat"));
+        ref.slots.put("input_1", env.food("roux", "thickener", "Roux"));
         ref.slots.put("input_2", env.food("sugar", "sweetener", "Sugar"));
         ref.colours.add("ffffff");
         ref.scoop(env.player, new ItemStack(Material.PAPER));
@@ -424,7 +424,7 @@ class CookingReferencesTest {
         ref.secondaries.put("liquid", -1);
         ref.colours.add("aa5500");
         ref.scoop(env.player, new ItemStack(Material.PAPER));
-        assertEquals(0, env.lastBuilt.getTagTrack("sauce_thickness").getValue());
+        assertFalse(env.lastBuilt.hasTagTrack("sauce_thickness"));
         assertFalse(env.lastBuilt.hasTagTrack("sauce_creamy"));
     }
 

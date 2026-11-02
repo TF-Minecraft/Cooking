@@ -1,0 +1,6 @@
+{
+ "parent": "minecraft:item/generated",
+ "textures": {
+  "layer0": "tfmc_cooking:item/chocolate/roasted_cocoa_beans_burnt"
+ }
+}

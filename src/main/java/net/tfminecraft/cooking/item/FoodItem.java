@@ -37,7 +37,10 @@ public class FoodItem {
     private boolean mashable = false;
     private boolean edible = true;
     private boolean edibleWhenCooked = false;
-    /** types.yml returns: the item path a station gives back for one used up (honey's empty glass bottle), or null. */
+    /**
+     * types.yml returns: the item path of what the food comes in, given back once it's drunk (hot chocolate's cup) or
+     * used up in a station (honey's glass bottle), or null.
+     */
     private String returns;
     private Integer catchSizeCm;
     private String seafoodCutType;
@@ -90,8 +93,8 @@ public class FoodItem {
         this.mashable = config.getBoolean("mashable", false);
         this.edible = config.getBoolean("edible", true);
         this.edibleWhenCooked = config.getBoolean("edible-when-cooked", false);
-        this.typeLevelCarveSequence = config.getString("carve-sequence", null);
         this.returns = config.getString("returns", null);
+        this.typeLevelCarveSequence = config.getString("carve-sequence", null);
 
         String modelId = config.getString("model", null);
         if (modelId != null)
@@ -275,9 +278,9 @@ public class FoodItem {
     public boolean shouldUpdate() { return update; }
     public boolean isValuable() { return valuable; }
     public boolean isMashable() { return mashable; }
-    public void setMashable(boolean mashable) { this.mashable = mashable; }
+    /** What the food comes in, given back once it's drunk or used up in a station (see the returns field), or null. */
     public String getReturns() { return returns; }
-
+    public void setMashable(boolean mashable) { this.mashable = mashable; }
     public boolean isEdible() {
         if (!edible) {
             return false;

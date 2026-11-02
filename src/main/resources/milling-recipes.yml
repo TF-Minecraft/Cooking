@@ -34,3 +34,19 @@ sugar:
   output-amount: 8
   revolutions: 4
   duration-ticks: 60
+
+# Roasted cocoa beans (types.yml cocoa_beans, roasted in the frying pan) ground into cocoa powder for hot chocolate and
+# melted chocolate (condiments.yml). One pan of two beans makes one powder. Only roasted beans that aren't burnt load
+# (input); a loaded stone that's broken gives them back as roasted beans.
+cocoa_powder:
+  furniture: milling_stone
+  input-count: 2
+  input: c.ingredient(type=roasted_cocoa_beans;tags=cooked.1)
+  input-name: roasted cocoa beans
+  input-display: ia.tfmc_cooking:roasted_cocoa_beans
+  output-food: cocoa_powder
+  category: ingredient
+  origin: Cocoa
+  output-display: ia.tfmc_cooking:cocoa_powder_pile
+  revolutions: 4
+  duration-ticks: 60

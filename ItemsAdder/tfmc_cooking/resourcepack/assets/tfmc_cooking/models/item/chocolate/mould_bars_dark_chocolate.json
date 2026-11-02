@@ -1,0 +1,281 @@
+{
+ "credit": "TFMC chocolate: four set bars lying in the mould",
+ "textures": {
+  "c": "tfmc_cooking:item/chocolate/dark_chocolate_solid",
+  "particle": "tfmc_cooking:item/chocolate/dark_chocolate_solid"
+ },
+ "elements": [
+  {
+   "from": [
+    2.5,
+    0.5,
+    5.0
+   ],
+   "to": [
+    4.875,
+    1.6,
+    11.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      12,
+      16
+     ],
+     "texture": "#c"
+    },
+    "down": {
+     "uv": [
+      2.5,
+      5.0,
+      4.875,
+      11.0
+     ],
+     "texture": "#c"
+    }
+   }
+  },
+  {
+   "from": [
+    5.375,
+    0.5,
+    5.0
+   ],
+   "to": [
+    7.75,
+    1.6,
+    11.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      12,
+      16
+     ],
+     "texture": "#c"
+    },
+    "down": {
+     "uv": [
+      5.375,
+      5.0,
+      7.75,
+      11.0
+     ],
+     "texture": "#c"
+    }
+   }
+  },
+  {
+   "from": [
+    8.25,
+    0.5,
+    5.0
+   ],
+   "to": [
+    10.625,
+    1.6,
+    11.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      12,
+      16
+     ],
+     "texture": "#c"
+    },
+    "down": {
+     "uv": [
+      8.25,
+      5.0,
+      10.625,
+      11.0
+     ],
+     "texture": "#c"
+    }
+   }
+  },
+  {
+   "from": [
+    11.125,
+    0.5,
+    5.0
+   ],
+   "to": [
+    13.5,
+    1.6,
+    11.0
+   ],
+   "faces": {
+    "north": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "south": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "east": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "west": {
+     "uv": [
+      0,
+      0,
+      16,
+      2
+     ],
+     "texture": "#c"
+    },
+    "up": {
+     "uv": [
+      4,
+      0,
+      12,
+      16
+     ],
+     "texture": "#c"
+    },
+    "down": {
+     "uv": [
+      11.125,
+      5.0,
+      13.5,
+      11.0
+     ],
+     "texture": "#c"
+    }
+   }
+  }
+ ]
+}

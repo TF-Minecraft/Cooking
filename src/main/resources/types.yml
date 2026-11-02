@@ -365,8 +365,9 @@ sweetener_1:
   update: false
 
 ###Honey: a vanilla honey bottle picked up (conversions.yml). A sweetener like sugar, so it goes wherever sugar does
-# (dough, sauces, catsup, the popcorn machine), and it glazes roasts (glazes.yml). It never spoils. A station that uses
-# it gives back the empty bottle (returns); drunk from the bottle it still feeds a little and cures poison, as vanilla.
+# (dough, sauces, catsup, hot chocolate, rice pudding, the popcorn machine), and it glazes roasts (glazes.yml). It never
+# spoils. A station that uses it gives back the empty bottle (returns); drunk from the bottle it still feeds a little
+# and cures poison, as vanilla.
 honey:
   name: "#e8a317Honey"
   model: honey
@@ -505,6 +506,16 @@ flour:
   model: flour
   food: 4
   nutrition: 4
+  # Thick sauce: flour cooked in a buttered frying pan becomes a roux (the butter goes into it, as in any frying).
+  # Without butter it burns, and a burnt roux won't go in a sauce. Flour elsewhere keeps its values: a type whose only
+  # options have an output isn't raw until it's in the pan. The pan's slot whitelist (InteractibleFurniture) must let
+  # flour in: c.grain(type=flour).
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 12
+      burn: 30
+      output: thickener(type=roux;origin=Roux;tags=processed.0)
   age:
     warmth: 450
     freshness: 20
@@ -618,6 +629,23 @@ sauce:
   food: 6
   nutrition: 5
 
+###Roux: flour cooked in a buttered frying pan (flour's frying_pan output). Added to a saucepan of water, milk or a brew
+# it takes one of the two ingredient places and makes the sauce Thick (naming.yml categories: thickener). It doesn't
+# name the sauce; the Thick tag does: Thick Garlic Sauce.
+roux:
+  name: "#d9a95bRoux"
+  model: roux
+  category: thickener
+  food: 6
+  nutrition: 4
+  age:
+    warmth: 450
+    freshness: 14
+  tag-labels:
+    freshness:
+      stale: "#c3db81Rancid"
+      rotten: "#8B7355Spoiled"
+
 ##SOUP
 soup:
   age:
@@ -714,15 +742,46 @@ seafood_octopus:
   food: 11
   nutrition: 7
   mashable: true
+  # Grilled in the frying pan it becomes grilled octopus (and burns as that); boiled in the pot it stays octopus.
   cooking-options:
     frying_pan:
       tag: 1
       time: 15
       burn: 30
+      output: seafood(type=grilled_octopus)
     pot:
       tag: 3
       time: 15
       burn: 30
+  age:
+    warmth: 450
+    freshness: 9.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+###Grilled octopus: what octopus becomes in the frying pan; keeps its origin (Octopus). Salads take it (salads.yml).
+grilled_octopus:
+  name: "#c8642aGrilled {inherit}"
+  model: grilled_octopus
+  food: 11
+  nutrition: 7
+  age:
+    warmth: 450
+    freshness: 9.33
+  tag-labels:
+    freshness:
+      stale: "#c3db81Stale"
+      rotten: "#8B7355Rotten"
+
+###Jellyfish strips: jellyfish cubes cut into strips on the cutting board (crafting-stations.yml slice_jellyfish). They
+# stay as raw, fried or boiled as the cubes were; boiled (blanched) is how jellyfish goes into a salad (salads.yml).
+jellyfish_strips:
+  name: "#87cefa{inherit} Strips"
+  model: jellyfish_strips
+  food: 9
+  nutrition: 5
   age:
     warmth: 450
     freshness: 9.33
@@ -829,3 +888,100 @@ caramel:
   nutrition: 2
   age:
     freshness: 60
+
+###Chocolate: cocoa beans (picked up or harvested, conversions.yml) roast in the frying pan, are ground on the milling
+# stone into cocoa powder (milling-recipes.yml), and boil in the saucepan into hot chocolate or melted chocolate
+# (condiments.yml). Melted chocolate poured into a chocolate mould is cut into bars there (crafting-stations.yml).
+# Vanilla, cinnamon and nutmeg boiled in with them flavour and name them (tags.yml flavour_*).
+cocoa_beans:
+  name: "#8b5a3cCocoa Beans"
+  model: cocoa_beans
+  food: 2
+  nutrition: 2
+  # Raw beans are roasted first. Its only cooking option has an output, so the beans aren't raw until they're in the pan.
+  edible: false
+  cooking-options:
+    frying_pan:
+      tag: 1
+      time: 10
+      burn: 25
+      output: ingredient(type=roasted_cocoa_beans)
+  age:
+    warmth: 450
+    freshness: 28
+
+roasted_cocoa_beans:
+  name: "#5c3a21Roasted Cocoa Beans"
+  model: roasted_cocoa_beans
+  food: 3
+  nutrition: 3
+  age:
+    warmth: 450
+    freshness: 28
+
+cocoa_powder:
+  name: "#7b4a2dCocoa Powder"
+  model: cocoa_powder
+  food: 2
+  nutrition: 2
+  edible: false
+  age:
+    warmth: 450
+    freshness: 20
+  tag-labels:
+    freshness:
+      rotten: "#8B7355Musty"
+
+# Drunk from its cup, which comes back (returns): Hot like soup, it cools to Warm and then cold.
+hot_chocolate:
+  name: "#8b5a3c{prefixes}Hot Chocolate"
+  model: hot_chocolate
+  returns: ia.tfmc_cooking:empty_cup
+  food: 14
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 2
+  tag-labels:
+    freshness:
+      stale: "#c3db81Skinned"
+      rotten: "#8B7355Spoiled"
+
+# Taken out of the saucepan in a bowl. Its origin is its kind (Milk Chocolate, Dark Chocolate), and each kind has its
+# own name, which gets the flavourings' prefixes (Vanilla Milk Chocolate Bar). The bars it's cut into share its food
+# (crafting-stations.yml share-food).
+melted_chocolate:
+  name: "#6b4226{prefixes}Chocolate (Melted)"
+  model: melted_milk_chocolate
+  overrides:
+    MILK CHOCOLATE:
+      name: "#7b4a2d{prefixes}Milk Chocolate (Melted)"
+      model: melted_milk_chocolate
+    DARK CHOCOLATE:
+      name: "#4a2c1a{prefixes}Dark Chocolate (Melted)"
+      model: melted_dark_chocolate
+  food: 24
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 8
+
+chocolate_bar:
+  name: "#6b4226{prefixes}Chocolate Bar"
+  model: milk_chocolate_bar
+  overrides:
+    MILK CHOCOLATE:
+      name: "#7b4a2d{prefixes}Milk Chocolate Bar"
+      model: milk_chocolate_bar
+    DARK CHOCOLATE:
+      name: "#4a2c1a{prefixes}Dark Chocolate Bar"
+      model: dark_chocolate_bar
+  food: 6
+  nutrition: 6
+  age:
+    warmth: 450
+    freshness: 14
+  tag-labels:
+    freshness:
+      stale: "#c3db81Bloomed"
+      rotten: "#8B7355Mouldy"

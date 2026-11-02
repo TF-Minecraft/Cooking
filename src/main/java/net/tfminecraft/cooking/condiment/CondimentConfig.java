@@ -12,6 +12,7 @@ import java.util.Set;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 import net.tfminecraft.cooking.item.CookingPathHandler;
 import net.tfminecraft.cooking.item.FoodItem;
@@ -106,6 +107,14 @@ public final class CondimentConfig {
     public static boolean isSaucepanLiquid(FoodItem food) {
         for (String path : saucepanLiquids) {
             if (CookingPathHandler.matches(food, path)) return true;
+        }
+        return false;
+    }
+
+    /** True for an item some bottling takes its output out with instead of a glass bottle (an empty cup, a bowl). */
+    public static boolean isBottlingContainer(ItemStack item) {
+        for (BottleRecipe recipe : bottles) {
+            if (recipe.isContainer(item)) return true;
         }
         return false;
     }

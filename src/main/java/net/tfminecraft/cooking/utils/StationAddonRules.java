@@ -8,6 +8,7 @@ import java.util.Map;
 import org.bukkit.entity.Player;
 
 import net.tfminecraft.cooking.cache.NamingConfig;
+import net.tfminecraft.cooking.enums.Tag;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
@@ -32,6 +33,54 @@ public final class StationAddonRules {
 
     public static boolean isSweetenerCategory(String category) {
         return NamingConfig.isCategory("sweetener", category);
+    }
+
+    /** A thickener (naming.yml categories: thickener), a roux cooked from flour in a buttered frying pan. */
+    public static boolean isThickenerCategory(String category) {
+        return NamingConfig.isCategory("thickener", category);
+    }
+
+    public static boolean hasThickener(Map<String, FoodItem> slots) {
+        for (FoodItem item : slots.values()) {
+            if (item != null && isThickenerCategory(item.getCategory())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** One thickener per batch, and never a burnt one. */
+    public static boolean canAcceptThickener(Map<String, FoodItem> slots, FoodItem incoming, Player player) {
+        if (incoming == null || !isThickenerCategory(incoming.getCategory())) {
+            return false;
+        }
+        String refusal = null;
+        if (incoming.hasTag(Tag.BURNT)) {
+            refusal = "§cThat roux is burnt. It would spoil the sauce.";
+        } else if (hasThickener(slots)) {
+            refusal = "§cThere's already a roux in there.";
+        }
+        if (refusal == null) {
+            return true;
+        }
+        if (player != null) {
+            player.sendMessage(refusal);
+        }
+        return false;
+    }
+
+    /** A thickener makes the sauce Thick (tags.yml sauce_thickness); without one the sauce gets no thickness tag. */
+    public static void applyThickTag(FoodItem product, Map<String, FoodItem> slots) {
+        if (!hasThickener(slots)) {
+            return;
+        }
+        TagTrack track = TrackLoader.getByString("sauce_thickness");
+        if (track == null) {
+            return;
+        }
+        track = new TagTrack(track);
+        track.setValue(1);
+        product.addOrModifyTrack(track);
     }
 
     public static boolean hasSweetener(Map<String, FoodItem> slots) {

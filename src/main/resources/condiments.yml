@@ -81,3 +81,112 @@ saucepan:
         - c.ingredient(type=butter)
       boil-seconds: 45
       output: condiment(type=caramel;origin=Sugar;tags=freshness.0)
+    # Chocolate (types.yml cocoa_beans to chocolate_bar). Cocoa powder is ground on the milling stone from roasted beans.
+    # extras: optional, once each, besides the ingredients; each gives the output its tags.yml track, which names it
+    #   (Cinnamon Hot Chocolate). A spice goes in like any spice, two at most (naming.yml addons).
+    # container: what takes the output out instead of an empty glass bottle; container-name is how a player is told.
+    #
+    # Hot chocolate: a cup of milk boiled with cocoa powder and a sweetener, taken out with an empty cup and drunk from
+    # it (types.yml returns gives the cup back).
+    hot_chocolate:
+      liquid: c.ingredient(type=cup_of_milk)
+      ingredients:
+        - c.ingredient(type=cocoa_powder)
+        - c.sweetener
+      extras:
+        vanilla:
+          path: c.spice(origin=Vanilla)
+          track: flavour_vanilla
+        cinnamon:
+          path: c.spice(origin=Cinnamon)
+          track: flavour_cinnamon
+        nutmeg:
+          path: c.spice(origin=Nutmeg)
+          track: flavour_nutmeg
+      boil-seconds: 30
+      container: ia.tfmc_cooking:empty_cup
+      container-name: an empty cup
+      output: drink(type=hot_chocolate;origin=Cocoa;tags=freshness.0:warmth.0)
+    # Melted chocolate: cocoa powder, a sweetener and butter boiled in a cup of milk (Milk Chocolate) or of water (Dark
+    # Chocolate), taken out with a bowl and poured into a chocolate mould (crafting-stations.yml chocolate_mould).
+    # Butter from the churn is dairy and butter picked up is an ingredient, so each has its line.
+    milk_chocolate:
+      liquid: c.ingredient(type=cup_of_milk)
+      ingredients:
+        - c.ingredient(type=cocoa_powder)
+        - c.sweetener
+        - c.dairy(type=butter)
+      extras:
+        vanilla:
+          path: c.spice(origin=Vanilla)
+          track: flavour_vanilla
+        cinnamon:
+          path: c.spice(origin=Cinnamon)
+          track: flavour_cinnamon
+        nutmeg:
+          path: c.spice(origin=Nutmeg)
+          track: flavour_nutmeg
+      boil-seconds: 45
+      container: v.bowl
+      container-name: a bowl
+      output: condiment(type=melted_chocolate;origin=Milk Chocolate;tags=freshness.0)
+    milk_chocolate_picked_up_butter:
+      liquid: c.ingredient(type=cup_of_milk)
+      ingredients:
+        - c.ingredient(type=cocoa_powder)
+        - c.sweetener
+        - c.ingredient(type=butter)
+      extras:
+        vanilla:
+          path: c.spice(origin=Vanilla)
+          track: flavour_vanilla
+        cinnamon:
+          path: c.spice(origin=Cinnamon)
+          track: flavour_cinnamon
+        nutmeg:
+          path: c.spice(origin=Nutmeg)
+          track: flavour_nutmeg
+      boil-seconds: 45
+      container: v.bowl
+      container-name: a bowl
+      output: condiment(type=melted_chocolate;origin=Milk Chocolate;tags=freshness.0)
+    dark_chocolate:
+      liquid: water
+      ingredients:
+        - c.ingredient(type=cocoa_powder)
+        - c.sweetener
+        - c.dairy(type=butter)
+      extras:
+        vanilla:
+          path: c.spice(origin=Vanilla)
+          track: flavour_vanilla
+        cinnamon:
+          path: c.spice(origin=Cinnamon)
+          track: flavour_cinnamon
+        nutmeg:
+          path: c.spice(origin=Nutmeg)
+          track: flavour_nutmeg
+      boil-seconds: 45
+      container: v.bowl
+      container-name: a bowl
+      output: condiment(type=melted_chocolate;origin=Dark Chocolate;tags=freshness.0)
+    dark_chocolate_picked_up_butter:
+      liquid: water
+      ingredients:
+        - c.ingredient(type=cocoa_powder)
+        - c.sweetener
+        - c.ingredient(type=butter)
+      extras:
+        vanilla:
+          path: c.spice(origin=Vanilla)
+          track: flavour_vanilla
+        cinnamon:
+          path: c.spice(origin=Cinnamon)
+          track: flavour_cinnamon
+        nutmeg:
+          path: c.spice(origin=Nutmeg)
+          track: flavour_nutmeg
+      boil-seconds: 45
+      container: v.bowl
+      container-name: a bowl
+      output: condiment(type=melted_chocolate;origin=Dark Chocolate;tags=freshness.0)

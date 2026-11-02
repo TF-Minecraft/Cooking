@@ -217,12 +217,26 @@ public class SauceReference extends CookingReference {
 
 
 
+        if (StationAddonRules.isThickenerCategory(category)) {
+
+            return StationAddonRules.canAcceptThickener(slots, fi, player);
+
+        }
+
+
+
         if (category.equals("alcohol")) return true;
 
 
 
         // What a bottling recipe for this liquid still needs (tomato paste in vinegar for catsup).
-        return bottlingTakes(fi);
+        if (bottlingTakes(fi)) return true;
+
+        // Raw flour doesn't thicken a sauce; a roux does.
+        if (ItemCache.isFlour(i) && player != null) {
+            player.sendMessage("§7Cook the flour in a buttered frying pan first: a roux thickens the sauce.");
+        }
+        return false;
 
     }
 
@@ -242,23 +256,7 @@ public class SauceReference extends CookingReference {
 
 
 
-        int flourCount = 0;
-
         boolean hasMilk = false;
-
-
-
-        for (FoodItem fi : slots.values()) {
-
-            String category = fi.getCategory().toLowerCase();
-
-            if (category.equals("flour")) {
-
-                flourCount++;
-
-            }
-
-        }
 
 
 
@@ -285,21 +283,8 @@ public class SauceReference extends CookingReference {
 
         StationAddonRules.applySweetTag(sauce, slots);
 
-
-
-        TagTrack thickTrack = new TagTrack(TrackLoader.getByString("sauce_thickness"));
-
-        if (flourCount >= 1) {
-
-            thickTrack.setValue(1);
-
-        } else {
-
-            thickTrack.setValue(0);
-
-        }
-
-        sauce.addOrModifyTrack(thickTrack);
+        // A roux makes it Thick, which also names it (naming.yml prefix-tracks), so dishes it's ladled onto say so.
+        StationAddonRules.applyThickTag(sauce, slots);
 
 
 
@@ -400,8 +385,9 @@ public class SauceReference extends CookingReference {
 
         }
 
-        if (item.getType() == Material.GLASS_BOTTLE && FoodItem.fromItem(item) == null) {
-            bottle(p);
+        if (FoodItem.fromItem(item) == null
+                && (item.getType() == Material.GLASS_BOTTLE || CondimentConfig.isBottlingContainer(item))) {
+            bottle(p, item);
             return;
         }
         FoodItem bottled = secondaries.containsKey("liquid") ? null : FoodItem.fromItem(item);
@@ -630,8 +616,11 @@ public class SauceReference extends CookingReference {
         return p.getInventory().getItemInMainHand();
     }
 
-    /** An empty glass bottle takes what the saucepan made (catsup, mustard, syrup) once it has boiled long enough. */
-    private void bottle(Player p) {
+    /**
+     * An empty glass bottle takes what the saucepan made (catsup, mustard, syrup) once it has boiled long enough, or the
+     * recipe's own container does (an empty cup takes hot chocolate).
+     */
+    private void bottle(Player p, ItemStack held) {
         if (!secondaries.containsKey("liquid")) {
             p.sendMessage("§7The saucepan is empty.");
             return;
@@ -639,6 +628,10 @@ public class SauceReference extends CookingReference {
         BottleRecipe recipe = matchingBottle();
         if (recipe == null) {
             p.sendMessage("§7Nothing in this saucepan goes in a bottle. Use a ladle for sauce.");
+            return;
+        }
+        if (!recipe.takesContainer(held)) {
+            p.sendMessage("§7Take this out with " + recipe.getContainerName() + ".");
             return;
         }
         if (boiled < recipe.getBoilSeconds()) {
@@ -654,6 +647,7 @@ public class SauceReference extends CookingReference {
             inputs.addAll(slots.values());
             CompositionResult composed = CompositionQualityResolver.compose(p, inputs, CompositionContext.SAUCE_SCOOP);
             CompositionApplier.apply(parsed.template, composed);
+            recipe.applyExtras(parsed.template, slots.values());
             output = ItemBuilder.buildSingleWithQuality(parsed.template, null, composed.getFinalQuality());
         }
         if (output == null) {
