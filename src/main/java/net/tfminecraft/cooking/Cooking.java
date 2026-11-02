@@ -74,6 +74,7 @@ import net.tfminecraft.cooking.pie.PieConfig;
 import net.tfminecraft.cooking.pie.PieHandler;
 import net.tfminecraft.cooking.salad.SaladConfig;
 import net.tfminecraft.cooking.pot.PotConfig;
+import net.tfminecraft.cooking.pan.PanConfig;
 import net.tfminecraft.cooking.salad.SaladHandler;
 import net.tfminecraft.cooking.sandwich.SandwichConfig;
 import net.tfminecraft.cooking.sandwich.SandwichHandler;
@@ -153,6 +154,7 @@ public class Cooking extends JavaPlugin {
     private final PizzaHandler pizzaHandler = new PizzaHandler();
     private final SaladConfig saladConfig = new SaladConfig();
     private final PotConfig potConfig = new PotConfig();
+    private final PanConfig panConfig = new PanConfig();
     private final SaladHandler saladHandler = new SaladHandler();
     private final PieConfig pieConfig = new PieConfig();
     private final PieHandler pieHandler = new PieHandler();
@@ -286,6 +288,7 @@ public class Cooking extends JavaPlugin {
         condimentConfig.load(new File(getDataFolder(), "condiments.yml"));
         saladConfig.load(new File(getDataFolder(), "salads.yml"));
         potConfig.load(new File(getDataFolder(), "pot.yml"));
+        panConfig.load(new File(getDataFolder(), "frying-pan.yml"));
         pieConfig.load(new File(getDataFolder(), "pies.yml"));
         popcornMachineConfig.load(new File(getDataFolder(), "popcorn-machines.yml"));
         glazeConfig.load(new File(getDataFolder(), "glazes.yml"));
@@ -457,6 +460,7 @@ public class Cooking extends JavaPlugin {
                 "condiments.yml",
                 "salads.yml",
                 "pot.yml",
+                "frying-pan.yml",
                 "pies.yml",
                 "popcorn-machines.yml",
                 "glazes.yml",

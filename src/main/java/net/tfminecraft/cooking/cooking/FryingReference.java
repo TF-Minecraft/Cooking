@@ -3,22 +3,29 @@ package net.tfminecraft.cooking.cooking;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.enums.Method;
+import net.tfminecraft.cooking.enums.Tag;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.item.data.CookData;
+import net.tfminecraft.cooking.pan.PanConfig;
+import net.tfminecraft.cooking.pan.StirIn;
 import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.sandwich.DishBonus;
+import net.tfminecraft.cooking.sandwich.SandwichItems;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
@@ -237,13 +244,20 @@ public class FryingReference extends CookingReference {
             return;
         }
 
-        if (butterExtra != null) {
+        List<FoodItem> stirred = stirIn(e.getSlot().getId(), fi);
+        if (butterExtra != null || !stirred.isEmpty()) {
             List<FoodItem> inputs = new ArrayList<>();
             inputs.add(fi);
-            inputs.add(butterExtra);
+            inputs.addAll(stirred);
+            if (butterExtra != null) inputs.add(butterExtra);
             CompositionResult composed = CompositionQualityResolver.compose(
                     e.getPlayer(), inputs, CompositionContext.FRYING_PAN);
             CompositionApplier.apply(fi, composed);
+        }
+        if (!stirred.isEmpty()) {
+            // The dish's stars are set, so a poison it stirred in can hide (frying-pan.yml bonuses).
+            DishBonus.apply(fi, stirred, food -> null, layer -> false, PanConfig.bonuses());
+            item = renamed(item, ItemBuilder.displayName(fi));
         }
 
         item = ItemUpdater.applyItemUpdate(item, fi, null);
@@ -257,6 +271,52 @@ public class FryingReference extends CookingReference {
         e.setItem(item);
         org.bukkit.Bukkit.getPluginManager().callEvent(
                 new net.tfminecraft.cooking.events.DishCookedEvent(e.getPlayer(), item, "station"));
+    }
+
+    /**
+     * A dish taken out fried (fried rice, frying-pan.yml stir-ins) stirs in the other fried pieces in the pan that it
+     * takes, up to its max: they leave the pan, their food is added to its own and their origins name it (Egg Fried
+     * Rice). Pieces still raw, or burnt, stay in the pan. Returns what it stirred in.
+     */
+    private List<FoodItem> stirIn(String takenSlot, FoodItem dish) {
+        List<FoodItem> stirred = new ArrayList<>();
+        StirIn recipe = PanConfig.stirInFor(dish);
+        if (recipe == null || !dish.hasTag(Tag.COOKED)) return stirred;
+        List<String> used = new ArrayList<>();
+        for (String slotId : new TreeSet<>(slots.keySet())) {
+            FoodItem piece = slots.get(slotId);
+            if (stirred.size() >= recipe.getMax()) break;
+            if (slotId.equals(takenSlot) || !piece.hasTag(Tag.COOKED) || !recipe.takes(piece)) continue;
+            stirred.add(piece);
+            used.add(slotId);
+        }
+        if (stirred.isEmpty()) return stirred;
+        // The parts' food summed as a sandwich's layers are; the dish's own Cooked tag still applies to it when eaten.
+        double ownFood = SandwichItems.multiplier(dish, true);
+        double ownNutrition = SandwichItems.multiplier(dish, false);
+        List<FoodItem> parts = new ArrayList<>();
+        parts.add(new FoodItem(dish));
+        parts.addAll(stirred);
+        SandwichItems.applyTotals(dish, parts);
+        dish.setBaseFood(dish.getBaseFood() / ownFood);
+        dish.setBaseNutrition(dish.getBaseNutrition() / ownNutrition);
+        for (FoodItem piece : stirred) dish.addIngredient(piece.getOrigin());
+        for (String slotId : used) {
+            slots.remove(slotId);
+            f.getActiveSlot(slotId).ifPresent(PlacedSlot::clearModel);
+            f.removeActiveSlot(slotId);
+        }
+        return stirred;
+    }
+
+    // Keep the existing legacy text representation of item names.
+    @SuppressWarnings("deprecation")
+    private static ItemStack renamed(ItemStack item, String name) {
+        ItemStack copy = item.clone();
+        ItemMeta meta = copy.getItemMeta();
+        meta.setDisplayName(name);
+        copy.setItemMeta(meta);
+        return copy;
     }
 
     private void clearButterSecondary() {

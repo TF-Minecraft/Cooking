@@ -407,4 +407,147 @@ class MillingStoneCoverageTest {
         MillingStoneAnimation.playMill(station.furniture, 1, 8, callbacks::incrementAndGet);
         assertEquals(3, callbacks.get());
     }
+
+    // ---------- a second recipe on the same stone: sugar cane into sugar ----------
+    MillingRecipe sugar(String refund) {
+        MillingRecipe flour = new MillingRecipe("flour", "milling_stone", 8, "wheat", "food:grain", "v.wheat", "flour", 1, 8);
+        MillingRecipe sugar = new MillingRecipe("sugar", "milling_stone", 8, null, null, "v.sugar_cane", "sweetener_1", 1, 8,
+                "Sugar", "sweetener", "sugar cane", "v.sugar_cane", "ia.tfmc_cooking:sugar_pile", refund, 8);
+        Map<String, MillingRecipe> both = new LinkedHashMap<>();
+        both.put("flour", flour); both.put("sugar", sugar);
+        MillingRecipeRegistry.load(both);
+        env.templates.put("sweetener_1", env.food("sweetener_1", "Sugar", 3));
+        when(env.api.getChecker().checkItemWithPath(any(), eq("v.sugar_cane"))).thenAnswer(inv -> {
+            ItemStack stack = inv.getArgument(0);
+            return stack != null && stack.getType() == Material.SUGAR_CANE;
+        });
+        when(env.api.getCreator().getItemFromPath("v.sugar_cane")).thenAnswer(inv -> new ItemStack(Material.SUGAR_CANE));
+        when(env.api.getCreator().getItemFromPath("ia.tfmc_cooking:sugar_pile")).thenAnswer(inv -> new ItemStack(Material.SUGAR));
+        return sugar;
+    }
+
+    @Test
+    void sugarCaneLoadsTheSecondRecipeAndGrindsIntoSugarOneForEachCane() {
+        sugar("v.sugar_cane");
+        ItemStack few = env.hold(new ItemStack(Material.SUGAR_CANE, 3));
+        handler.onInteract(station.interact());
+        assertEquals(3, few.getAmount());
+        assertTrue(env.messages.contains("§cYou need 8 sugar cane to fill the mill."));
+        ItemStack cane = env.hold(new ItemStack(Material.SUGAR_CANE, 9));
+        handler.onInteract(station.interact());
+        assertEquals(1, cane.getAmount());
+        assertEquals("sugar", MillingStoneState.getRecipe(station.furniture));
+        assertEquals(IngredientLineage.ofMain("Sugar"), MillingStoneState.getLineage(station.furniture));
+        for (String slot : MillingStoneSlots.WHEAT) assertEquals(Material.SUGAR_CANE, station.active.get(slot).getCurrentItem().getType());
+        env.hold(null); handler.onInteract(station.interact());
+        env.server.getScheduler().performTicks(10);
+        assertEquals(MillingStoneStage.READY, MillingStoneState.getStage(station.furniture));
+        assertEquals(Material.SUGAR, station.active.get("flour").getCurrentItem().getType());
+        // A reload or chunk load that loses the displays shows the sugar pile again, not flour.
+        MillingStoneDisplay.clearAll(station.furniture);
+        handler.onInteract(station.interact());
+        assertEquals("sweetener_1", env.lastBuilt.getId());
+        assertEquals("sweetener", env.lastBuilt.getCategory()); assertEquals("Sugar", env.lastBuilt.getOrigin());
+        assertEquals(3, env.lastQuality);
+        ItemStack given = null;
+        for (ItemStack stack : env.player.getInventory().getStorageContents()) {
+            FoodItem food = env.resolve(stack);
+            if (food != null && food.getId().equals("sweetener_1")) given = stack;
+        }
+        assertNotNull(given); assertEquals(8, given.getAmount());
+        assertTrue(station.variables.isEmpty());
+    }
+
+    @Test
+    void wheatStillLoadsTheFirstRecipeOnAStoneThatAlsoGrindsSugar() {
+        sugar(null);
+        loaded();
+        assertEquals("flour", MillingStoneState.getRecipe(station.furniture));
+        for (String slot : MillingStoneSlots.WHEAT) assertEquals(Material.WHEAT, station.active.get(slot).getCurrentItem().getType());
+    }
+
+    @Test
+    void breakingALoadedStoneGivesTheCaneBackAndAMissingRefundItemKeepsIt() {
+        sugar("v.sugar_cane");
+        env.hold(new ItemStack(Material.SUGAR_CANE, 8)); handler.onInteract(station.interact()); env.hold(null);
+        handler.onBreak(new FurnitureBreakEvent(station.furniture, env.player));
+        assertEquals(1, env.dropped.size());
+        assertEquals(Material.SUGAR_CANE, env.dropped.get(0).getType()); assertEquals(8, env.dropped.get(0).getAmount());
+        env.dropped.clear();
+        env.hold(new ItemStack(Material.SUGAR_CANE, 8)); handler.onInteract(station.interact()); env.hold(null);
+        when(env.api.getCreator().getItemFromPath("v.sugar_cane")).thenReturn(null);
+        var event = new FurnitureBreakEvent(station.furniture, env.player);
+        handler.onBreak(event);
+        assertTrue(event.isCancelled()); assertTrue(env.dropped.isEmpty());
+    }
+
+    @Test
+    void aSugarCaneRecipeWithoutARefundGivesBackWheatFoodAsBefore() {
+        sugar(null);
+        env.hold(new ItemStack(Material.SUGAR_CANE, 8)); handler.onInteract(station.interact()); env.hold(null);
+        handler.onBreak(new FurnitureBreakEvent(station.furniture, env.player));
+        assertEquals("wheat", env.resolve(env.dropped.get(0)).getId());
+        assertEquals("Sugar", env.lastBuilt.getOrigin());
+    }
+
+    @Test
+    void aMissingInputDisplayItemLeavesTheStoneEmptyLooking() {
+        MillingRecipe recipe = sugar(null);
+        when(env.api.getCreator().getItemFromPath("v.sugar_cane")).thenReturn(null);
+        MillingStoneDisplay.showWheat(station.furniture, recipe);
+        for (String slot : MillingStoneSlots.WHEAT) assertFalse(station.active.containsKey(slot));
+    }
+
+    @Test
+    void recipeKeysDefaultAndASavedRecipeThatIsGoneFallsBackToTheFirst(@TempDir Path directory) throws Exception {
+        Path config = directory.resolve("milling.yml");
+        Files.writeString(config, """
+                flour:
+                  furniture: milling_stone
+                  output-food: flour
+                  origin: ' '
+                  input-display: ''
+                sugar:
+                  furniture: milling_stone
+                  vanilla-fallback: v.sugar_cane
+                  output-food: sweetener_1
+                  category: sweetener
+                  origin: Sugar
+                  input-name: sugar cane
+                  input-display: v.sugar_cane
+                  output-display: ia.tfmc_cooking:sugar_pile
+                  refund: v.sugar_cane
+                  output-amount: 0
+                """);
+        new MillingRecipeLoader().load(config.toFile());
+        MillingRecipe flour = MillingRecipeRegistry.getByFurnitureId("milling_stone");
+        assertEquals("Wheat", flour.getOrigin()); assertEquals("grain", flour.getCategory()); assertEquals("wheat", flour.getInputName());
+        assertNull(flour.getInputDisplay()); assertNull(flour.getOutputDisplay()); assertNull(flour.getRefund());
+        assertEquals(1, flour.getOutputAmount()); assertEquals("wheat", flour.getRefundFood());
+        MillingRecipe sugar = MillingRecipeRegistry.getForFurniture("MILLING_STONE", "sugar");
+        assertEquals("Sugar", sugar.getOrigin()); assertEquals("sweetener", sugar.getCategory());
+        assertEquals("sugar cane", sugar.getInputName()); assertEquals("v.sugar_cane", sugar.getInputDisplay());
+        assertEquals("ia.tfmc_cooking:sugar_pile", sugar.getOutputDisplay()); assertEquals("v.sugar_cane", sugar.getRefund());
+        assertEquals(1, sugar.getOutputAmount());
+        assertEquals(List.of(flour, sugar), MillingRecipeRegistry.getAllForFurniture("milling_stone"));
+        assertSame(flour, MillingRecipeRegistry.getForFurniture("milling_stone", "removed"));
+        assertSame(flour, MillingRecipeRegistry.getForFurniture("milling_stone", null));
+        assertNull(MillingRecipeRegistry.getForFurniture("chair", "sugar"));
+        assertTrue(MillingRecipeRegistry.getAllForFurniture(null).isEmpty());
+        assertEquals("barley", new MillingRecipe("b", "m", 8, "barley", null, null, "flour", 1, 8).getRefundFood());
+        assertEquals("wheat", new MillingRecipe("b", "m", 8, " ", null, null, "flour", 1, 8).getRefundFood());
+        station.variables.put(MillingStoneState.VAR_RECIPE, 7);
+        assertNull(MillingStoneState.getRecipe(station.furniture));
+    }
+
+    @Test
+    void theShippedRecipesGrindWheatIntoFlourAndSugarCaneIntoSugar() {
+        new MillingRecipeLoader().load(new java.io.File("src/main/resources/milling-recipes.yml"));
+        List<MillingRecipe> recipes = MillingRecipeRegistry.getAllForFurniture("milling_stone");
+        assertEquals(List.of("flour", "sugar"), recipes.stream().map(MillingRecipe::getId).toList());
+        MillingRecipe sugar = recipes.get(1);
+        assertEquals("v.sugar_cane", sugar.getVanillaFallback()); assertEquals("sweetener_1", sugar.getOutputFood());
+        assertEquals("Sugar", sugar.getOrigin()); assertEquals("sweetener", sugar.getCategory());
+        assertEquals(8, sugar.getInputCount()); assertEquals(8, sugar.getOutputAmount());
+    }
 }

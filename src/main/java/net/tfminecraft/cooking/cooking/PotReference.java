@@ -46,6 +46,7 @@ import net.tfminecraft.cooking.quality.CompositionContext;
 import net.tfminecraft.cooking.quality.CompositionApplier;
 import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
+import net.tfminecraft.cooking.salad.SaladKind;
 import net.tfminecraft.cooking.sandwich.DishBonus;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
@@ -54,6 +55,7 @@ import net.tfminecraft.cooking.utils.HeldStack;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.NameComposer;
 import net.tfminecraft.cooking.utils.WarmthUtils;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.cooking.utils.StationAddonRules;
@@ -247,6 +249,9 @@ public class PotReference extends CookingReference {
         soup.setBaseFood(scoopFood(soup.getBaseFood()));
         // The pot has no layers: only bonuses that count origins (a poison) apply, over everything in it.
         DishBonus.apply(soup, inputs, food -> null, layer -> false, PotConfig.bonuses());
+        // A named soup (pot.yml kinds) takes the kind as its origin and is called by its name: Borscht.
+        SaladKind kind = PotConfig.kindFor(mashIngredients());
+        if (kind != null) soup.setOrigin(kind.getOrigin());
         int quality = composed.getFinalQuality();
 
         ItemStack output = ItemBuilder.buildSingleWithQuality(soup, ladle, quality);
@@ -255,7 +260,10 @@ public class PotReference extends CookingReference {
             return;
         }
 
-        String displayName = applyNameTemplate(soup, DisplayUtils.getMergedColour(colours), "Soup");
+        String colour = DisplayUtils.getMergedColour(colours);
+        String displayName = kind != null && kind.getName() != null
+                ? DisplayUtils.getNameColour(colour) + NameComposer.formatPrefixes(soup) + kind.getName()
+                : applyNameTemplate(soup, colour, "Soup");
         ItemMeta m = output.getItemMeta();
         m.setDisplayName(StringFormatter.formatHex(displayName));
         m.getPersistentDataContainer().set(Keys.SLOT_DATA, PersistentDataType.STRING, Encoder.getEncodedSlots(f));
@@ -297,12 +305,20 @@ public class PotReference extends CookingReference {
                 if (data.isBeingCooked()) data.stop();
                 continue;
             }
+            // Rice, whose pot option only names an output (boiled rice), is raw once it's in the water.
+            CookingOutput.startRaw(item, method);
             if (!data.isBeingCooked()) {
                 data.start(Method.POT);
             }
             boolean progressed = data.tick();
             if (!progressed) continue;
-            applySlotUpdate(slot, item);
+            FoodItem turned = CookingOutput.turn(item, method);
+            if (turned == item) {
+                applySlotUpdate(slot, item);
+                continue;
+            }
+            entry.setValue(turned);
+            applySlotUpdate(slot, turned, ItemBuilder.displayName(turned));
         }
     }
 
@@ -366,6 +382,8 @@ public class PotReference extends CookingReference {
             if(slot.getCurrentItem() == null) continue;
             ItemStack stack = slot.getCurrentItem();
             FoodItem fi = slots.get(key);
+            // Rice taken out before it has boiled is still rice.
+            CookingOutput.restoreInput(fi, method);
             if (WarmthUtils.isHeated(fi, 3)) {
                 WarmthUtils.applyHot(fi);
             }
@@ -923,10 +941,14 @@ public class PotReference extends CookingReference {
         }
     }
 
-    /** True for food the pot holds as a main: soup pieces and anything that boils. */
+    /**
+     * True for food the pot holds as a main: soup pieces, anything that boils, and what a piece boiled into (boiled
+     * rice, which only fries from then on).
+     */
     public static boolean keepsOnRebuild(FoodItem fi) {
         if (fi == null) return false;
         if (fi.hasTag(Tag.MASHED)) return true;
+        if (WarmthUtils.isHeated(fi, 3)) return true;
         return fi.canBeCooked() && fi.getCookData().hasMethod(Method.POT);
     }
 
