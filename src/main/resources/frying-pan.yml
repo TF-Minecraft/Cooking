@@ -1,0 +1,35 @@
+# The frying pan (furniture frying_pan): dishes that stir in the other fried pieces in the pan when they're taken out.
+#
+# Boiled rice fries into fried rice (types.yml boiled_rice output). Fry it beside a fried egg, cut vegetables,
+# mushrooms, meat or fish in the same pan and take the rice out once it's fried (Cooked, not burnt): it stirs in the
+# other pieces that are fried too (Cooked, not raw or burnt), up to max. Their food is added to the rice's, their
+# origins name it (Egg Fried Rice, Beef Fried Rice), and its quality, freshness and variety come from all of them
+# (composition.yml context FRYING_PAN, with the pan's butter). Pieces still raw stay in the pan. Take the other piece
+# out first to keep it for itself.
+#   dish:  the food taken out that stirs the others in (a Cooking food path)
+#   takes: what it stirs in, any one of these paths
+#   max:   at most this many pieces (and no more than the pan's other places hold)
+stir-ins:
+  fried_rice:
+    dish: c.grain(type=fried_rice)
+    takes:
+      - c.egg
+      - c.food(type=egg)
+      - c.vegetable
+      - c.meat
+      - c.seafood
+    max: 3
+
+# Tags such a dish earns from what it stirred in, written like pot.yml's bonuses (count: origin only).
+bonuses:
+  # Red mushrooms poison it; grilled into fried rice of 3 stars or more, nothing shows.
+  poison:
+    track: poison
+    count: origin
+    origin: Red Mushroom
+    steps:
+      1: tainted
+      2: poisoned
+      3: deadly
+    hide-at-stars: 3
+    hide-tags: [cooked]

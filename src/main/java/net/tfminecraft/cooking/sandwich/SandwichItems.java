@@ -90,6 +90,11 @@ public final class SandwichItems {
         if (food > 0) dish.setBaseNutrition(nutrition / food);
     }
 
+    /** What a food's lasting tags (Cooked, Burnt) multiply its food (or nutrition) by; its age doesn't count. */
+    public static double multiplier(FoodItem food, boolean forFood) {
+        return kept(food, forFood, false);
+    }
+
     /** What a layer's lasting tags (burnt bread) do to it; its age becomes the sandwich's own freshness instead. */
     private static double kept(FoodItem layer, boolean forFood, boolean bakedTogether) {
         double multiplier = 1;
