@@ -9,7 +9,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.FoodScan;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.tlibs.itemscan.ItemScanHandler;
 
@@ -17,7 +17,7 @@ public class TagManager implements ItemScanHandler {
 
     private static final int OFF_HAND_SLOT = 40;
 
-    // Runs on every scanned slot: read the key through the stack's data view instead of copying its whole meta.
+    // Runs on every new or changed slot: read the key through the stack's data view instead of copying its whole meta.
     @Override
     public boolean matches(ItemStack stack) {
         if (stack == null || stack.getType() == Material.AIR) {
@@ -26,27 +26,33 @@ public class TagManager implements ItemScanHandler {
         return stack.getPersistentDataContainer().has(Keys.FOOD_ID, PersistentDataType.STRING);
     }
 
-    // Keep the existing legacy text representation, formatting, and exact-string comparisons.
-    @SuppressWarnings("deprecation")
     @Override
     public void update(Player player, Inventory inventory, int slot, ItemStack stack) {
-        FoodItem food = FoodItem.fromItem(stack);
+        scan(player, inventory, slot, stack);
+    }
+
+    /**
+     * Ages a food and rewrites its slot only when it would look different (FoodScan), reading its meta once. Answers
+     * when TLibs must show it the unchanged item again: when it can next look different, or every scan while it is
+     * held, since held food waits for a visible change.
+     */
+    @Override
+    public long scan(Player player, Inventory inventory, int slot, ItemStack stack) {
+        if (!matches(stack)) {
+            return WHEN_CHANGED;
+        }
+        ItemMeta meta = stack.getItemMeta();
+        FoodItem food = FoodItem.fromItem(stack, meta);
         if (food == null) {
-            return;
+            // An unknown food id: only a reload can change that, and Cooking's reload rescans every slot.
+            return WHEN_CHANGED;
         }
-        if (!food.shouldUpdate()) {
-            ItemMeta meta = stack.getItemMeta();
-            if (meta != null && !ItemUpdater.needsLoreRebuild(
-                    meta.getLore(),
-                    meta.getPersistentDataContainer().has(Keys.LORE_INDEX_MAP, PersistentDataType.STRING))) {
-                return;
-            }
-        }
-        boolean held = isHeldSlot(player, inventory, slot);
-        ItemStack updated = ItemUpdater.updateItem(stack, food, null, held);
+        FoodScan.Result result = FoodScan.update(stack, meta, food, isHeldSlot(player, inventory, slot));
+        ItemStack updated = result.item();
         if (updated != null && !updated.getType().isAir() && inventory != null && slot >= 0) {
             inventory.setItem(slot, updated);
         }
+        return result.recheckAt();
     }
 
     public static boolean isHeldSlot(Player player, Inventory inventory, int slot) {

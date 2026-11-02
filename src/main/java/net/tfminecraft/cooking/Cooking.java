@@ -282,6 +282,10 @@ public class Cooking extends JavaPlugin {
     public void reloadAll() {
         ItemRef.clearCache();
         loadConfigs();
+        if (ItemScanService.get() != null) {
+            // Food skipped as unchanged must be looked at again with the new config.
+            ItemScanService.get().rescanAll();
+        }
         HusbandryLifecycleListener.applyStatsRevision();
         craftingManager.rebuildStations();
         NutritionDrainTask.stop();
