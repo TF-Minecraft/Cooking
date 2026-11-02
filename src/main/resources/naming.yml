@@ -3,6 +3,10 @@ prefix-tracks:
   - sweet
   - butter_salted
   - butter_spiced
+  # Flavourings (tags.yml flavour_*), before the popcorn toppings: Cinnamon Vanilla Hot Chocolate, Vanilla Caramel Popcorn.
+  - flavour_cinnamon
+  - flavour_nutmeg
+  - flavour_vanilla
   # Popcorn machine toppings, in this order: Buttered Sugared Salted Caramel Popcorn.
   - topping_butter
   - topping_sugar

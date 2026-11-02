@@ -354,3 +354,25 @@ popcorn_look:
   look_caramel:
     name: ""
     value: 1
+
+# Flavourings: vanilla, cinnamon and nutmeg boiled into hot chocolate or melted chocolate (condiments.yml extras), and
+# vanilla or cinnamon put in a popcorn machine (popcorn-machines.yml toppings). Each names the food (naming.yml
+# prefix-tracks): Cinnamon Hot Chocolate, Vanilla Milk Chocolate Bar, Cinnamon Caramel Popcorn.
+flavour_vanilla:
+  flavour_vanilla:
+    name: "#f5e6c8Vanilla"
+    value: 0
+    food-mult: 1.03
+    nutrition-mult: 1.05
+flavour_cinnamon:
+  flavour_cinnamon:
+    name: "#c8814aCinnamon"
+    value: 0
+    food-mult: 1.03
+    nutrition-mult: 1.05
+flavour_nutmeg:
+  flavour_nutmeg:
+    name: "#a0704bNutmeg"
+    value: 0
+    food-mult: 1.03
+    nutrition-mult: 1.05

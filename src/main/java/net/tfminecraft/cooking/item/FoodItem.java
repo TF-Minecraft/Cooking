@@ -37,6 +37,8 @@ public class FoodItem {
     private boolean mashable = false;
     private boolean edible = true;
     private boolean edibleWhenCooked = false;
+    /** What drinking it leaves in the hand instead of a glass bottle (types.yml returns: an empty cup), or null. */
+    private String returns;
     private Integer catchSizeCm;
     private String seafoodCutType;
     private String customFishingId;
@@ -88,6 +90,7 @@ public class FoodItem {
         this.mashable = config.getBoolean("mashable", false);
         this.edible = config.getBoolean("edible", true);
         this.edibleWhenCooked = config.getBoolean("edible-when-cooked", false);
+        this.returns = config.getString("returns", null);
         this.typeLevelCarveSequence = config.getString("carve-sequence", null);
 
         String modelId = config.getString("model", null);
@@ -161,6 +164,7 @@ public class FoodItem {
         this.mashable = other.mashable;
         this.edible = other.edible;
         this.edibleWhenCooked = other.edibleWhenCooked;
+        this.returns = other.returns;
         this.catchSizeCm = other.catchSizeCm;
         this.seafoodCutType = other.seafoodCutType;
         this.customFishingId = other.customFishingId;
@@ -271,6 +275,8 @@ public class FoodItem {
     public boolean shouldUpdate() { return update; }
     public boolean isValuable() { return valuable; }
     public boolean isMashable() { return mashable; }
+    /** The item path drinking it leaves instead of a glass bottle (ia.tfmc_cooking:empty_cup), or null for vanilla's. */
+    public String getReturns() { return returns; }
     public void setMashable(boolean mashable) { this.mashable = mashable; }
     public boolean isEdible() {
         if (!edible) {

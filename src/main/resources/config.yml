@@ -150,6 +150,9 @@ colours:
     - origin.cinnamon 8b4513
     - origin.vanilla f5e6c8
     - origin.nutmeg 6b3a1f
+    - origin.cocoa 5c3a21
+    - origin.milk_chocolate 7b4a2d
+    - origin.dark_chocolate 3e2415
     - origin.spice_leaf 2e7d32
     - origin.mustard c9a227
     - origin.potato d4a017
@@ -183,6 +186,7 @@ dictionary:
   liquid: "#3d85c6Liquid"
   thickener: "#d9a95bThickener"
   snack: "#e8c56bSnack"
+  drink: "#8b5a3cDrink"
 
 sauce-dict:
     - ffffff ia.tfmc_cooking:milk|ia.tfmc_cooking:milk_plated

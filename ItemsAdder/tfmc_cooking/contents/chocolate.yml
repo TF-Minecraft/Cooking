@@ -1,0 +1,85 @@
+# Chocolate (Cooking feat/chocolate). Made by scratch/new-foods/chocolate/bin/gen.py. Melted milk chocolate
+# uses the pack's cooking_chocolate; the mould uses the pie tin's tray texture.
+info:
+  namespace: tfmc_cooking
+items:
+  roasted_cocoa_beans:
+    display_name: "Roasted Cocoa Beans"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/roasted_cocoa_beans
+  roasted_cocoa_beans_burnt:
+    display_name: "Burnt Cocoa Beans"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/roasted_cocoa_beans_burnt
+  cocoa_powder:
+    display_name: "Cocoa Powder"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/cocoa_powder
+  cocoa_powder_pile:
+    display_name: "Cocoa Powder (Milling Stone)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/bulk/cocoa_powder
+  hot_chocolate:
+    display_name: "Hot Chocolate"
+    resource:
+      material: POTION
+      generate: false
+      model_path: item/chocolate/hot_chocolate
+    item_flags:
+      - HIDE_POTION_EFFECTS
+  melted_dark_chocolate:
+    display_name: "Melted Dark Chocolate"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/melted_dark_chocolate
+  chocolate_mould:
+    display_name: "Chocolate Mould"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: furniture/chocolate_mould
+  milk_chocolate_bar:
+    display_name: "Milk Chocolate Bar"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/milk_chocolate_bar
+  chocolate_mould_fill_milk_chocolate:
+    display_name: "Milk Chocolate (Mould, Poured)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/mould_fill_milk_chocolate
+  chocolate_mould_bars_milk_chocolate:
+    display_name: "Milk Chocolate Bars (Mould)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/mould_bars_milk_chocolate
+  dark_chocolate_bar:
+    display_name: "Dark Chocolate Bar"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/dark_chocolate_bar
+  chocolate_mould_fill_dark_chocolate:
+    display_name: "Dark Chocolate (Mould, Poured)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/mould_fill_dark_chocolate
+  chocolate_mould_bars_dark_chocolate:
+    display_name: "Dark Chocolate Bars (Mould)"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: item/chocolate/mould_bars_dark_chocolate

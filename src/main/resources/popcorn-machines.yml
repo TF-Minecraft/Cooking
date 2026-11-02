@@ -51,6 +51,15 @@ popcorn_machine:
       item: c.salt
       track: topping_salt
       name: Salt
+    # Flavourings (tags.yml flavour_*), named before the other toppings: Cinnamon Sugared Popcorn.
+    cinnamon:
+      item: c.spice(origin=Cinnamon)
+      track: flavour_cinnamon
+      name: Cinnamon
+    vanilla:
+      item: c.spice(origin=Vanilla)
+      track: flavour_vanilla
+      name: Vanilla
   models:
     kettle: ia.tfmc_cooking:popcorn_machine_kettle
     kettle-loaded: ia.tfmc_cooking:popcorn_machine_kettle_loaded
