@@ -45,7 +45,8 @@ mashes:
     output: mash(type=mashed_potatoes;origin=Potato;tags=freshness.0)
     display: ia.tfmc_cooking:gray
     hint: 4 boiled cut potatoes and a butter
-  # Two boiled rice, a cup of milk and a sweetener (sugar, maple syrup), stirred with the masher: rice pudding.
+  # Two boiled rice, a cup of milk and a sweetener (sugar, maple syrup, honey: its bottle comes back), stirred with the masher:
+  # rice pudding.
   # Cinnamon, vanilla or nutmeg make it Aromatic. Boiled rice, milk and sugar over a pot of water get the mash hint.
   rice_pudding:
     ingredients:

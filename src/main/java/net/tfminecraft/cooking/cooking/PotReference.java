@@ -48,6 +48,7 @@ import net.tfminecraft.cooking.quality.CompositionQualityResolver;
 import net.tfminecraft.cooking.quality.CompositionResult;
 import net.tfminecraft.cooking.salad.SaladKind;
 import net.tfminecraft.cooking.sandwich.DishBonus;
+import net.tfminecraft.cooking.utils.FoodReturns;
 import net.tfminecraft.cooking.utils.DisplayUtils;
 import net.tfminecraft.cooking.utils.Encoder;
 import net.tfminecraft.cooking.utils.FoodParser;
@@ -641,8 +642,11 @@ public class PotReference extends CookingReference {
     }
 
     private void addMashPiece(Player p, ItemStack item) {
+        FoodItem piece = FoodItem.fromItem(item);
         for (String slot : f.getType().getSlots().keySet()) {
             if (add(slot, item)) {
+                // Honey's empty bottle comes back (types.yml returns).
+                FoodReturns.giveBack(p, piece);
                 f.getVariables().put(VAR_MASH, true);
                 InteractibleFurniture.getInstance().getFurnitureManager().markDirty(f);
                 p.swingMainHand();

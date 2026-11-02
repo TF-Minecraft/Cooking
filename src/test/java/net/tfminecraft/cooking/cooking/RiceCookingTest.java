@@ -438,6 +438,8 @@ class RiceCookingTest {
             assertTrue(pudding.takesIngredient(milk, List.of(rice, rice)));
             assertFalse(pudding.complete(List.of(rice, rice, milk)));
             assertTrue(pudding.complete(List.of(rice, milk, rice, sugar)));
+            FoodItem honey = env.foodNamed("honey", "sweetener", "Honey", "Honey");
+            assertTrue(pudding.complete(List.of(rice, milk, rice, honey)), "honey sweetens it as well as sugar");
             assertEquals("aromatic", pudding.extraFor(cinnamon).track());
             assertTrue(PotConfig.isMashIngredient(sugar), "Sugar over a pot of water gets the mash hint");
             // Milk alone starts a pudding, not mashed potatoes, whose milk is only an extra.
