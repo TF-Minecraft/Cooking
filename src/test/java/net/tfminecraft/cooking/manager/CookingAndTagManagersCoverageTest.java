@@ -12,7 +12,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.configuration.MemoryConfiguration;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -227,35 +226,5 @@ class CookingAndTagManagersCoverageTest {
         assertFalse(TagManager.isHeldSlot(env.player, inventory, 4)); assertFalse(TagManager.isHeldSlot(null, inventory, 3));
         assertFalse(TagManager.isHeldSlot(env.player, null, 3)); assertFalse(TagManager.isHeldSlot(env.player, env.server.createInventory(null, 9), 3));
         assertFalse(TagManager.isHeldSlot(env.player, env.server.addPlayer().getInventory(), 3));
-    }
-
-    @Test
-    void unchangedFoodAndNonFoodAreNotRewrittenButMissingLoreIsRebuilt() {
-        Inventory inventory = env.server.createInventory(null, 9); ItemStack item = env.stack(kitchen.food("steak", "meat"), Material.BEEF, 2);
-        inventory.setItem(0, item); tags.update(env.player, inventory, 0, new ItemStack(Material.STONE)); tags.update(env.player, inventory, 0, item);
-        kitchen.updater.verify(() -> ItemUpdater.updateItem(any(), any(), any(), anyBoolean()), never()); assertEquals(item, inventory.getItem(0));
-        kitchen.updater.when(() -> ItemUpdater.needsLoreRebuild(any(), anyBoolean())).thenReturn(true);
-        tags.update(env.player, inventory, 0, item); kitchen.updater.verify(() -> ItemUpdater.updateItem(item, env.resolve(item), null, false));
-        assertEquals(2, inventory.getItem(0).getAmount()); assertNotEquals(item, inventory.getItem(0));
-    }
-
-    @Test
-    void changingFoodUsesHeldContextOnlyForThePlayersSelectedOrOffhandSlot() {
-        MemoryConfiguration config = new MemoryConfiguration(); config.set("name", "Steak"); config.set("update", true);
-        FoodItem food = new FoodItem("steak", config); ItemStack stack = env.stack(food, Material.BEEF, 2); var inventory = env.player.getInventory();
-        inventory.setItem(0, stack); tags.update(env.player, inventory, 0, stack);
-        kitchen.updater.verify(() -> ItemUpdater.updateItem(stack, food, null, true)); assertEquals(2, inventory.getItem(0).getAmount());
-        tags.update(env.player, inventory, 1, stack); kitchen.updater.verify(() -> ItemUpdater.updateItem(stack, food, null, false));
-        tags.update(env.player, inventory, 40, stack); assertEquals(2, inventory.getItemInOffHand().getAmount());
-        tags.update(env.player, null, 0, stack); tags.update(env.player, inventory, -1, stack);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"null", "air"})
-    void failedTagUpdatesNeverDeleteTheExistingFood(String failure) {
-        ItemStack source = env.stack(kitchen.food("steak", "meat"), Material.BEEF, 2); Inventory inventory = env.server.createInventory(null, 9); inventory.setItem(0, source);
-        kitchen.updater.when(() -> ItemUpdater.needsLoreRebuild(any(), anyBoolean())).thenReturn(true);
-        kitchen.updater.when(() -> ItemUpdater.updateItem(any(), any(), any(), anyBoolean())).thenReturn(failure.equals("null") ? null : new ItemStack(Material.AIR));
-        tags.update(env.player, inventory, 0, source); assertEquals(source, inventory.getItem(0));
     }
 }

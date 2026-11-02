@@ -26,6 +26,16 @@ public final class LegacyFishScan implements ItemScanHandler {
         return isFood(data) ? SeafoodWholeItems.carriesCatchData(data) : stack.getType() == Material.COD;
     }
 
+    /** A slot that doesn't match never will until its item changes; a matching one is checked every scan, as before. */
+    @Override
+    public long scan(Player player, Inventory inventory, int slot, ItemStack stack) {
+        if (!matches(stack)) {
+            return WHEN_CHANGED;
+        }
+        update(player, inventory, slot, stack);
+        return EVERY_SCAN;
+    }
+
     @Override
     public void update(Player player, Inventory inventory, int slot, ItemStack stack) {
         if (inventory == null || slot < 0) {
