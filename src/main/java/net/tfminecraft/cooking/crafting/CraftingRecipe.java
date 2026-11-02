@@ -24,6 +24,10 @@ public class CraftingRecipe {
     private boolean shareFood;
     /** On a station with fill-models, its inputs show as the rising fill. False keeps them as themselves (olives in the cheese press). */
     private boolean fill;
+    /** One of each input line makes a unit (boiled rice and a fish filet roll into sushi), whatever their origins. */
+    private boolean combine;
+    /** The input line (1 = the first) whose origin fills the output's {origin}; 0 for none. */
+    private int originFrom;
 
     public CraftingRecipe(String id, ConfigurationSection config) {
         this.id = id;
@@ -36,13 +40,20 @@ public class CraftingRecipe {
         this.inherit = config.getBoolean("inherit", false);
         this.shareFood = config.getBoolean("share-food", false);
         this.fill = config.getBoolean("fill", true);
+        this.combine = config.getBoolean("combine", false);
+        this.originFrom = config.getInt("origin-from", 0);
     }
 
     public boolean canAdd(ItemStack item) {
-        for(String input : inputs) {
-            if(TLibs.getItemAPI().getChecker().checkItemWithPath(item, input)) return true;
+        return line(item) >= 0;
+    }
+
+    /** The input line this item fills (0 = the first), or -1. */
+    public int line(ItemStack item) {
+        for (int i = 0; i < inputs.size(); i++) {
+            if (TLibs.getItemAPI().getChecker().checkItemWithPath(item, inputs.get(i))) return i;
         }
-        return false;
+        return -1;
     }
 
     public String getId() {
@@ -74,5 +85,11 @@ public class CraftingRecipe {
     }
     public boolean fills() {
         return fill;
+    }
+    public boolean combines() {
+        return combine;
+    }
+    public int getOriginFrom() {
+        return originFrom;
     }
 }

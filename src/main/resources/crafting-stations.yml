@@ -18,6 +18,10 @@
 #     (Sweet, Cooked, its age) that the output line doesn't set. The station takes one such input at a time.
 #   share-food: true  with inherit, each output takes an even share of its input's food (its food over yield) at
 #     its nutrition, so a pie's slices hold what the pie did instead of their type's own food.
+#   combine: true  one of each input line makes a unit, whatever their origins (boiled rice and a fish filet), as
+#     many units as every line has; the rest stays on the station. On a single-origin station only the inputs of one
+#     line must share their origin.
+#   origin-from: <n>  the output's {origin} is the origin of what fills input line n (1 = the first).
 cutting_board:
   furniture: cutting_board
   single-origin: true
@@ -69,6 +73,15 @@ cutting_board:
       inputs:
         - c.seafood(type=seafood_whole)
       output: seafood(type=seafood_fish_filet;origin={origin};tags=freshness.0)
+    # A boiled rice and a raw fish filet roll into two pieces of sushi, named for the fish: Salmon Sushi.
+    sushi:
+      combine: true
+      origin-from: 2
+      yield: 2
+      inputs:
+        - c.grain(type=boiled_rice;tags=cooked.3)
+        - c.seafood(type=seafood_fish_filet;tags=cooked.0)
+      output: meal(type=sushi;origin={origin};tags=freshness.0)
 # Chocolate mould: right-click it with a bowl of melted chocolate (condiments.yml) to pour it in (you keep the bowl);
 # it lies in the mould as one slab, in its own colour per kind ({origin}: milk_chocolate, dark_chocolate). Hit the mould
 # with the cutting knife to cut it into 4 bars, which keep its kind and flavourings (Vanilla Milk Chocolate Bar) and
