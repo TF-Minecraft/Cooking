@@ -260,8 +260,13 @@ class CookingLifecycleTest {
     @Test void reloadRefreshesConfigStationsAndPeriodicNutritionAndHusbandryTasks() {
         Cooking plugin = loadPlugin();
         server.getScheduler().performOneTick();
+        ItemScanService scan = mock(ItemScanService.class);
+        scans.when(ItemScanService::get).thenReturn(scan);
 
         plugin.reloadAll();
+
+        // Food the scan skipped as unchanged is looked at again with the new config.
+        verify(scan).rescanAll();
 
         verify(built(ConfigLoader.class), times(2)).loadConfig(new File(plugin.getDataFolder(), "config.yml"));
         verify(built(CraftingManager.class)).rebuildStations();

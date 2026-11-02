@@ -733,8 +733,12 @@ public class FoodItem {
     // --------------------------------------------------------------
     public static FoodItem fromItem(ItemStack stack) {
         if (stack == null || !stack.hasItemMeta()) return null;
+        return fromItem(stack, stack.getItemMeta());
+    }
 
-        ItemMeta meta = stack.getItemMeta();
+    /** As {@link #fromItem(ItemStack)}, reading the stack's meta the caller already has, so it isn't copied again. */
+    public static FoodItem fromItem(ItemStack stack, ItemMeta meta) {
+        if (stack == null || meta == null) return null;
         var pdc = meta.getPersistentDataContainer();
 
         String id = pdc.get(Keys.FOOD_ID, PersistentDataType.STRING);
