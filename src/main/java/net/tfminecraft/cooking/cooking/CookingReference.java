@@ -184,7 +184,7 @@ public class CookingReference {
                 if (fi == null || !fi.canBeCooked() || !fi.getCookData().hasMethod(method)) {
                     return;
                 }
-                if (!fi.hasTag(Tag.RAW)) {
+                if (!fi.hasTag(Tag.RAW) && !CookingOutput.turnsHere(fi, method)) {
                     return;
                 }
                 if (!fi.getCookData().isBeingCooked()) {
@@ -210,7 +210,7 @@ public class CookingReference {
             return;
         }
         CookingOutput.startRaw(fi, method);
-        if(!fi.hasTag(Tag.RAW)) {
+        if(!fi.hasTag(Tag.RAW) && !CookingOutput.turnsHere(fi, method)) {
             e.setCancelled(true);
             return;
         }

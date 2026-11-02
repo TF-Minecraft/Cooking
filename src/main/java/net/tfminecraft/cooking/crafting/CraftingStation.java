@@ -1,11 +1,14 @@
 package net.tfminecraft.cooking.crafting;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.bukkit.Sound;
@@ -141,7 +144,10 @@ public class CraftingStation {
         FoodItem fi = FoodItem.fromItem(i);
         if(fi == null) return true;
 
+        // A combining recipe (sushi) mixes its lines' origins: only the items of one line must share theirs.
+        CraftingRecipe combining = combining(i);
         for(ItemStack stack : slots.values()) {
+            if (combining != null && combining.line(stack) != combining.line(i)) continue;
             FoodItem fs = FoodItem.fromItem(stack);
             if(fs != null && (fs.getOrigin() == null
                     ? fi.getOrigin() != null : !fs.getOrigin().equalsIgnoreCase(fi.getOrigin()))) {
@@ -155,13 +161,22 @@ public class CraftingStation {
         slots.put(slotId, item);
 
         if(currentRecipe == null) {
-            for(CraftingRecipe cr : recipes) {
-                if(cr.canAdd(item)) {
-                    currentRecipe = cr;
-                    break;
-                }
-            }
+            currentRecipe = recipeFor(item);
         }
+    }
+
+    /** The first recipe that takes this item, or null. */
+    private CraftingRecipe recipeFor(ItemStack item) {
+        for (CraftingRecipe cr : recipes) {
+            if (cr.canAdd(item)) return cr;
+        }
+        return null;
+    }
+
+    /** The combining recipe this item goes into (the station's, or the one it would start), or null. */
+    private CraftingRecipe combining(ItemStack item) {
+        CraftingRecipe recipe = currentRecipe != null ? currentRecipe : recipeFor(item);
+        return recipe != null && recipe.combines() ? recipe : null;
     }
 
     public void rebuildFromFurniture() {
@@ -261,6 +276,10 @@ public class CraftingStation {
             cutInPlace(p, recipe);
             return;
         }
+        if (recipe.combines()) {
+            combine(p, recipe);
+            return;
+        }
 
         String origin = "none";
         List<FoodItem> consumedInputs = new ArrayList<>();
@@ -309,6 +328,14 @@ public class CraftingStation {
             f.getLoc().getWorld().dropItem(f.getLoc(), poured ? asHeld(remaining) : remaining)
                     .setVelocity(new Vector(Math.random()*0.2-0.1, 0.1, Math.random()*0.2-0.1));
         }
+        place(p, recipe, item, output, displayData);
+    }
+
+    /**
+     * Puts a recipe's output on the station in its first free input slot (or drops it when there's none) and picks the
+     * recipe that output could go on to.
+     */
+    private void place(Player p, CraftingRecipe recipe, FoodItem item, ItemStack output, DisplayData displayData) {
         currentRecipe = null;
         f.getLoc().getWorld().playSound(f.getLoc(), Sound.BLOCK_SWEET_BERRY_BUSH_PICK_BERRIES, 1f, 1f);
 
@@ -353,12 +380,63 @@ public class CraftingStation {
         }
     }
 
+    /**
+     * A combining recipe takes one of each input line per unit (sushi: a boiled rice and a fish filet), as many units as
+     * every line has, and leaves the rest where it lies. The output's {origin} is its origin-from line's (Salmon).
+     */
+    private void combine(Player p, CraftingRecipe recipe) {
+        int lines = recipe.getInputs().size();
+        int[] have = new int[lines];
+        for (ItemStack stack : slots.values()) {
+            int line = recipe.line(stack);
+            if (line >= 0) have[line] += stack.getAmount();
+        }
+        int units = Arrays.stream(have).min().orElse(0);
+        if (units == 0) return;
+        int[] need = new int[lines];
+        Arrays.fill(need, units);
+        String origin = "none";
+        List<FoodItem> consumed = new ArrayList<>();
+        Map<String, Integer> taken = new LinkedHashMap<>();
+        for (String slotId : new TreeSet<>(slots.keySet())) {
+            ItemStack source = slots.get(slotId);
+            int line = recipe.line(source);
+            if (line < 0 || need[line] == 0) continue;
+            int take = Math.min(need[line], source.getAmount());
+            need[line] -= take;
+            taken.put(slotId, take);
+            FoodItem fi = FoodItem.fromItem(source);
+            for (int i = 0; fi != null && i < take; i++) consumed.add(fi);
+            if (fi != null && line == recipe.getOriginFrom() - 1) origin = fi.getOrigin();
+        }
+        // Prepare the complete result before taking any ingredient from the board.
+        Built built = build(p, recipe, consumed, origin);
+        if (built == null) return;
+        built.stack().setAmount(units * recipe.getYield());
+        var modelData = built.food().getModelData();
+        DisplayData displayData = modelData == null ? null : modelData.getDisplayData(f.getId());
+        taken.forEach((slotId, take) -> {
+            ItemStack source = slots.get(slotId);
+            if (take < source.getAmount()) {
+                source.setAmount(source.getAmount() - take);
+                f.getActiveSlot(slotId).ifPresent(slot -> slot.setCurrentItem(source));
+                return;
+            }
+            f.getActiveSlot(slotId).ifPresent(PlacedSlot::clearModel);
+            f.removeActiveSlot(slotId);
+            slots.remove(slotId);
+        });
+        place(p, recipe, built.food(), built.stack(), displayData);
+        // What's left of one line waits on the board for more of the others.
+        if (currentRecipe == null && slots.values().stream().anyMatch(recipe::canAdd)) currentRecipe = recipe;
+    }
+
     private record Built(FoodItem food, ItemStack stack) {}
 
     /** The recipe's output made from these inputs, or null when its output line doesn't make an item. */
     private Built build(Player p, CraftingRecipe recipe, List<FoodItem> inputs, String origin) {
         String data = recipe.getOutput();
-        if(isSingleOrigin() && origin != null && !origin.equalsIgnoreCase("none")) {
+        if((isSingleOrigin() || recipe.getOriginFrom() > 0) && origin != null && !origin.equalsIgnoreCase("none")) {
             data = data.replace("{origin}", origin);
         }
 

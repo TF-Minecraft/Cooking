@@ -328,6 +328,23 @@ categories:
       - tfmc_cooking:popcorn_buttered
       - tfmc_cooking:popcorn_machine
       - tfmc_cooking:rice
+      - tfmc_cooking:rice_rotten
+      - tfmc_cooking:rice_grains
+      - tfmc_cooking:boiled_rice
+      - tfmc_cooking:boiled_rice_burnt
+      - tfmc_cooking:boiled_rice_rotten
+      - tfmc_cooking:boiled_rice_heap
+      - tfmc_cooking:boiled_rice_heap_burnt
+      - tfmc_cooking:boiled_rice_heap_rotten
+      - tfmc_cooking:fried_rice
+      - tfmc_cooking:fried_rice_burnt
+      - tfmc_cooking:fried_rice_rotten
+      - tfmc_cooking:fried_rice_heap
+      - tfmc_cooking:fried_rice_heap_burnt
+      - tfmc_cooking:rice_pudding
+      - tfmc_cooking:rice_pudding_rotten
+      - tfmc_cooking:sushi
+      - tfmc_cooking:sushi_rotten
       - tfmc_cooking:stock
       - tfmc_cooking:sunflower_seeds
       - tfmc_cooking:strawberry_jam
