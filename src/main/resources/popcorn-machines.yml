@@ -51,6 +51,10 @@ popcorn_machine:
       item: c.salt
       track: topping_salt
       name: Salt
+    honey:
+      item: c.sweetener(type=honey)
+      track: topping_honey
+      name: Honey
   models:
     kettle: ia.tfmc_cooking:popcorn_machine_kettle
     kettle-loaded: ia.tfmc_cooking:popcorn_machine_kettle_loaded

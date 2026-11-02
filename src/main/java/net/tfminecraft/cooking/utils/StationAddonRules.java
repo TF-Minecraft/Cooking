@@ -49,7 +49,7 @@ public final class StationAddonRules {
         }
         if (hasSweetener(slots)) {
             if (player != null) {
-                player.sendMessage("§cSugar is already in the pan.");
+                player.sendMessage("§cThe pan already has a sweetener.");
             }
             return false;
         }

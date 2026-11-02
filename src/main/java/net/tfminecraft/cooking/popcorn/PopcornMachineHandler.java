@@ -18,6 +18,7 @@ import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.TrackLoader;
 import net.tfminecraft.cooking.popcorn.PopcornMachineState.Stage;
 import net.tfminecraft.cooking.utils.FoodParser;
+import net.tfminecraft.cooking.utils.FoodReturns;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
@@ -116,6 +117,8 @@ public final class PopcornMachineHandler implements Listener {
             }
             PopcornMachineState.addTopping(furniture, FoodParser.toString(food, 1));
             player.getInventory().setItemInMainHand(less(hand, 1));
+            // Honey's empty bottle comes back (types.yml returns).
+            FoodReturns.giveBack(player, food);
         }
         PopcornMachineState.setStage(furniture, Stage.LOADING);
         show(furniture, machine);

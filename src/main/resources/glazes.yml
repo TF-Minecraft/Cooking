@@ -1,0 +1,13 @@
+# Glazes: right-click the roast on a fire pit or a meat hook while holding a glaze. One glaze is used (honey gives back
+# its empty bottle, types.yml returns) and the roast gets the glaze's tags.yml track: a lore line, a food and nutrition
+# bonus, and once cooked its glazed look (models.yml roast states tagged with the track's step). Carving passes the
+# glaze on to every cut. A roast takes one glaze, raw or while it cooks, but not once it has gone rotten.
+#
+# roasts:  the Cooking food paths that can be glazed (a sausage chain on the hook can't).
+# glazes:  <id>: item (or items, a list) is the Cooking food paths of the glaze; track is the tags.yml track it gives.
+roasts:
+  - c.meat(type=roast)
+glazes:
+  honey:
+    item: c.sweetener(type=honey)
+    track: honey_glazed

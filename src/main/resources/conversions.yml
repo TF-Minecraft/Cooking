@@ -28,6 +28,7 @@ conversions:
   - ia.tfmc_cooking:garlic vegetable(type=vegetable_chop_only;origin=Garlic;tags=freshness.0)
   - ia.tfmc_cooking:salt salt(type=seasoning_1;origin=Salt)
   - v.sugar sweetener(type=sweetener_1;origin=Sugar)
+  - v.honey_bottle sweetener(type=honey;origin=Honey)
   - ia.tfmc_cooking:basil spice(type=spice_1;origin=Basil;tags=freshness.0)
   - ia.tfmc_cooking:black_pepper pepper(type=spice_1;origin=Black Pepper;tags=freshness.0)
   - ia.tfmc_cooking:cinnamon spice(type=spice_1;origin=Cinnamon;tags=freshness.0)

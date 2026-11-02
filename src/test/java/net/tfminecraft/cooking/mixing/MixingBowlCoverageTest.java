@@ -193,6 +193,18 @@ class MixingBowlCoverageTest {
         e.hold(new ItemStack(Material.STONE)); handler.onInteract(s.interact()); assertTrue(e.messages.getLast().contains("doesn't go"));
     }
 
+    @Test void honeySweetensTheDoughAndGivesBackItsEmptyBottle() {
+        prepare();
+        org.bukkit.configuration.MemoryConfiguration type = new org.bukkit.configuration.MemoryConfiguration();
+        type.set("name", "Honey"); type.set("update", false); type.set("returns", "v.glass_bottle");
+        FoodItem honey = new FoodItem("honey", type); honey.setCategory("sweetener"); honey.setOrigin("Honey"); honey.setQualityRange(5, 5);
+        when(e.itemApi.getCreator().getItemFromPath("v.glass_bottle")).thenAnswer(call -> new ItemStack(Material.GLASS_BOTTLE));
+        e.hold(e.stack(honey, Material.HONEY_BOTTLE, 2)); handler.onInteract(s.interact());
+        assertTrue(MixingBowlState.hasSugar(s.f)); assertEquals("Honey", MixingBowlState.getSugarOrigin(s.f)); assertEquals(5, MixingBowlState.getSugarQuality(s.f));
+        assertEquals(1, e.player.getInventory().getItemInMainHand().getAmount());
+        assertTrue(e.player.getInventory().contains(Material.GLASS_BOTTLE), "the empty bottle comes back");
+    }
+
     @Test void fruitWithoutOriginIsRejectedAndBlankIngredientOriginsUseDocumentedFallbacks() {
         add(e.food("flour", "grain", " ", 3, -1), Material.WHEAT); addWater(Material.WATER_BUCKET, 1); add(e.food("yeast", "ingredient", null, 3, -1), Material.BROWN_MUSHROOM);
         assertEquals("Wheat", MixingBowlState.getFlourOrigin(s.f)); assertEquals("Yeast", MixingBowlState.getYeastOrigin(s.f));

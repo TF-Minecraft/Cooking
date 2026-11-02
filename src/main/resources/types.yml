@@ -364,6 +364,17 @@ sweetener_1:
   nutrition: 0
   update: false
 
+###Honey: a vanilla honey bottle picked up (conversions.yml). A sweetener like sugar, so it goes wherever sugar does
+# (dough, sauces, catsup, the popcorn machine), and it glazes roasts (glazes.yml). It never spoils. A station that uses
+# it gives back the empty bottle (returns); drunk from the bottle it still feeds a little and cures poison, as vanilla.
+honey:
+  name: "#e8a317Honey"
+  model: honey
+  food: 6
+  nutrition: 2
+  update: false
+  returns: v.glass_bottle
+
 ###Spices — raw
 spice_1:
   name: "#5dad58{inherit}"
