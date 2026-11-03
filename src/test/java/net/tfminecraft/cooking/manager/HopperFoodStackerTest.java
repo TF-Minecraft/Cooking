@@ -1,9 +1,9 @@
 package net.tfminecraft.cooking.manager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,6 +46,8 @@ class HopperFoodStackerTest {
     private Inventory hopper;
     private Inventory chest;
     private long now;
+    private final List<Runnable> ticks = new ArrayList<>();
+    private final HopperFoodStacker stacker = new HopperFoodStacker(ticks::add);
 
     @BeforeEach
     void setUp() {
@@ -100,32 +102,62 @@ class HopperFoodStackerTest {
     /** A hopper pushing moved into chest, after Cooking's listener ran. */
     private InventoryMoveItemEvent push(ItemStack moved) {
         InventoryMoveItemEvent event = new InventoryMoveItemEvent(hopper, moved, chest, true);
-        new HopperFoodStacker().onMove(event);
+        stacker.onMove(event);
         return event;
+    }
+
+    /** What vanilla does with an item that matches slot 0 exactly. */
+    private static void addTo(Inventory inventory, int slot, ItemStack item) {
+        ItemStack current = inventory.getItem(slot);
+        assertTrue(current.isSimilar(item));
+        current.setAmount(current.getAmount() + item.getAmount());
+        inventory.setItem(slot, current);
+    }
+
+    private void tick() {
+        List<Runnable> due = new ArrayList<>(ticks);
+        ticks.clear();
+        due.forEach(Runnable::run);
     }
 
     @Test
     void aFresherEggTakesTheStoredStacksDataSoItStacks() {
         chest.setItem(0, egg(3, 600));
-        ItemStack moved = egg(1, 0);
 
-        InventoryMoveItemEvent event = push(moved);
+        InventoryMoveItemEvent event = push(egg(1, 0));
 
         assertTrue(event.getItem().isSimilar(chest.getItem(0)));
         assertEquals(1, event.getItem().getAmount());
         assertEquals(now - 600_000L, clock(chest.getItem(0)));
-        assertEquals(3, chest.getItem(0).getAmount());
+        assertTrue(ticks.isEmpty());
     }
 
     @Test
-    void anOlderEggGivesTheStoredStackItsDataSoNothingGetsFresher() {
-        chest.setItem(0, egg(3, 0));
+    void anOlderEggStacksAndTheStackTakesItsDataOnTheNextTick() {
+        ItemStack stored = egg(3, 0);
+        chest.setItem(0, stored);
         ItemStack moved = egg(1, 600);
 
         InventoryMoveItemEvent event = push(moved);
+        // Nothing in the chest changes while the move can still be cancelled.
+        assertTrue(chest.getItem(0).isSimilar(stored));
+        assertTrue(event.getItem().isSimilar(stored));
+        addTo(chest, 0, event.getItem());
+        tick();
 
-        assertTrue(event.getItem().isSimilar(moved));
         assertTrue(chest.getItem(0).isSimilar(moved));
+        assertEquals(4, chest.getItem(0).getAmount());
+    }
+
+    @Test
+    void aCancelledMoveOfAnOlderEggLeavesTheStackAlone() {
+        ItemStack stored = egg(3, 0);
+        chest.setItem(0, stored);
+
+        push(egg(1, 600));
+        tick();
+
+        assertTrue(chest.getItem(0).isSimilar(stored));
         assertEquals(3, chest.getItem(0).getAmount());
     }
 
@@ -138,7 +170,7 @@ class HopperFoodStackerTest {
         InventoryMoveItemEvent event = push(egg(1, 10, 0, 1));
 
         assertTrue(event.getItem().isSimilar(stored));
-        assertTrue(chest.getItem(0).isSimilar(stored));
+        assertTrue(ticks.isEmpty());
     }
 
     @Test
@@ -146,10 +178,7 @@ class HopperFoodStackerTest {
         chest.setItem(1, egg(3, 600));
         ItemStack moved = egg(1, 0);
 
-        InventoryMoveItemEvent event = push(moved);
-
-        assertTrue(event.getItem().isSimilar(moved));
-        assertEquals(now - 600_000L, clock(chest.getItem(1)));
+        assertTrue(push(moved).getItem().isSimilar(moved));
     }
 
     @Test
@@ -160,10 +189,7 @@ class HopperFoodStackerTest {
         chest.setItem(0, copy);
         chest.setItem(1, egg(3, 600));
 
-        InventoryMoveItemEvent event = push(moved);
-
-        assertTrue(event.getItem().isSimilar(moved));
-        assertEquals(now - 600_000L, clock(chest.getItem(1)));
+        assertTrue(push(moved).getItem().isSimilar(moved));
     }
 
     @Test
@@ -173,9 +199,8 @@ class HopperFoodStackerTest {
         chest.setItem(2, new ItemStack(Material.STONE));
         chest.setItem(3, egg(2, 0, 600, 3));
         chest.setItem(4, egg(2, 300));
-        ItemStack moved = egg(1, 0);
 
-        InventoryMoveItemEvent event = push(moved);
+        InventoryMoveItemEvent event = push(egg(1, 0));
 
         assertTrue(event.getItem().isSimilar(chest.getItem(4)));
         assertEquals(16, chest.getItem(0).getAmount());
@@ -190,10 +215,7 @@ class HopperFoodStackerTest {
         chest.setItem(0, named);
         ItemStack moved = egg(1, 0);
 
-        InventoryMoveItemEvent event = push(moved);
-
-        assertTrue(event.getItem().isSimilar(moved));
-        assertTrue(chest.getItem(0).isSimilar(named));
+        assertTrue(push(moved).getItem().isSimilar(moved));
     }
 
     @Test
@@ -220,10 +242,9 @@ class HopperFoodStackerTest {
     void aHopperPullingIntoItselfStacksToo() {
         Inventory above = server.createInventory(null, 27);
         hopper.setItem(0, egg(2, 600));
-        ItemStack moved = egg(1, 0);
-        InventoryMoveItemEvent event = new InventoryMoveItemEvent(above, moved, hopper, false);
+        InventoryMoveItemEvent event = new InventoryMoveItemEvent(above, egg(1, 0), hopper, false);
 
-        new HopperFoodStacker().onMove(event);
+        stacker.onMove(event);
 
         assertTrue(event.getItem().isSimilar(hopper.getItem(0)));
     }
@@ -235,7 +256,7 @@ class HopperFoodStackerTest {
         ItemStack moved = egg(1, 0);
         InventoryMoveItemEvent event = new InventoryMoveItemEvent(dropper, moved, chest, true);
 
-        new HopperFoodStacker().onMove(event);
+        stacker.onMove(event);
 
         assertTrue(event.getItem().isSimilar(moved));
     }
@@ -247,7 +268,7 @@ class HopperFoodStackerTest {
         ItemStack moved = egg(1, 0);
         InventoryMoveItemEvent event = new InventoryMoveItemEvent(hopper, moved, furnace, true);
 
-        new HopperFoodStacker().onMove(event);
+        stacker.onMove(event);
 
         assertTrue(event.getItem().isSimilar(moved));
     }
@@ -258,24 +279,49 @@ class HopperFoodStackerTest {
         hopper.setItem(0, egg(2, 600));
         Item ground = world.dropItem(world.getSpawnLocation(), egg(3, 0));
 
-        new HopperFoodStacker().onPickup(new InventoryPickupItemEvent(hopper, ground));
+        stacker.onPickup(new InventoryPickupItemEvent(hopper, ground));
+        addTo(hopper, 0, ground.getItemStack());
+        ground.remove();
+        tick();
 
-        assertTrue(ground.getItemStack().isSimilar(hopper.getItem(0)));
-        assertEquals(3, ground.getItemStack().getAmount());
-        assertEquals(now - 600_000L, clock(ground.getItemStack()));
+        assertEquals(now - 600_000L, clock(hopper.getItem(0)));
+        assertEquals(5, hopper.getItem(0).getAmount());
     }
 
     @Test
-    void aHopperPickingUpAnOlderEggAgesTheStoredStack() {
+    void aHopperPickingUpAnOlderEggAgesTheStackOnceItIsIn() {
         WorldMock world = server.addSimpleWorld("world");
-        hopper.setItem(0, egg(2, 0));
+        ItemStack stored = egg(2, 0);
+        hopper.setItem(0, stored);
         ItemStack old = egg(1, 600);
         Item ground = world.dropItem(world.getSpawnLocation(), old);
 
-        new HopperFoodStacker().onPickup(new InventoryPickupItemEvent(hopper, ground));
+        stacker.onPickup(new InventoryPickupItemEvent(hopper, ground));
+        assertTrue(hopper.getItem(0).isSimilar(stored));
+        assertTrue(ground.getItemStack().isSimilar(stored));
+        addTo(hopper, 0, ground.getItemStack());
+        ground.remove();
+        tick();
 
-        assertTrue(ground.getItemStack().isSimilar(old));
         assertTrue(hopper.getItem(0).isSimilar(old));
+        assertEquals(3, hopper.getItem(0).getAmount());
+    }
+
+    @Test
+    void aCancelledPickupGetsItsOwnDataBack() {
+        WorldMock world = server.addSimpleWorld("world");
+        ItemStack stored = egg(2, 600);
+        hopper.setItem(0, stored);
+        ItemStack fresh = egg(3, 0);
+        Item ground = world.dropItem(world.getSpawnLocation(), fresh);
+
+        stacker.onPickup(new InventoryPickupItemEvent(hopper, ground));
+        assertTrue(ground.getItemStack().isSimilar(stored));
+        tick();
+
+        assertTrue(ground.getItemStack().isSimilar(fresh));
+        assertEquals(3, ground.getItemStack().getAmount());
+        assertTrue(hopper.getItem(0).isSimilar(stored));
         assertEquals(2, hopper.getItem(0).getAmount());
     }
 
@@ -287,20 +333,43 @@ class HopperFoodStackerTest {
         ItemStack fresh = egg(1, 0);
         Item ground = world.dropItem(world.getSpawnLocation(), fresh);
 
-        new HopperFoodStacker().onPickup(new InventoryPickupItemEvent(furnace, ground));
+        stacker.onPickup(new InventoryPickupItemEvent(furnace, ground));
 
         assertTrue(ground.getItemStack().isSimilar(fresh));
+        assertTrue(ticks.isEmpty());
     }
 
     @Test
-    void onlyAMoveThatNeedsNewDataGetsACopy() {
-        assertNull(HopperFoodStacker.stackable(chest, null));
-        assertNull(HopperFoodStacker.stackable(chest, new ItemStack(Material.AIR)));
+    void foodThatWouldNotAllFitIsLeftToVanilla() {
+        hopper.setItem(0, egg(14, 0));
+        assertNull(HopperFoodStacker.merge(hopper, egg(3, 600)));
+        assertNotNull(HopperFoodStacker.merge(hopper, egg(2, 600)));
+    }
+
+    @Test
+    void theStackIsNotAgedWhenItDidNotGrow() {
+        ItemStack stored = egg(3, 0);
+        chest.setItem(0, stored);
+        HopperFoodStacker.Merge merge = HopperFoodStacker.merge(chest, egg(1, 600));
+        assertTrue(merge.incomingIsOlder());
+
+        merge.ageStack();
+        assertTrue(chest.getItem(0).isSimilar(stored));
+        chest.setItem(0, null);
+        merge.ageStack();
+        assertNull(chest.getItem(0));
+    }
+
+    @Test
+    void onlyFoodThatNeedsNewDataGetsAMerge() {
+        assertNull(HopperFoodStacker.merge(chest, null));
+        assertNull(HopperFoodStacker.merge(chest, new ItemStack(Material.AIR)));
         ItemStack moved = egg(1, 0);
-        assertNull(HopperFoodStacker.stackable(chest, moved));
+        assertNull(HopperFoodStacker.merge(chest, moved));
         chest.setItem(0, egg(2, 600));
-        ItemStack out = HopperFoodStacker.stackable(chest, moved);
-        assertNotNull(out);
-        assertSame(Material.EGG, out.getType());
+        HopperFoodStacker.Merge merge = HopperFoodStacker.merge(chest, moved);
+        assertNotNull(merge);
+        assertFalse(merge.incomingIsOlder());
+        assertEquals(0, merge.slot());
     }
 }
