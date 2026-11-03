@@ -1,8 +1,5 @@
 package net.tfminecraft.cooking.manager;
 
-import java.util.function.Consumer;
-
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,7 +11,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 
-import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.item.FoodItem;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.Keys;
@@ -23,57 +19,52 @@ import net.tfminecraft.cooking.utils.Keys;
  * Aging foods carry their own clock, so hoppers, which only stack exact copies, give every piece
  * of the same food its own slot: eggs laid an hour apart fill a hopper five slots at a time. When a
  * hopper moves food into a storage block, or picks it up off the ground, and the slot vanilla would
- * fill first holds an equal food that only aged differently, the incoming food takes the stored
- * stack's data so vanilla stacks it there. Vanilla still picks the slot.
+ * fill first holds an equal food that only aged differently, the fresher side takes the older one's
+ * data so vanilla stacks them there. Food never gets fresher, and vanilla still does the moving.
  *
- * <p>Other plugins may cancel the event after this listener, so it changes only what a cancelled
- * event leaves untouched: the moved item, which a cancelled move discards, or the ground item, which
- * is put back on the next tick if it is still there. When the incoming food was the older one, the
- * stack takes its data on the next tick, once the slot has really grown, so food never gets fresher.
+ * <p>Other plugins may cancel these events, so nothing outside the event changes before they are
+ * done. A fresher moved item takes the stored data through the event at HIGHEST, which a cancelled
+ * move throws away. Changes to the stored stack or to a ground item wait for MONITOR, which only
+ * runs for an event nothing cancelled; vanilla adds the item straight after it.
  */
 public class HopperFoodStacker implements Listener {
 
-    private final Consumer<Runnable> nextTick;
-
-    public HopperFoodStacker() {
-        this(task -> Bukkit.getScheduler().runTask(Cooking.plugin, task));
-    }
-
-    HopperFoodStacker(Consumer<Runnable> nextTick) {
-        this.nextTick = nextTick;
-    }
-
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onMove(InventoryMoveItemEvent event) {
-        // Hoppers take the item out of the source before this event and add whatever it carries
-        // after, so a changed copy moves cleanly. A dropper keeps the source item when it changes.
-        if (event.getInitiator().getType() != InventoryType.HOPPER) return;
-        Inventory destination = event.getDestination();
-        if (!storage(destination)) return;
-        Merge merge = merge(destination, event.getItem());
-        if (merge == null) return;
-        event.setItem(merge.carried());
-        if (merge.incomingIsOlder()) nextTick.accept(merge::ageStack);
+        if (!hopperIntoStorage(event)) return;
+        Merge merge = merge(event.getDestination(), event.getItem());
+        if (merge != null && !merge.incomingIsOlder()) event.setItem(merge.carried());
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void afterMove(InventoryMoveItemEvent event) {
+        if (!hopperIntoStorage(event)) return;
+        // A fresher item already carries the stored data, so only an older one still merges here.
+        Merge merge = merge(event.getDestination(), event.getItem());
+        if (merge != null && merge.incomingIsOlder()) merge.ageStoredStack();
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPickup(InventoryPickupItemEvent event) {
         Inventory destination = event.getInventory();
         if (!storage(destination)) return;
-        // The hopper copies the ground item after this event, so it takes the changed data.
+        // The hopper copies the ground item after this event, and all of it fits in the slot.
         Item entity = event.getItem();
         Merge merge = merge(destination, entity.getItemStack());
         if (merge == null) return;
-        entity.setItemStack(merge.carried());
-        nextTick.accept(() -> {
-            // A merge only happens when the whole item fits, so an item still on the ground was
-            // not picked up: give it its own data back.
-            if (entity.isValid()) {
-                if (entity.getItemStack().isSimilar(merge.stored())) entity.setItemStack(merge.incoming());
-            } else if (merge.incomingIsOlder()) {
-                merge.ageStack();
-            }
-        });
+        if (merge.incomingIsOlder()) {
+            merge.ageStoredStack();
+        } else {
+            entity.setItemStack(merge.carried());
+        }
+    }
+
+    /**
+     * Hoppers take the item out of the source before the event and add whatever it carries after,
+     * so a changed copy moves cleanly. A dropper keeps the source item when it changes.
+     */
+    private static boolean hopperIntoStorage(InventoryMoveItemEvent event) {
+        return event.getInitiator().getType() == InventoryType.HOPPER && storage(event.getDestination());
     }
 
     /** Containers that take an item in any slot from any side, in slot order. */
@@ -97,13 +88,10 @@ public class HopperFoodStacker implements Listener {
             return out;
         }
 
-        /** Once the incoming food has joined the stack, give the stack its older data. */
-        void ageStack() {
-            ItemStack current = destination.getItem(slot);
-            if (current == null || !current.isSimilar(stored)
-                    || current.getAmount() < stored.getAmount() + incoming.getAmount()) return;
+        /** The stored stack carrying the older incoming food's data, so vanilla stacks it there. */
+        void ageStoredStack() {
             ItemStack older = incoming.clone();
-            older.setAmount(current.getAmount());
+            older.setAmount(stored.getAmount());
             destination.setItem(slot, older);
         }
     }
@@ -111,7 +99,8 @@ public class HopperFoodStacker implements Listener {
     /**
      * Where the incoming food can stack after all, or null when vanilla handles it as it is. Vanilla
      * fills the first slot that is empty or holds an exact copy with room; a merge is offered when
-     * that slot instead holds an equal food that aged differently and has room for all of it.
+     * that slot instead holds an equal food that aged differently and has room for all of it, and no
+     * later slot holds an exact copy with room.
      */
     static Merge merge(Inventory destination, ItemStack incoming) {
         // Most hopper traffic is not food; read the food id without copying the item's meta.
@@ -124,7 +113,7 @@ public class HopperFoodStacker implements Listener {
             ItemStack current = destination.getItem(slot);
             if (current == null || current.isEmpty()) return null;
             if (current.getType() != incoming.getType()) continue;
-            int room = Math.min(current.getMaxStackSize(), destination.getMaxStackSize()) - current.getAmount();
+            int room = room(destination, current);
             if (room <= 0) continue;
             if (current.isSimilar(incoming)) return null;
 
@@ -136,11 +125,24 @@ public class HopperFoodStacker implements Listener {
             if (other == null || !InventoryAdder.equalsFood(food, other)
                     || !ConversionManager.sameApartFromAging(incoming, current)) continue;
             // Part of it would spill into later slots with the stored data; leave that to vanilla.
-            if (incoming.getAmount() > room) return null;
+            if (incoming.getAmount() > room || laterExactCopy(destination, slot, incoming)) return null;
             // Equal age keeps the stored stack's data.
             boolean older = BundleFoodStacker.moreAged(current, incoming) != current;
             return new Merge(destination, slot, current.clone(), incoming.clone(), older);
         }
         return null;
+    }
+
+    private static int room(Inventory inventory, ItemStack stack) {
+        return Math.min(stack.getMaxStackSize(), inventory.getMaxStackSize()) - stack.getAmount();
+    }
+
+    /** True when a slot after this one already stacks the item exactly; vanilla puts it there. */
+    private static boolean laterExactCopy(Inventory destination, int after, ItemStack incoming) {
+        for (int slot = after + 1; slot < destination.getSize(); slot++) {
+            ItemStack later = destination.getItem(slot);
+            if (later != null && later.isSimilar(incoming) && room(destination, later) > 0) return true;
+        }
+        return false;
     }
 }
