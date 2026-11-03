@@ -57,6 +57,7 @@ import net.tfminecraft.cooking.manager.CommandManager;
 import net.tfminecraft.cooking.manager.ConversionManager;
 import net.tfminecraft.cooking.manager.CookingManager;
 import net.tfminecraft.cooking.manager.CraftingManager;
+import net.tfminecraft.cooking.manager.HopperFoodStacker;
 import net.tfminecraft.cooking.manager.PlateManager;
 import net.tfminecraft.cooking.manager.TagManager;
 import net.tfminecraft.cooking.baking.BakingTrayAging;
@@ -394,6 +395,7 @@ public class Cooking extends JavaPlugin {
         }
         getServer().getPluginManager().registerEvents(new ConversionManager(), this);
         getServer().getPluginManager().registerEvents(new BundleFoodStacker(), this);
+        getServer().getPluginManager().registerEvents(new HopperFoodStacker(), this);
         getServer().getPluginManager().registerEvents(new PopcornMachineHandler(), this);
         getServer().getPluginManager().registerEvents(new GlazeHandler(), this);
         getServer().getPluginManager().registerEvents(new RegenBlocker(), this);
