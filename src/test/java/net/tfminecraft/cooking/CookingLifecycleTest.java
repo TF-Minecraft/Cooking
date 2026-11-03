@@ -161,6 +161,12 @@ class CookingLifecycleTest {
         assertTrue(plugin.getCommand("cooking").testPermissionSilent(caller));
         assertTrue(plugin.getCommand("animals").getAliases().contains("livestock"));
         assertFalse(HandlerList.getRegisteredListeners(plugin).isEmpty());
+        // Hoppers only stack aging food through this listener; nothing else would notice it missing.
+        for (HandlerList handlers : List.of(org.bukkit.event.inventory.InventoryMoveItemEvent.getHandlerList(),
+                org.bukkit.event.inventory.InventoryPickupItemEvent.getHandlerList())) {
+            assertTrue(java.util.Arrays.stream(handlers.getRegisteredListeners()).anyMatch(registered ->
+                    registered.getPlugin() == plugin && registered.getListener() instanceof HopperFoodStacker));
+        }
         verify(built(CookingManager.class)).start();
         verify(built(PlateManager.class), never()).start();
     }
