@@ -2,6 +2,7 @@ package net.tfminecraft.cooking.utils;
 
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -22,11 +23,14 @@ import net.tfminecraft.tlibs.itemscan.ItemScanHandler;
  */
 public final class SlotAging {
 
-    /** A slot's food as the timer last left it, and when it can next look different. */
-    private record Resting(ItemStack item, long until) {}
+    /** A slot's food as the timer last left it, when it can next look different, and the generation it rests in. */
+    private record Resting(ItemStack item, long until, int generation) {}
 
-    // By slot identity; a slot dropped by its furniture drops out on its own.
+    // By slot identity; a slot dropped by its furniture drops out on its own. Only the server thread touches it.
     private static final Map<PlacedSlot, Resting> RESTING = new WeakHashMap<>();
+
+    // forgetAll can come from an ItemsAdder event on any thread, so it only moves this on and rests from before end.
+    private static final AtomicInteger GENERATION = new AtomicInteger();
 
     private SlotAging() {}
 
@@ -36,7 +40,8 @@ public final class SlotAging {
         if (resting == null) {
             return false;
         }
-        if (resting.until() > StackNormalizer.quantizedNow() && resting.item().equals(stack)) {
+        if (resting.generation() == GENERATION.get() && resting.until() > StackNormalizer.quantizedNow()
+                && resting.item().equals(stack)) {
             return true;
         }
         RESTING.remove(slot);
@@ -49,10 +54,12 @@ public final class SlotAging {
      * at again on the next pass, as the scan does.
      */
     public static ItemStack age(PlacedSlot slot, ItemStack stack, FoodItem food, String furniture) {
+        // Read first: a rest must not outlive a forgetAll that came while this food was being built.
+        int generation = GENERATION.get();
         ItemMeta meta = stack.getItemMeta();
         FoodScan.Result result = FoodScan.update(stack, meta, food, false, furniture);
         if (result.item() == null && result.recheckAt() != ItemScanHandler.EVERY_SCAN) {
-            RESTING.put(slot, new Resting(stack.clone(), result.recheckAt()));
+            RESTING.put(slot, new Resting(stack.clone(), result.recheckAt(), generation));
         } else {
             RESTING.remove(slot);
         }
@@ -61,6 +68,6 @@ public final class SlotAging {
 
     /** Ends every skip, so each slot's food is looked at again: its config or item templates may have changed. */
     public static void forgetAll() {
-        RESTING.clear();
+        GENERATION.incrementAndGet();
     }
 }

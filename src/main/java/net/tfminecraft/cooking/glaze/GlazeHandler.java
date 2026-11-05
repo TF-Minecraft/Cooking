@@ -48,6 +48,8 @@ public final class GlazeHandler implements Listener {
             p.sendMessage("§cThere's no roast here to glaze.");
             return;
         }
+        // The hook only rewrites a resting roast when it looks different, so bring its numbers up to now first.
+        roast.updateAge();
         if (!GlazeConfig.isRoast(roast)) {
             p.sendMessage("§cOnly roasts can be glazed.");
             return;
