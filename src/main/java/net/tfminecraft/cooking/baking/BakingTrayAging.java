@@ -12,7 +12,7 @@ import net.tfminecraft.interactiblefurniture.InteractibleFurniture;
 import net.tfminecraft.cooking.Cooking;
 import net.tfminecraft.cooking.heat.HeatSources;
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.SlotAging;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedFurnitureSlot;
 import net.tfminecraft.interactiblefurniture.furniture.PlacedSlot;
@@ -81,7 +81,7 @@ public final class BakingTrayAging {
 
     private boolean ageSlot(PlacedSlot slot, Furniture tray) {
         ItemStack item = slot.getCurrentItem();
-        if (item == null || item.getType().isAir()) {
+        if (item == null || item.getType().isAir() || SlotAging.isResting(slot, item)) {
             return false;
         }
 
@@ -90,7 +90,7 @@ public final class BakingTrayAging {
             return false;
         }
 
-        ItemStack updated = ItemUpdater.updateItem(item, foodItem, tray.getId());
+        ItemStack updated = SlotAging.age(slot, item, foodItem, tray.getId());
         if (updated == null || updated.getType().isAir()) {
             return false;
         }

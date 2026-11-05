@@ -18,7 +18,8 @@ import net.tfminecraft.tlibs.itemscan.ItemScanHandler;
  * remainder, so writing the aged numbers back changes nothing a player sees and the food ages the same either way.
  * The scan therefore only rewrites a food that would look different (a new tag step, warmth gone, lore or model built
  * differently, as after a reload or an update), whose clock must be set, or that has a sauce (below). It also says
- * when the unchanged food could next look different, so TLibs can skip the slot until then.
+ * when the unchanged food could next look different, so TLibs can skip the slot until then. SlotAging does the same
+ * for food lying in furniture.
  */
 public final class FoodScan {
 
@@ -37,18 +38,26 @@ public final class FoodScan {
      * Ages the food (parsed from stack, whose meta is meta) to now. A held food is only rewritten when today's held
      * rule says so (a new step, warmth gone or broken lore), so eating it isn't interrupted.
      */
+    public static Result update(ItemStack stack, ItemMeta meta, FoodItem fi, boolean held) {
+        return update(stack, meta, fi, held, null);
+    }
+
+    /**
+     * As {@link #update(ItemStack, ItemMeta, FoodItem, boolean)} for food in a slot of the furniture whose id is
+     * furniture (null in an inventory), which picks the model the food is built with there.
+     */
     // Keep the existing legacy text representation, formatting, and exact-string comparisons.
     @SuppressWarnings("deprecation")
-    public static Result update(ItemStack stack, ItemMeta meta, FoodItem fi, boolean held) {
+    public static Result update(ItemStack stack, ItemMeta meta, FoodItem fi, boolean held, String furniture) {
         PersistentDataContainer pdc = meta.getPersistentDataContainer();
         boolean broken = ItemUpdater.needsLoreRebuild(meta.getLore(), pdc.has(Keys.LORE_INDEX_MAP, PersistentDataType.STRING));
         if (!fi.shouldUpdate()) {
-            return new Result(broken ? ItemUpdater.applyItemUpdate(stack, fi, null) : null, ItemScanHandler.WHEN_CHANGED);
+            return new Result(broken ? ItemUpdater.applyItemUpdate(stack, fi, furniture) : null, ItemScanHandler.WHEN_CHANGED);
         }
         if (fi.hasSauce()) {
             // A sauce keeps no clock or remainder of its own, so it only ages by whole steps each time the food is
             // rewritten. Rewrite it on every scan as before, so sauces age exactly as they always have.
-            return new Result(ItemUpdater.updateItem(stack, fi, null, held), ItemScanHandler.EVERY_SCAN);
+            return new Result(ItemUpdater.updateItem(stack, fi, furniture, held), ItemScanHandler.EVERY_SCAN);
         }
         long now = StackNormalizer.quantizedNow();
         Long stored = pdc.get(Keys.LAST_UPDATE, PersistentDataType.LONG);
@@ -58,12 +67,12 @@ public final class FoodScan {
         fi.setLastUpdate(now);
         long recheckAt = held ? ItemScanHandler.EVERY_SCAN : nextChange(fi, now);
         if (changed || expired || broken || (!held && clockNeedsWriting(stored, now))) {
-            return new Result(ItemUpdater.applyItemUpdate(stack, fi, null), recheckAt);
+            return new Result(ItemUpdater.applyItemUpdate(stack, fi, furniture), recheckAt);
         }
         if (held) {
             return new Result(null, recheckAt);
         }
-        ItemStack rebuilt = ItemUpdater.applyItemUpdate(stack.clone(), fi, null);
+        ItemStack rebuilt = ItemUpdater.applyItemUpdate(stack.clone(), fi, furniture);
         return new Result(looksTheSame(stack, meta, rebuilt) ? null : rebuilt, recheckAt);
     }
 
