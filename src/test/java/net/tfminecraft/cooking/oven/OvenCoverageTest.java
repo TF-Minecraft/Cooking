@@ -327,7 +327,8 @@ class OvenCoverageTest {
         assertEquals(2, env.resolve(bakery.tray.active.get("left_b").getCurrentItem()).getTagTrack("cooked").getValue());
         assertEquals(0, BakingTrayState.getSlotElapsed(bakery.tray.furniture, "right_a"));
         assertEquals(0, BakingTrayState.getSlotElapsed(bakery.tray.furniture, "right_b"));
-        verify(env.manager, times(2)).markDirty(bakery.tray.furniture);
+        // Once per heated second: the bake times advance and are saved with them.
+        verify(env.manager, times(4)).markDirty(bakery.tray.furniture);
     }
 
     @Test
@@ -374,6 +375,8 @@ class OvenCoverageTest {
         bakery.updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenReturn(null);
         new OvenCavityManager().start(); env.server.getScheduler().performTicks(40);
         assertSame(original, slot.getCurrentItem()); verify(slot, never()).forceModel(any());
-        verify(env.manager, never()).markDirty(bakery.tray.furniture);
+        // Only the bake time advanced (and is saved); the loaf itself stays as it was.
+        assertEquals(2, BakingTrayState.getSlotElapsed(bakery.tray.furniture, "left_a"));
+        verify(env.manager, times(2)).markDirty(bakery.tray.furniture);
     }
 }
