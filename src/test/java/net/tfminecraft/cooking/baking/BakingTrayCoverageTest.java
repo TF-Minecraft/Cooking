@@ -39,6 +39,7 @@ import net.tfminecraft.cooking.sausagemaker.SausageMakerCoverageTest.Workshop;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.SlotAging;
 import net.tfminecraft.cooking.utils.WarmthUtils;
 import net.tfminecraft.interactiblefurniture.events.FurnitureInteractEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -374,6 +375,24 @@ public class BakingTrayCoverageTest {
         verify(slot, never()).forceModel(any());
     }
 
+    @Test
+    void breadTakenFromARestingSlotIsAgedToNowBeforeItIsMadeHot() {
+        org.bukkit.configuration.MemoryConfiguration config = new org.bukkit.configuration.MemoryConfiguration();
+        config.set("name", "bread"); config.set("update", true);
+        FoodItem bread = new FoodItem("bread", config); bread.setCategory("grain"); bread.setOrigin("Wheat"); bread.setQualityRange(4, 4);
+        bread.setModel(new net.tfminecraft.cooking.item.model.FoodModel(new ItemStack(Material.BREAD)));
+        bakery.track(bread, "cooked", 1);
+        // The slot rested since it was filled 40 minutes ago, so the loaf's clock is that old.
+        long filled = System.currentTimeMillis() - 40 * 60_000L;
+        bread.setLastUpdate(filled);
+        tray.place("left_a", env.stack(bread, Material.BREAD, 1));
+        var take = bakery.interact(null); handler.onInteract(take);
+        assertTrue(take.isCancelled());
+        bakery.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), same(bread), any()));
+        // applyHot adds the warmth track, and adding a track ages the food to now first.
+        assertTrue(bread.getLastUpdate() > filled + 39 * 60_000L, "aged to now before it is stamped Hot");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"take", "cook", "age"})
     void airRenderingResultsNeverConsumeOrReplaceBread(String operation) {
@@ -414,6 +433,15 @@ public class BakingTrayCoverageTest {
     }
 
     @Test
+    void restingBreadIsLeftAloneUntilItCanLookDifferent() {
+        ItemStack original = bakery.loaf(0, 1); PlacedSlot slot = tray.place("left_a", original);
+        bakery.aging.when(() -> SlotAging.isResting(slot, original)).thenReturn(true);
+        new BakingTrayAging().start(); env.server.getScheduler().performTicks(20);
+        assertSame(original, slot.getCurrentItem()); verify(slot, never()).forceModel(any());
+        bakery.aging.verify(() -> SlotAging.age(any(), any(), any(), any()), never()); verify(env.manager, never()).markDirty(tray.furniture);
+    }
+
+    @Test
     void emptyEntriesInThePublicSlotMapDoNotPreventOtherLoavesFromAging() {
         tray.furniture.getActiveSlots().put("left_a", null);
         PlacedSlot bread = tray.place("left_b", bakery.loaf(0, 1));
@@ -430,6 +458,7 @@ public class BakingTrayCoverageTest {
         public final Set<Furniture> consumers = new HashSet<>();
         public final Map<Furniture, Map<String, PlacedFurnitureSlot>> nested = new LinkedHashMap<>();
         public final MockedStatic<ItemUpdater> updater;
+        public final MockedStatic<SlotAging> aging;
         public final MockedStatic<HeatSources> heat;
         public final Station tray;
         public BakingTrayRecipe recipe;
@@ -445,6 +474,9 @@ public class BakingTrayCoverageTest {
             updater = env.scoped(mockStatic(ItemUpdater.class));
             updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenAnswer(inv -> updated(inv.getArgument(0), inv.getArgument(1)));
             updater.when(() -> ItemUpdater.updateItem(any(), any(), any())).thenAnswer(inv -> updated(inv.getArgument(0), inv.getArgument(1)));
+            // The timer ages through SlotAging; route it to the stubbed ItemUpdater (SlotAgingTest covers the real one).
+            aging = env.scoped(mockStatic(SlotAging.class));
+            aging.when(() -> SlotAging.age(any(), any(), any(), any())).thenAnswer(inv -> ItemUpdater.updateItem(inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
             heat = env.scoped(mockStatic(HeatSources.class));
             heat.when(() -> HeatSources.isConsumer(any())).thenAnswer(inv -> consumers.contains(inv.getArgument(0)));
             heat.when(() -> HeatSources.consumerHasHeat(any())).thenAnswer(inv -> heated);

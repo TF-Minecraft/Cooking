@@ -78,6 +78,10 @@ public final class CarveHandler {
 
         if (roast == null) return false;
 
+        // The hook only rewrites a roast when it looks different, so bring its aging up to now before the cuts and
+        // the roast left on the hook (which starts a new clock) take its numbers.
+        roast.updateAge();
+
         CarvableRoastUtils.readCarveState(roast, stack);
 
         if (!CarvableRoastUtils.isCarvable(roast)) return false;

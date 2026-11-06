@@ -56,6 +56,7 @@ import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemBuilder;
 import net.tfminecraft.cooking.utils.ItemRef;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.SlotAging;
 import net.tfminecraft.cooking.utils.Keys;
 import net.tfminecraft.interactiblefurniture.events.FurniturePunchEvent;
 import net.tfminecraft.interactiblefurniture.furniture.Furniture;
@@ -71,6 +72,7 @@ class CarvingAndMeatHookCoverageTest {
     MockedStatic<FoodParser> parser;
     MockedStatic<ItemRef> refs;
     MockedStatic<ItemUpdater> updater;
+    MockedStatic<SlotAging> aging;
     String oldHook, oldTool;
     FoodItem lastPart;
 
@@ -97,6 +99,9 @@ class CarvingAndMeatHookCoverageTest {
         updater = env.scoped(mockStatic(ItemUpdater.class));
         updater.when(() -> ItemUpdater.applyItemUpdate(any(), any(), any())).thenAnswer(inv -> updated(inv.getArgument(1)));
         updater.when(() -> ItemUpdater.updateItem(any(), any(), any())).thenAnswer(inv -> updated(inv.getArgument(1)));
+        // The hook's timer ages through SlotAging; route it to the stubbed ItemUpdater (SlotAgingTest covers the real one).
+        aging = env.scoped(mockStatic(SlotAging.class));
+        aging.when(() -> SlotAging.age(any(), any(), any(), any())).thenAnswer(inv -> ItemUpdater.updateItem(inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
         load("""
                 roast:
                   start-remaining: 3
@@ -410,6 +415,24 @@ class CarvingAndMeatHookCoverageTest {
         verify(env.manager).markDirty(hook.furniture);
         updater.when(() -> ItemUpdater.updateItem(any(), any(), any())).thenReturn(null); env.server.getScheduler().performTicks(20);
         verify(slot).setCurrentItem(any()); verify(slot).applyDisplayData(any()); verify(env.manager).markDirty(hook.furniture);
+    }
+
+    @Test
+    void carvingAgesTheRoastToNowBeforeTheCutsTakeItsNumbers() {
+        // The hook leaves a resting roast's stored numbers alone, so they can be well behind the clock.
+        FoodItem roast = roast("roast"); track(roast, "freshness", 0); roast.setLastUpdate(System.currentTimeMillis() - 5_000L);
+        PlacedSlot slot = hook.place("content", whole(roast));
+        assertTrue(carve(slot));
+        assertTrue(lastPart.getTagTrack("freshness").getValue() >= 5, "the cut keeps the roast's five seconds of aging");
+    }
+
+    @Test
+    void aRestingRoastKeepsItsItemAndDisplayUntilItCanLookDifferent() {
+        PlacedSlot slot = placeRoast(); ItemStack original = slot.getCurrentItem();
+        aging.when(() -> SlotAging.isResting(slot, original)).thenReturn(true);
+        hooks.start(); env.server.getScheduler().performTicks(20);
+        assertSame(original, slot.getCurrentItem()); verify(slot, never()).setCurrentItem(any()); verify(slot, never()).applyDisplayData(any());
+        aging.verify(() -> SlotAging.age(any(), any(), any(), any()), never()); verify(env.manager, never()).markDirty(hook.furniture);
     }
 
     @Test

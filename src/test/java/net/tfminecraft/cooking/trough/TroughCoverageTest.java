@@ -25,6 +25,7 @@ import net.tfminecraft.cooking.sausagemaker.SausageMakerCoverageTest.Workshop;
 import net.tfminecraft.cooking.utils.IngredientConverter;
 import net.tfminecraft.cooking.utils.InventoryAdder;
 import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.SlotAging;
 
 class TroughCoverageTest {
     Kitchen kitchen;
@@ -32,6 +33,7 @@ class TroughCoverageTest {
     Station trough;
     TroughHandler handler;
     MockedStatic<IngredientConverter> converter;
+    MockedStatic<SlotAging> aging;
     String previousTrough, previousFeed;
     int previousCount;
 
@@ -43,6 +45,9 @@ class TroughCoverageTest {
         when(env.api.getCreator().getItemFromPath("feed")).thenAnswer(inv -> new ItemStack(Material.WHEAT));
         converter = env.scoped(mockStatic(IngredientConverter.class));
         converter.when(() -> IngredientConverter.convertIfNeeded(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+        // The timer ages through SlotAging; route it to the kitchen's stubbed ItemUpdater (SlotAgingTest covers the real one).
+        aging = env.scoped(mockStatic(SlotAging.class));
+        aging.when(() -> SlotAging.age(any(), any(), any(), any())).thenAnswer(inv -> ItemUpdater.updateItem(inv.getArgument(1), inv.getArgument(2), inv.getArgument(3)));
     }
     @AfterEach void close() {
         kitchen.close(); FurnitureCache.trough = previousTrough; ItemCache.troughFeed = previousFeed; ItemCache.troughItemsPerClick = previousCount;
@@ -130,6 +135,14 @@ class TroughCoverageTest {
         new TroughAging().start(); env.server.getScheduler().performTicks(20); assertFalse(trough.active.containsKey("a")); assertEquals(Material.STONE, env.dropped.getFirst().getType());
         trough.place("a", new ItemStack(Material.STONE)); when(trough.furniture.getLoc()).thenReturn(null); env.server.getScheduler().performTicks(20); assertFalse(trough.active.containsKey("a")); assertEquals(1, env.dropped.size());
         trough.place("a", new ItemStack(Material.STONE)); when(trough.furniture.getLoc()).thenReturn(new Location(null, 0, 0, 0)); env.server.getScheduler().performTicks(20); assertFalse(trough.active.containsKey("a")); assertEquals(1, env.dropped.size());
+    }
+
+    @Test void restingFoodIsLeftAloneUntilItCanLookDifferent() {
+        ItemStack original = env.stack(carrot(), Material.CARROT, 3); var slot = trough.place("a", original);
+        aging.when(() -> SlotAging.isResting(slot, original)).thenReturn(true);
+        new TroughAging().start(); env.server.getScheduler().performTicks(20);
+        assertSame(original, slot.getCurrentItem()); verify(slot, never()).forceModel(any()); assertTrue(env.dropped.isEmpty());
+        aging.verify(() -> SlotAging.age(any(), any(), any(), any()), never()); verify(env.manager, never()).markDirty(trough.furniture);
     }
 
     @Test void failedAgingRenderingNeverDeletesStoredFood() {

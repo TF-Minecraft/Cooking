@@ -17,7 +17,7 @@ import net.tfminecraft.cooking.cache.FurnitureCache;
 import net.tfminecraft.cooking.carve.CarvableRoastUtils;
 import net.tfminecraft.cooking.carve.CarveHandler;
 import net.tfminecraft.cooking.item.FoodItem;
-import net.tfminecraft.cooking.utils.ItemUpdater;
+import net.tfminecraft.cooking.utils.SlotAging;
 import net.tfminecraft.cooking.utils.StationChunks;
 import net.tfminecraft.interactiblefurniture.events.FurniturePunchEvent;
 import net.tfminecraft.interactiblefurniture.events.FurnitureSlotItemAddEvent;
@@ -107,14 +107,15 @@ public final class MeatHookHandler implements Listener {
             return;
         }
         ItemStack stack = slot.getCurrentItem();
-        if (stack == null) {
+        // An unchanged roast that can't look different yet keeps its item and display as they are.
+        if (stack == null || SlotAging.isResting(slot, stack)) {
             return;
         }
         FoodItem foodItem = FoodItem.fromItem(stack);
         if (foodItem == null) {
             return;
         }
-        ItemStack updated = ItemUpdater.updateItem(stack, foodItem, furniture.getId());
+        ItemStack updated = SlotAging.age(slot, stack, foodItem, furniture.getId());
         if (updated == null || updated.getType().isAir()) {
             return;
         }
