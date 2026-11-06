@@ -375,6 +375,24 @@ public class BakingTrayCoverageTest {
         verify(slot, never()).forceModel(any());
     }
 
+    @Test
+    void breadTakenFromARestingSlotIsAgedToNowBeforeItIsMadeHot() {
+        org.bukkit.configuration.MemoryConfiguration config = new org.bukkit.configuration.MemoryConfiguration();
+        config.set("name", "bread"); config.set("update", true);
+        FoodItem bread = new FoodItem("bread", config); bread.setCategory("grain"); bread.setOrigin("Wheat"); bread.setQualityRange(4, 4);
+        bread.setModel(new net.tfminecraft.cooking.item.model.FoodModel(new ItemStack(Material.BREAD)));
+        bakery.track(bread, "cooked", 1);
+        // The slot rested since it was filled 40 minutes ago, so the loaf's clock is that old.
+        long filled = System.currentTimeMillis() - 40 * 60_000L;
+        bread.setLastUpdate(filled);
+        tray.place("left_a", env.stack(bread, Material.BREAD, 1));
+        var take = bakery.interact(null); handler.onInteract(take);
+        assertTrue(take.isCancelled());
+        bakery.updater.verify(() -> ItemUpdater.applyItemUpdate(any(), same(bread), any()));
+        // applyHot adds the warmth track, and adding a track ages the food to now first.
+        assertTrue(bread.getLastUpdate() > filled + 39 * 60_000L, "aged to now before it is stamped Hot");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"take", "cook", "age"})
     void airRenderingResultsNeverConsumeOrReplaceBread(String operation) {
