@@ -51,9 +51,13 @@ public class ItemRef {
         return out;
     }
 
-    /** Drops every kept template; the next use of each ref builds it again. */
+    /**
+     * Drops every kept template; the next use of each ref builds it again. Runs on /cooking reload and /iareload, so
+     * food resting in furniture slots is looked at again too: it may now be built differently.
+     */
     public static void clearCache() {
         templates = null;
+        SlotAging.forgetAll();
     }
 
     /** Turns template keeping on or off; either way the kept templates are dropped. */

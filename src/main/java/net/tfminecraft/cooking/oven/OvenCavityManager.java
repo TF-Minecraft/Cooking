@@ -98,6 +98,8 @@ public final class OvenCavityManager {
             }
 
             BakingTrayState.incrementSlotElapsed(tray, slotId);
+            // Save the bake time with the next autosave: the tray's aging timer no longer rewrites it every second.
+            changed = true;
             int elapsed = BakingTrayState.getSlotElapsed(tray, slotId);
             int cookedValue = cooked == null ? RAW : cooked.getValue();
 
