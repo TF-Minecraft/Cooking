@@ -17,7 +17,11 @@ public final class HusbandryTickTask {
 
     private static final long PERIOD_TICKS = 20L * 60L;
 
+    /** Ticks in a row that left relaxed saves waiting for their sync before a warning is logged. */
+    static final int WAITING_WARN_TICKS = 5;
+
     private static int taskId = -1;
+    private static int waitingTicks;
 
     private HusbandryTickTask() {}
 
@@ -25,6 +29,7 @@ public final class HusbandryTickTask {
         if (taskId != -1 || Cooking.plugin == null) {
             return;
         }
+        waitingTicks = 0;
         taskId = Bukkit.getScheduler().runTaskTimer(
                 Cooking.plugin, HusbandryTickTask::tick, PERIOD_TICKS, PERIOD_TICKS).getTaskId();
     }
@@ -35,6 +40,11 @@ public final class HusbandryTickTask {
         }
         Bukkit.getScheduler().cancelTask(taskId);
         taskId = -1;
+        // A reload starts the minute over: sync what waits now, not up to two minutes from the last tick.
+        HusbandryRepository repository = HusbandryEntities.repository();
+        if (repository != null) {
+            syncRelaxed(repository);
+        }
     }
 
     private static void tick() {
@@ -79,6 +89,8 @@ public final class HusbandryTickTask {
             repository.saveLoaded(dirty, snapshots, now, false);
         } catch (SqliteDatabaseException together) {
             // A failing snapshot must not cost the animals their save: write the two apart.
+            Bukkit.getLogger().warning("[Cooking] Husbandry tick save failed as a whole, saving animals and snapshots apart: "
+                    + together.getMessage());
             try {
                 repository.upsertAnimals(dirty);
             } catch (SqliteDatabaseException ex) {
@@ -92,10 +104,23 @@ public final class HusbandryTickTask {
     }
 
     private static void syncRelaxed(HusbandryRepository repository) {
+        boolean synced;
         try {
-            repository.syncRelaxed();
+            synced = repository.syncRelaxed();
         } catch (SqliteDatabaseException ex) {
             Bukkit.getLogger().severe("[Cooking] Failed to sync husbandry saves: " + ex.getMessage());
+            return;
+        }
+        // A checkpoint that another program holds back fails without an error, minute after minute.
+        if (synced) {
+            if (waitingTicks >= WAITING_WARN_TICKS) {
+                Bukkit.getLogger().info("[Cooking] Husbandry saves are synced to disk again.");
+            }
+            waitingTicks = 0;
+        } else if (++waitingTicks == WAITING_WARN_TICKS) {
+            Bukkit.getLogger().warning("[Cooking] Husbandry saves have waited " + WAITING_WARN_TICKS
+                    + " minutes for their disk sync: something else is holding husbandry.db open."
+                    + " A power loss would roll back the chunk load and unload saves since then.");
         }
     }
 }

@@ -267,6 +267,8 @@ public final class HusbandryLifecycleListener implements Listener {
             } catch (SqliteDatabaseException together) {
                 // One bad row rolls back the whole pass. Save the animals and the snapshots apart,
                 // each fully synced as before, so only the rows that still fail are lost.
+                Bukkit.getLogger().warning("[Cooking] Husbandry save of a chunk pass failed as a whole, saving row by row: "
+                        + together.getMessage());
             }
             try {
                 repository.upsertAnimals(animals);

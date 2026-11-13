@@ -27,6 +27,7 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.*;
 import org.mockbukkit.mockbukkit.world.WorldMock;
+import org.mockito.InOrder;
 import org.mockito.MockedStatic;
 import io.papermc.paper.entity.EntitySerializationFlag;
 
@@ -318,6 +319,7 @@ class HusbandryRuntimeCoverageTest {
             // The minute's save is one synced commit, and the tick then puts the relaxed load and unload saves on disk.
             verify(f.repository).saveLoaded(argThat(animals -> animals.size() == 3), argThat(copies -> copies.size() == 1), anyLong(), eq(false));
             verify(f.repository, never()).upsertAnimals(any()); verify(f.repository).syncRelaxed();
+            InOrder minute = inOrder(f.repository); minute.verify(f.repository).saveLoaded(any(), any(), anyLong(), eq(false)); minute.verify(f.repository).syncRelaxed();
             // A save that fails as a whole falls back to the animals and the snapshots apart.
             doThrow(new SqliteDatabaseException("snapshot row")).doCallRealMethod().when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             animal.setCare(55); f.server.getScheduler().performTicks(1200);
@@ -336,6 +338,39 @@ class HusbandryRuntimeCoverageTest {
             doThrow(new SqliteDatabaseException("checkpoint")).when(f.repository).syncRelaxed(); assertDoesNotThrow(() -> f.server.getScheduler().performTicks(1200));
             HusbandryTickTask.stop(); HusbandryTickTask.stop();
             Cooking.plugin = null; HusbandryTickTask.start(); Cooking.plugin = f.plugin;
+        }
+    }
+
+    @Test void theTickWarnsOnceWhenSavesKeepWaitingForTheirSyncAndSaysWhenTheyAreBack() {
+        List<String> lines = new ArrayList<>();
+        java.util.logging.Handler handler = new java.util.logging.Handler() {
+            @Override public void publish(java.util.logging.LogRecord record) { lines.add(record.getLevel() + " " + record.getMessage()); }
+            @Override public void flush() {}
+            @Override public void close() {}
+        };
+        Bukkit.getLogger().addHandler(handler);
+        try {
+            // Nothing is loaded, so each tick only tries the sync; another program holds the checkpoint back.
+            doReturn(false).when(f.repository).syncRelaxed();
+            HusbandryTickTask.start();
+            f.server.getScheduler().performTicks(1200L * (HusbandryTickTask.WAITING_WARN_TICKS - 1));
+            assertTrue(lines.stream().noneMatch(line -> line.contains("waited")));
+            f.server.getScheduler().performTicks(1200L * 3);
+            assertEquals(1, lines.stream().filter(line -> line.startsWith("WARNING") && line.contains("waited 5 minutes")).count());
+            doReturn(true).when(f.repository).syncRelaxed();
+            f.server.getScheduler().performTicks(1200L * 2);
+            assertEquals(1, lines.stream().filter(line -> line.startsWith("INFO") && line.contains("synced to disk again")).count());
+            // A short wait that clears by itself says nothing.
+            doReturn(false).when(f.repository).syncRelaxed(); f.server.getScheduler().performTicks(1200L * 2);
+            doReturn(true).when(f.repository).syncRelaxed(); f.server.getScheduler().performTicks(1200L);
+            assertEquals(1, lines.stream().filter(line -> line.contains("waited")).count());
+            assertEquals(1, lines.stream().filter(line -> line.contains("synced to disk again")).count());
+            // Stopping syncs once more, and copes with a closed repository.
+            clearInvocations(f.repository); HusbandryTickTask.stop(); verify(f.repository).syncRelaxed();
+            HusbandryTickTask.start(); when(f.plugin.getHusbandryRepository()).thenReturn(null); clearInvocations(f.repository);
+            HusbandryTickTask.stop(); verify(f.repository, never()).syncRelaxed();
+        } finally {
+            Bukkit.getLogger().removeHandler(handler); when(f.plugin.getHusbandryRepository()).thenReturn(f.repository); HusbandryTickTask.stop();
         }
     }
 

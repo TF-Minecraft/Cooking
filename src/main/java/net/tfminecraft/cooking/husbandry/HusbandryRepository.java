@@ -331,11 +331,14 @@ public final class HusbandryRepository {
                 database.runTransaction(work);
                 return;
             }
-            synchronous("NORMAL");
             Throwable failure = null;
             try {
-                database.runTransaction(work);
+                // Inside the try: a switch that fails after it took effect is undone below as well.
+                synchronous("NORMAL");
+                // Marked before the commit, not after: TLibs can still throw once the commit has
+                // gone through, and a spare checkpoint after a save that rolled back costs little.
                 unsynced = true;
+                database.runTransaction(work);
             } catch (Throwable e) {
                 // Errors too: TLibs rolls back and rethrows them, and the level must still go back.
                 failure = e;
@@ -385,12 +388,15 @@ public final class HusbandryRepository {
     /**
      * Puts relaxed saves on disk, if any are waiting. They stay marked until a checkpoint has
      * copied the whole log, so one that could not is tried again.
+     *
+     * @return whether no relaxed save is waiting any more
      */
-    public void syncRelaxed() {
+    public boolean syncRelaxed() {
         synchronized (database) {
             if (unsynced && checkpointedAll()) {
                 unsynced = false;
             }
+            return !unsynced;
         }
     }
 

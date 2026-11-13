@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -391,7 +392,7 @@ class HusbandryRepositoryTest {
             assertEquals("out of memory, say", error.getMessage());
             assertEquals(2, repository.synchronousLevel(), "an Error must not leave the connection at NORMAL");
             assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care(), "and the save rolled back");
-            assertFalse(repository.relaxedPending());
+            assertTrue(repository.relaxedPending(), "marked before the commit, whatever became of it");
         } finally {
             repository.close();
         }
@@ -455,39 +456,44 @@ class HusbandryRepositoryTest {
                     () -> repository.saveLoaded(List.of(cow), Map.of(cow.uuid(), new byte[] {1}), 100L, true));
             assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care(), "the animal rolled back with its snapshot");
             assertEquals(2, repository.synchronousLevel());
-            // A failed relaxed save left nothing behind to sync.
+            // It is marked all the same, since a save can fail after its commit went through.
+            assertTrue(repository.relaxedPending());
+            assertTrue(repository.syncRelaxed());
+            verify(repository, times(1)).checkpointedAll();
             assertFalse(repository.relaxedPending());
-            repository.syncRelaxed();
-            verify(repository, never()).checkpointedAll();
         } finally {
             repository.close();
         }
     }
 
     @Test
-    void relaxedSavesStayMarkedUntilACheckpointHasCopiedThem(@TempDir Path tempDir) {
+    void relaxedSavesStayMarkedUntilACheckpointHasCopiedThem(@TempDir Path tempDir) throws Exception {
         HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        Path log = tempDir.resolve("husbandry.db-wal");
         try {
             HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
-            repository.syncRelaxed();
+            assertTrue(repository.syncRelaxed(), "nothing is waiting");
             verify(repository, never()).checkpointedAll();
 
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
-            repository.syncRelaxed();
+            assertTrue(repository.syncRelaxed());
             assertFalse(repository.relaxedPending());
             repository.syncRelaxed();
             verify(repository, times(1)).checkpointedAll();
 
             // A synced save afterwards is no proof. This one writes the same row again, which
-            // changes no page: SQLite then writes nothing and syncs nothing.
+            // changes no page: SQLite then writes nothing, so there is nothing for it to sync.
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+            byte[] before = Files.readAllBytes(log);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            assertTrue(Arrays.equals(before, Files.readAllBytes(log)), "the same row again leaves the log untouched");
             assertTrue(repository.relaxedPending(), "only a checkpoint clears the mark");
             // Nor is a synced save that does change the row.
             cow.setCare(90);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            assertFalse(Arrays.equals(before, Files.readAllBytes(log)), "a changed row is written to the log");
             assertTrue(repository.relaxedPending());
-            repository.syncRelaxed();
+            assertTrue(repository.syncRelaxed());
             assertFalse(repository.relaxedPending());
             verify(repository, times(2)).checkpointedAll();
 
@@ -522,13 +528,33 @@ class HusbandryRepositoryTest {
                 // SQLite reports no error here: the checkpoint just stops at the reader's view.
                 assertFalse(repository.checkpointedAll());
                 repository.saveLoaded(List.of(cow), Map.of(), 101L, true);
-                repository.syncRelaxed();
+                assertFalse(repository.syncRelaxed());
                 assertTrue(repository.relaxedPending(), "nothing was synced, so the save still waits");
                 reader.rollback();
             }
-            repository.syncRelaxed();
+            assertTrue(repository.syncRelaxed());
             assertFalse(repository.relaxedPending(), "with the reader gone the next try goes through");
             assertEquals(40, repository.getAnimal(cow.uuid()).orElseThrow().care());
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void aLevelSwitchThatFailsAfterTakingEffectIsUndoneAsWell(@TempDir Path tempDir) {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            doAnswer(call -> {
+                call.callRealMethod();
+                throw new SqliteDatabaseException("the statement would not close");
+            }).when(repository).synchronous("NORMAL");
+            SqliteDatabaseException failure = assertThrows(SqliteDatabaseException.class,
+                    () -> repository.saveLoaded(List.of(cow), Map.of(), 100L, true));
+            assertEquals("the statement would not close", failure.getMessage());
+            assertEquals(2, repository.synchronousLevel(), "the connection must not stay at NORMAL");
+            assertFalse(repository.exists(cow.uuid()), "no save ran");
+            assertFalse(repository.relaxedPending());
         } finally {
             repository.close();
         }
