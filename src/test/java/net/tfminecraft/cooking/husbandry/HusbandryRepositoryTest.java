@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -398,32 +399,43 @@ class HusbandryRepositoryTest {
     }
 
     @Test
-    void noOtherThreadsWriteRunsWhileARelaxedSaveHoldsTheLevelDown(@TempDir Path tempDir) throws Exception {
-        HusbandryRepository repository = HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile());
+    void noOtherThreadsWriteRunsBetweenTheLevelChangesAndTheTransaction(@TempDir Path tempDir) throws Exception {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
         try {
             HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
-            HusbandryAnimal other = animal(UUID.randomUUID(), "PIG", "Ham", 8);
-            Thread writer = new Thread(() -> repository.upsertAnimal(other));
-            boolean[] waited = new boolean[1];
-            Map<UUID, byte[]> duringSave = new HashMap<UUID, byte[]>(Map.of(cow.uuid(), new byte[] {1})) {
-                @Override
-                public Set<Map.Entry<UUID, byte[]>> entrySet() {
-                    // Inside the relaxed transaction: the level is NORMAL right now.
-                    writer.start();
-                    try {
-                        writer.join(400);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                    waited[0] = writer.isAlive() && !repository.exists(other.uuid());
-                    return super.entrySet();
-                }
-            };
-            repository.saveLoaded(List.of(cow), duringSave, 100L, true);
-            assertTrue(waited[0], "the other write must wait until the level is back at FULL");
-            writer.join(5_000);
-            assertFalse(writer.isAlive());
-            assertTrue(repository.exists(other.uuid()));
+            HusbandryAnimal early = animal(UUID.randomUUID(), "PIG", "Ham", 8);
+            HusbandryAnimal late = animal(UUID.randomUUID(), "SHEEP", "Wool", 4);
+            // The two moments the database's own lock is free while the level is still NORMAL:
+            // after the level is lowered and before the transaction begins, and after the commit
+            // and before the level is raised again. A write that got in there would commit unsynced.
+            Thread beforeTransaction = new Thread(() -> repository.upsertAnimal(early));
+            Thread afterCommit = new Thread(() -> repository.upsertAnimal(late));
+            boolean[] waited = new boolean[2];
+            doAnswer(call -> {
+                Object result = call.callRealMethod();
+                beforeTransaction.start();
+                beforeTransaction.join(500);
+                waited[0] = beforeTransaction.isAlive() && !repository.exists(early.uuid());
+                return result;
+            }).when(repository).synchronous("NORMAL");
+            doAnswer(call -> {
+                afterCommit.start();
+                afterCommit.join(500);
+                waited[1] = afterCommit.isAlive() && beforeTransaction.isAlive()
+                        && !repository.exists(early.uuid()) && !repository.exists(late.uuid());
+                return call.callRealMethod();
+            }).when(repository).synchronous("FULL");
+
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+
+            assertTrue(waited[0], "a write that arrives before the transaction begins must wait");
+            assertTrue(waited[1], "and so must one that arrives after the commit, until the level is FULL again");
+            beforeTransaction.join(5_000);
+            afterCommit.join(5_000);
+            assertFalse(beforeTransaction.isAlive());
+            assertFalse(afterCommit.isAlive());
+            assertTrue(repository.exists(early.uuid()));
+            assertTrue(repository.exists(late.uuid()));
             assertEquals(2, repository.synchronousLevel());
         } finally {
             repository.close();
