@@ -124,8 +124,13 @@ public final class HusbandryRepository {
 
     private final SqliteDatabase database;
     private HusbandryOwnershipStore ownership;
-    /** A relaxed save has been committed and no synced commit or checkpoint has followed it yet. */
-    private volatile boolean unsynced;
+    /**
+     * A relaxed save has been committed, and neither a synced {@link #saveLoaded} nor a complete
+     * checkpoint from {@link #syncRelaxed()} has followed it yet. Other synced commits (ownership,
+     * estates) put it on disk as well without clearing this, which only costs one spare checkpoint.
+     * Read and written under the database's lock.
+     */
+    private boolean unsynced;
 
     private HusbandryRepository(SqliteDatabase database) {
         this.database = database;
@@ -318,40 +323,49 @@ public final class HusbandryRepository {
             writeAnimals(connection, valid);
             writeSnapshots(connection, copies, savedAt);
         };
-        if (!relaxed) {
-            database.runTransaction(work);
-            unsynced = false;
-            return;
-        }
         // One lock for the level change, the transaction and the change back: no other thread's
         // write can run between them and be committed without its sync.
         synchronized (database) {
+            if (!relaxed) {
+                database.runTransaction(work);
+                // A synced commit syncs the whole log, the relaxed saves before it included.
+                unsynced = false;
+                return;
+            }
             synchronous("NORMAL");
-            RuntimeException failure = null;
+            Throwable failure = null;
             try {
                 database.runTransaction(work);
                 unsynced = true;
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
+                // Errors too: TLibs rolls back and rethrows them, and the level must still go back.
                 failure = e;
+                throw e;
+            } finally {
+                restoreSynced(failure);
             }
+        }
+    }
+
+    /**
+     * Back to synced commits after a relaxed save, whatever became of it. A connection that cannot
+     * be switched back is closed: ownership and estate changes rely on their sync, so husbandry
+     * then fails loudly until the plugin restarts instead of committing without one.
+     */
+    private void restoreSynced(Throwable failure) {
+        try {
+            synchronous("FULL");
+        } catch (Throwable restore) {
             try {
-                synchronous("FULL");
-            } catch (RuntimeException restore) {
-                // Never leave a connection that commits without syncing: ownership and estate
-                // changes rely on it. Husbandry then stays closed until the plugin restarts.
-                try {
-                    database.close();
-                } catch (RuntimeException closing) {
-                    restore.addSuppressed(closing);
-                }
-                if (failure == null) {
-                    throw new SqliteDatabaseException("Could not restore synced husbandry commits", restore);
-                }
-                failure.addSuppressed(restore);
+                closeDatabase();
+            } catch (RuntimeException closing) {
+                restore.addSuppressed(closing);
             }
-            if (failure != null) {
-                throw failure;
+            if (failure == null) {
+                throw new SqliteDatabaseException("Could not restore synced husbandry commits", restore);
             }
+            // The save's own failure is the one reported; this one travels with it.
+            failure.addSuppressed(restore);
         }
     }
 
@@ -365,14 +379,38 @@ public final class HusbandryRepository {
         return queryOne("PRAGMA synchronous", result -> result.getInt(1)).orElseThrow();
     }
 
-    /** Puts relaxed saves on disk when no synced commit has followed them. */
+    void closeDatabase() {
+        database.close();
+    }
+
+    /**
+     * Puts relaxed saves on disk when no synced save has followed them. The saves stay marked
+     * until a checkpoint has copied the whole log, so one that could not is tried again.
+     */
     public void syncRelaxed() {
-        if (!unsynced) {
-            return;
+        synchronized (database) {
+            if (unsynced && checkpointedAll()) {
+                unsynced = false;
+            }
         }
-        // SQLite syncs the write-ahead log before a checkpoint copies it into the database.
-        checkpointWal(false);
-        unsynced = false;
+    }
+
+    /**
+     * Runs a passive checkpoint and tells whether it copied the whole write-ahead log, which
+     * SQLite only does after syncing that log. A passive checkpoint does not throw when another
+     * connection is in its way: it reports busy, or fewer frames copied than the log holds.
+     */
+    boolean checkpointedAll() {
+        // Columns: busy, frames in the log, frames checkpointed.
+        return queryOne("PRAGMA wal_checkpoint(PASSIVE)",
+                result -> result.getInt(1) == 0 && result.getInt(2) == result.getInt(3)).orElse(false);
+    }
+
+    /** Whether a relaxed save is still waiting for its sync. For tests. */
+    boolean relaxedPending() {
+        synchronized (database) {
+            return unsynced;
+        }
     }
 
     public Optional<HusbandryAnimal> getAnimal(UUID uuid) {

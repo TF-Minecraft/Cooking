@@ -71,11 +71,7 @@ public final class HusbandryTickTask {
         }
         if (dirty.isEmpty()) {
             // Nothing loaded to save: the load and unload saves since the last tick still get synced.
-            try {
-                repository.syncRelaxed();
-            } catch (SqliteDatabaseException ex) {
-                Bukkit.getLogger().severe("[Cooking] Failed to sync husbandry saves: " + ex.getMessage());
-            }
+            syncRelaxed(repository);
             return;
         }
         try {
@@ -91,5 +87,15 @@ public final class HusbandryTickTask {
             Bukkit.getLogger().severe("[Cooking] Failed to persist husbandry tick: " + ex.getMessage());
         }
         HusbandrySnapshots.save(repository, snapshots);
+        // Whatever these writes managed, the relaxed saves before them must not wait on the next tick.
+        syncRelaxed(repository);
+    }
+
+    private static void syncRelaxed(HusbandryRepository repository) {
+        try {
+            repository.syncRelaxed();
+        } catch (SqliteDatabaseException ex) {
+            Bukkit.getLogger().severe("[Cooking] Failed to sync husbandry saves: " + ex.getMessage());
+        }
     }
 }

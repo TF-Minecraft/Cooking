@@ -89,6 +89,28 @@ class HusbandryRuntimeCoverageTest {
         assertNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
     }
 
+    @Test void aFailedCombinedSaveStillWritesAnimalsAndSnapshotsApart() {
+        Cow first = f.spawn(Cow.class), second = f.spawn(Cow.class);
+        HusbandryAnimal a = f.record(first), b = f.record(second); f.own(a, f.player); f.own(b, f.player);
+        UnsafeValues unsafe = mock(UnsafeValues.class);
+        when(unsafe.serializeEntity(first, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{1});
+        when(unsafe.serializeEntity(second, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{2});
+        doThrow(new SqliteDatabaseException("together")).when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
+        clearInvocations(f.repository);
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
+            lifecycle.onEntitiesUnload(new EntitiesUnloadEvent(first.getChunk(), List.of(first, second)));
+        }
+        // The old two synced writes take over, and both go through.
+        verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 2));
+        verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 2), anyLong());
+        verify(f.repository, never()).upsertAnimal(any());
+        assertNotNull(f.repository.getAnimal(a.uuid()).orElseThrow().unloadedAt());
+        assertNotNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
+        assertArrayEquals(new byte[]{1}, f.repository.getSnapshot(a.uuid()).orElseThrow().data());
+        assertArrayEquals(new byte[]{2}, f.repository.getSnapshot(b.uuid()).orElseThrow().data());
+    }
+
     @Test void failedEventBatchFallsBackToOneWritePerAnimalAndSnapshot() {
         Cow first = f.spawn(Cow.class), second = f.spawn(Cow.class);
         HusbandryAnimal a = f.record(first), b = f.record(second); f.own(a, f.player); f.own(b, f.player);
@@ -300,6 +322,8 @@ class HusbandryRuntimeCoverageTest {
             doThrow(new SqliteDatabaseException("snapshot row")).doCallRealMethod().when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             animal.setCare(55); f.server.getScheduler().performTicks(1200);
             verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 3)); verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 1), anyLong());
+            // The fallback ends by syncing whatever load and unload left, so a save that keeps failing cannot hold that back.
+            verify(f.repository).syncRelaxed();
             assertTrue(f.repository.getAnimal(animal.uuid()).orElseThrow().care() >= 55);
             doThrow(new SqliteDatabaseException("together")).when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             doThrow(new SqliteDatabaseException("tick write failure")).when(f.repository).upsertAnimals(anyList());
@@ -307,6 +331,7 @@ class HusbandryRuntimeCoverageTest {
             assertDoesNotThrow(() -> f.server.getScheduler().performTicks(1200));
             when(f.plugin.getHusbandryRepository()).thenReturn(null); f.server.getScheduler().performTicks(1200); when(f.plugin.getHusbandryRepository()).thenReturn(f.repository);
             // With nothing loaded there is no save to ride on: the tick syncs what load and unload left, and survives a failure.
+            clearInvocations(f.repository);
             HusbandryEntities.clearLoaded(); f.server.getScheduler().performTicks(1200); verify(f.repository).syncRelaxed();
             doThrow(new SqliteDatabaseException("checkpoint")).when(f.repository).syncRelaxed(); assertDoesNotThrow(() -> f.server.getScheduler().performTicks(1200));
             HusbandryTickTask.stop(); HusbandryTickTask.stop();

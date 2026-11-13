@@ -5,9 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -18,15 +16,17 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import org.mockito.InOrder;
 
 import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 
@@ -342,18 +342,89 @@ class HusbandryRepositoryTest {
         }
     }
 
+    /** One snapshot in a map that reports the connection's sync level when the save comes to write it. */
+    private static Map<UUID, byte[]> reportingLevel(HusbandryRepository repository, List<Integer> levels, UUID animal) {
+        return new HashMap<UUID, byte[]>(Map.of(animal, new byte[] {1})) {
+            @Override
+            public Set<Map.Entry<UUID, byte[]>> entrySet() {
+                levels.add(repository.synchronousLevel());
+                return super.entrySet();
+            }
+        };
+    }
+
     @Test
-    void aRelaxedSaveLowersTheSyncLevelOnlyWhileItRuns(@TempDir Path tempDir) {
-        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+    void aRelaxedSaveCommitsAtNormalAndHandsBackFullWhileASyncedSaveStaysAtFull(@TempDir Path tempDir) {
+        HusbandryRepository repository = HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile());
         try {
             HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
-            InOrder order = inOrder(repository);
-            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
-            order.verify(repository).synchronous("NORMAL");
-            order.verify(repository).synchronous("FULL");
-            repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
-            verify(repository, times(1)).synchronous("NORMAL");
-            verify(repository, times(1)).synchronous("FULL");
+            List<Integer> levels = new ArrayList<>();
+            repository.saveLoaded(List.of(cow), reportingLevel(repository, levels, cow.uuid()), 100L, true);
+            assertEquals(List.of(1), levels, "the transaction of a relaxed save runs at NORMAL");
+            assertEquals(2, repository.synchronousLevel(), "and the connection is back at FULL once it returns");
+            assertTrue(repository.relaxedPending());
+            assertTrue(repository.getSnapshot(cow.uuid()).isPresent());
+
+            repository.saveLoaded(List.of(cow), reportingLevel(repository, levels, cow.uuid()), 200L, false);
+            assertEquals(List.of(1, 2), levels, "a synced save never leaves FULL");
+            assertFalse(repository.relaxedPending(), "its sync covers the relaxed save before it");
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void anErrorInsideARelaxedSaveStillRestoresSyncedCommits(@TempDir Path tempDir) {
+        HusbandryRepository repository = HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile());
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            repository.upsertAnimal(cow);
+            cow.setCare(77);
+            Map<UUID, byte[]> failing = new HashMap<UUID, byte[]>(Map.of(cow.uuid(), new byte[] {1})) {
+                @Override
+                public Set<Map.Entry<UUID, byte[]>> entrySet() {
+                    throw new AssertionError("out of memory, say");
+                }
+            };
+            AssertionError error = assertThrows(AssertionError.class,
+                    () -> repository.saveLoaded(List.of(cow), failing, 100L, true));
+            assertEquals("out of memory, say", error.getMessage());
+            assertEquals(2, repository.synchronousLevel(), "an Error must not leave the connection at NORMAL");
+            assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care(), "and the save rolled back");
+            assertFalse(repository.relaxedPending());
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void noOtherThreadsWriteRunsWhileARelaxedSaveHoldsTheLevelDown(@TempDir Path tempDir) throws Exception {
+        HusbandryRepository repository = HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile());
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            HusbandryAnimal other = animal(UUID.randomUUID(), "PIG", "Ham", 8);
+            Thread writer = new Thread(() -> repository.upsertAnimal(other));
+            boolean[] waited = new boolean[1];
+            Map<UUID, byte[]> duringSave = new HashMap<UUID, byte[]>(Map.of(cow.uuid(), new byte[] {1})) {
+                @Override
+                public Set<Map.Entry<UUID, byte[]>> entrySet() {
+                    // Inside the relaxed transaction: the level is NORMAL right now.
+                    writer.start();
+                    try {
+                        writer.join(400);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    waited[0] = writer.isAlive() && !repository.exists(other.uuid());
+                    return super.entrySet();
+                }
+            };
+            repository.saveLoaded(List.of(cow), duringSave, 100L, true);
+            assertTrue(waited[0], "the other write must wait until the level is back at FULL");
+            writer.join(5_000);
+            assertFalse(writer.isAlive());
+            assertTrue(repository.exists(other.uuid()));
+            assertEquals(2, repository.synchronousLevel());
         } finally {
             repository.close();
         }
@@ -374,8 +445,9 @@ class HusbandryRepositoryTest {
             assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care(), "the animal rolled back with its snapshot");
             assertEquals(2, repository.synchronousLevel());
             // A failed relaxed save left nothing behind to sync.
+            assertFalse(repository.relaxedPending());
             repository.syncRelaxed();
-            verify(repository, never()).checkpointWal(anyBoolean());
+            verify(repository, never()).checkpointedAll();
         } finally {
             repository.close();
         }
@@ -387,26 +459,57 @@ class HusbandryRepositoryTest {
         try {
             HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
             repository.syncRelaxed();
-            verify(repository, never()).checkpointWal(false);
+            verify(repository, never()).checkpointedAll();
 
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
             repository.syncRelaxed();
+            assertFalse(repository.relaxedPending());
             repository.syncRelaxed();
-            verify(repository, times(1)).checkpointWal(false);
+            verify(repository, times(1)).checkpointedAll();
 
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
             repository.syncRelaxed();
-            verify(repository, times(1)).checkpointWal(false);
+            verify(repository, times(1)).checkpointedAll();
 
             // A checkpoint that fails leaves the saves marked, so the next minute tries again.
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
-            doThrow(new SqliteDatabaseException("busy")).doCallRealMethod().when(repository).checkpointWal(false);
+            doThrow(new SqliteDatabaseException("disk")).doCallRealMethod().when(repository).checkpointedAll();
             assertThrows(SqliteDatabaseException.class, repository::syncRelaxed);
+            assertTrue(repository.relaxedPending());
             repository.syncRelaxed();
-            verify(repository, times(3)).checkpointWal(false);
+            assertFalse(repository.relaxedPending());
+            verify(repository, times(3)).checkpointedAll();
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void aCheckpointThatAnotherConnectionHoldsBackKeepsTheSavesMarked(@TempDir Path tempDir) throws Exception {
+        File dbFile = tempDir.resolve("husbandry.db").toFile();
+        HusbandryRepository repository = HusbandryRepository.open(dbFile);
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            repository.upsertAnimal(cow);
+            try (Connection reader = DriverManager.getConnection("jdbc:sqlite:" + dbFile)) {
+                // A reader that keeps looking at the database as it was before the relaxed save.
+                reader.setAutoCommit(false);
+                try (var rows = reader.createStatement().executeQuery("SELECT COUNT(*) FROM animals")) {
+                    assertTrue(rows.next());
+                }
+                cow.setCare(40);
+                repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+                // SQLite reports no error here: the checkpoint just stops at the reader's view.
+                assertFalse(repository.checkpointedAll());
+                repository.saveLoaded(List.of(cow), Map.of(), 101L, true);
+                repository.syncRelaxed();
+                assertTrue(repository.relaxedPending(), "nothing was synced, so the save still waits");
+                reader.rollback();
+            }
             repository.syncRelaxed();
-            verify(repository, times(3)).checkpointWal(false);
+            assertFalse(repository.relaxedPending(), "with the reader gone the next try goes through");
+            assertEquals(40, repository.getAnimal(cow.uuid()).orElseThrow().care());
         } finally {
             repository.close();
         }
@@ -420,9 +523,45 @@ class HusbandryRepositoryTest {
         SqliteDatabaseException failure = assertThrows(SqliteDatabaseException.class,
                 () -> repository.saveLoaded(List.of(cow), Map.of(), 100L, true));
         assertEquals("Could not restore synced husbandry commits", failure.getMessage());
+        assertEquals("level stuck", failure.getCause().getMessage());
         // Closed rather than left committing without syncs: every later use fails loudly.
         assertThrows(SqliteDatabaseException.class, () -> repository.getAnimal(cow.uuid()));
         assertThrows(SqliteDatabaseException.class, () -> repository.upsertAnimal(cow));
+    }
+
+    @Test
+    void aFailedSaveKeepsItsOwnFailureWhenTheLevelCannotBeRestoredEither(@TempDir Path tempDir) throws Exception {
+        File dbFile = tempDir.resolve("husbandry.db").toFile();
+        HusbandryRepository repository = spy(HusbandryRepository.open(dbFile));
+        HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+        repository.upsertAnimal(cow);
+        try (Connection db = DriverManager.getConnection("jdbc:sqlite:" + dbFile)) {
+            db.createStatement().execute(
+                    "CREATE TRIGGER reject_snapshots BEFORE INSERT ON snapshots BEGIN SELECT RAISE(FAIL,'no snapshots'); END");
+        }
+        doThrow(new SqliteDatabaseException("level stuck")).when(repository).synchronous("FULL");
+        SqliteDatabaseException failure = assertThrows(SqliteDatabaseException.class,
+                () -> repository.saveLoaded(List.of(cow), Map.of(cow.uuid(), new byte[] {1}), 100L, true));
+        assertEquals("Failed to upsert snapshots", failure.getMessage());
+        assertEquals(1, failure.getSuppressed().length);
+        assertEquals("level stuck", failure.getSuppressed()[0].getMessage());
+        assertThrows(SqliteDatabaseException.class, () -> repository.getAnimal(cow.uuid()), "closed here too");
+    }
+
+    @Test
+    void aCloseThatFailsWhileRestoringTravelsWithTheRestoreFailure(@TempDir Path tempDir) {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            doThrow(new SqliteDatabaseException("level stuck")).doCallRealMethod().when(repository).synchronous("FULL");
+            doThrow(new SqliteDatabaseException("close stuck")).doCallRealMethod().when(repository).closeDatabase();
+            SqliteDatabaseException failure = assertThrows(SqliteDatabaseException.class,
+                    () -> repository.saveLoaded(List.of(cow), Map.of(), 100L, true));
+            assertEquals("Could not restore synced husbandry commits", failure.getMessage());
+            assertEquals("close stuck", failure.getCause().getSuppressed()[0].getMessage());
+        } finally {
+            repository.close();
+        }
     }
 
     private static HusbandryAnimal animal(UUID uuid, String type, String name, int care) {
