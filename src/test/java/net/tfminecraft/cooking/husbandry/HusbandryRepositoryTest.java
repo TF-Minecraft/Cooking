@@ -481,8 +481,11 @@ class HusbandryRepositoryTest {
             repository.syncRelaxed();
             verify(repository, times(1)).checkpointedAll();
 
-            // A synced save afterwards is no proof. This one writes the same row again, which
-            // changes no page: SQLite then writes nothing, so there is nothing for it to sync.
+            // A synced save afterwards is no proof. The relaxed save here changes the row, so the
+            // log now holds a commit that was never synced. The synced save after it writes the
+            // same row again, which changes no page: SQLite then writes nothing, so there is
+            // nothing for it to sync, and the relaxed commit is where it was.
+            cow.setCare(50);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
             byte[] before = Files.readAllBytes(log);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, false);

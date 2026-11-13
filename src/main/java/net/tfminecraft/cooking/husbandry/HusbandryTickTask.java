@@ -119,7 +119,7 @@ public final class HusbandryTickTask {
             waitingTicks = 0;
         } else if (++waitingTicks == WAITING_WARN_TICKS) {
             Bukkit.getLogger().warning("[Cooking] Husbandry saves have waited " + WAITING_WARN_TICKS
-                    + " minutes for their disk sync: something else is holding husbandry.db open."
+                    + " minutes for their disk sync, probably because another program is reading husbandry.db."
                     + " A power loss would roll back the chunk load and unload saves since then.");
         }
     }
