@@ -151,7 +151,7 @@ public final class HusbandryLifecycleListener implements Listener {
      * Saves every animal of one entities event, and the entity copies taken with them, in a single
      * relaxed transaction ({@link HusbandryRepository#saveLoaded}): chunks load and unload all the
      * time, and each synced commit holds the server thread for a disk sync. The once-a-minute
-     * husbandry tick puts these saves on disk.
+     * husbandry tick puts these saves on disk ({@link HusbandryRepository#syncRelaxed}).
      */
     private static void load(Iterable<? extends Entity> entities) {
         Writes writes = new Writes();

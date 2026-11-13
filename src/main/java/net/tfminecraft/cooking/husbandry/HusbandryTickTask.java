@@ -75,19 +75,19 @@ public final class HusbandryTickTask {
             return;
         }
         try {
-            // One synced commit a minute: it also puts the relaxed load and unload saves on disk.
+            // One synced commit a minute for the loaded animals and their snapshots.
             repository.saveLoaded(dirty, snapshots, now, false);
-            return;
         } catch (SqliteDatabaseException together) {
             // A failing snapshot must not cost the animals their save: write the two apart.
+            try {
+                repository.upsertAnimals(dirty);
+            } catch (SqliteDatabaseException ex) {
+                Bukkit.getLogger().severe("[Cooking] Failed to persist husbandry tick: " + ex.getMessage());
+            }
+            HusbandrySnapshots.save(repository, snapshots);
         }
-        try {
-            repository.upsertAnimals(dirty);
-        } catch (SqliteDatabaseException ex) {
-            Bukkit.getLogger().severe("[Cooking] Failed to persist husbandry tick: " + ex.getMessage());
-        }
-        HusbandrySnapshots.save(repository, snapshots);
-        // Whatever these writes managed, the relaxed saves before them must not wait on the next tick.
+        // Whatever the save above managed or changed, the relaxed load and unload saves since the
+        // last tick are put on disk now. A save that rewrites unchanged rows would not do that.
         syncRelaxed(repository);
     }
 

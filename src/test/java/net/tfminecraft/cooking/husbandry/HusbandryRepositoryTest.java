@@ -368,7 +368,6 @@ class HusbandryRepositoryTest {
 
             repository.saveLoaded(List.of(cow), reportingLevel(repository, levels, cow.uuid()), 200L, false);
             assertEquals(List.of(1, 2), levels, "a synced save never leaves FULL");
-            assertFalse(repository.relaxedPending(), "its sync covers the relaxed save before it");
         } finally {
             repository.close();
         }
@@ -466,7 +465,7 @@ class HusbandryRepositoryTest {
     }
 
     @Test
-    void relaxedSavesAreSyncedOnceByACheckpointUnlessASyncedSaveCameFirst(@TempDir Path tempDir) {
+    void relaxedSavesStayMarkedUntilACheckpointHasCopiedThem(@TempDir Path tempDir) {
         HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
         try {
             HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
@@ -479,10 +478,18 @@ class HusbandryRepositoryTest {
             repository.syncRelaxed();
             verify(repository, times(1)).checkpointedAll();
 
+            // A synced save afterwards is no proof. This one writes the same row again, which
+            // changes no page: SQLite then writes nothing and syncs nothing.
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
             repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            assertTrue(repository.relaxedPending(), "only a checkpoint clears the mark");
+            // Nor is a synced save that does change the row.
+            cow.setCare(90);
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            assertTrue(repository.relaxedPending());
             repository.syncRelaxed();
-            verify(repository, times(1)).checkpointedAll();
+            assertFalse(repository.relaxedPending());
+            verify(repository, times(2)).checkpointedAll();
 
             // A checkpoint that fails leaves the saves marked, so the next minute tries again.
             repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
@@ -491,7 +498,7 @@ class HusbandryRepositoryTest {
             assertTrue(repository.relaxedPending());
             repository.syncRelaxed();
             assertFalse(repository.relaxedPending());
-            verify(repository, times(3)).checkpointedAll();
+            verify(repository, times(4)).checkpointedAll();
         } finally {
             repository.close();
         }

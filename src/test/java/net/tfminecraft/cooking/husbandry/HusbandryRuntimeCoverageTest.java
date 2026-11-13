@@ -315,15 +315,15 @@ class HusbandryRuntimeCoverageTest {
             bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe); clearInvocations(f.repository); HusbandryTickTask.start(); HusbandryTickTask.start(); f.server.getScheduler().performTicks(1200);
             assertEquals(1, f.repository.getAnimal(animal.uuid()).orElseThrow().care()); assertEquals(unchanged, notVisited.lastProcessedAt()); assertArrayEquals(new byte[]{3}, f.repository.getSnapshot(animal.uuid()).orElseThrow().data()); assertTrue(f.repository.getSnapshot(cannotCapture.uuid()).isEmpty());
             assertTrue(HusbandryEntities.getLoaded(gone.uuid()).isEmpty()); assertTrue(HusbandryEntities.getLoaded(nonLiving.uuid()).isEmpty());
-            // The minute's save is one synced commit, which is what puts the relaxed load and unload saves on disk.
+            // The minute's save is one synced commit, and the tick then puts the relaxed load and unload saves on disk.
             verify(f.repository).saveLoaded(argThat(animals -> animals.size() == 3), argThat(copies -> copies.size() == 1), anyLong(), eq(false));
-            verify(f.repository, never()).upsertAnimals(any()); verify(f.repository, never()).syncRelaxed();
+            verify(f.repository, never()).upsertAnimals(any()); verify(f.repository).syncRelaxed();
             // A save that fails as a whole falls back to the animals and the snapshots apart.
             doThrow(new SqliteDatabaseException("snapshot row")).doCallRealMethod().when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             animal.setCare(55); f.server.getScheduler().performTicks(1200);
             verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 3)); verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 1), anyLong());
-            // The fallback ends by syncing whatever load and unload left, so a save that keeps failing cannot hold that back.
-            verify(f.repository).syncRelaxed();
+            // The fallback ends the same way, so a save that keeps failing cannot hold that sync back.
+            verify(f.repository, times(2)).syncRelaxed();
             assertTrue(f.repository.getAnimal(animal.uuid()).orElseThrow().care() >= 55);
             doThrow(new SqliteDatabaseException("together")).when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             doThrow(new SqliteDatabaseException("tick write failure")).when(f.repository).upsertAnimals(anyList());

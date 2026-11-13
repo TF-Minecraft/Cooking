@@ -125,10 +125,10 @@ public final class HusbandryRepository {
     private final SqliteDatabase database;
     private HusbandryOwnershipStore ownership;
     /**
-     * A relaxed save has been committed, and neither a synced {@link #saveLoaded} nor a complete
-     * checkpoint from {@link #syncRelaxed()} has followed it yet. Other synced commits (ownership,
-     * estates) put it on disk as well without clearing this, which only costs one spare checkpoint.
-     * Read and written under the database's lock.
+     * A relaxed save has been committed and no complete checkpoint from {@link #syncRelaxed()} has
+     * followed it yet. Only that checkpoint clears this. A later synced commit usually puts the
+     * relaxed save on disk too, but not always: a commit that changes no page (the same rows
+     * written again) writes nothing and so syncs nothing. Read and written under the database's lock.
      */
     private boolean unsynced;
 
@@ -307,10 +307,9 @@ public final class HusbandryRepository {
      *
      * <p>A {@code relaxed} save is committed without its own disk sync, which is what a save on the
      * server thread costs. A crash or kill of the server process still loses nothing, because the
-     * commit already reached the operating system. The next synced commit on this database (any
-     * save that is not relaxed, an ownership or estate change) or {@link #syncRelaxed()} puts it on
-     * disk, so an operating-system crash or power loss can only roll back relaxed saves made since
-     * then. Every other write keeps {@code synchronous=FULL}.
+     * commit already reached the operating system. {@link #syncRelaxed()} puts it on disk, and the
+     * once-a-minute husbandry tick calls that, so an operating-system crash or power loss can only
+     * roll back relaxed saves made since then. Every other write keeps {@code synchronous=FULL}.
      */
     public void saveLoaded(Collection<HusbandryAnimal> animals, Map<UUID, byte[]> snapshots, long savedAt,
             boolean relaxed) {
@@ -327,9 +326,9 @@ public final class HusbandryRepository {
         // write can run between them and be committed without its sync.
         synchronized (database) {
             if (!relaxed) {
+                // Relaxed saves before this stay marked: this commit syncs the log only if it
+                // changes a page, and rows written again unchanged change none.
                 database.runTransaction(work);
-                // A synced commit syncs the whole log, the relaxed saves before it included.
-                unsynced = false;
                 return;
             }
             synchronous("NORMAL");
@@ -358,7 +357,7 @@ public final class HusbandryRepository {
         } catch (Throwable restore) {
             try {
                 closeDatabase();
-            } catch (RuntimeException closing) {
+            } catch (Throwable closing) {
                 restore.addSuppressed(closing);
             }
             if (failure == null) {
@@ -384,8 +383,8 @@ public final class HusbandryRepository {
     }
 
     /**
-     * Puts relaxed saves on disk when no synced save has followed them. The saves stay marked
-     * until a checkpoint has copied the whole log, so one that could not is tried again.
+     * Puts relaxed saves on disk, if any are waiting. They stay marked until a checkpoint has
+     * copied the whole log, so one that could not is tried again.
      */
     public void syncRelaxed() {
         synchronized (database) {
