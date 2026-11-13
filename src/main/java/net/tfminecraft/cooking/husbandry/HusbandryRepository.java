@@ -1,6 +1,7 @@
 package net.tfminecraft.cooking.husbandry;
 
 import java.io.File;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import net.tfminecraft.tlibs.database.SqliteDatabase;
 import net.tfminecraft.tlibs.database.SqliteDatabaseException;
@@ -122,6 +124,8 @@ public final class HusbandryRepository {
 
     private final SqliteDatabase database;
     private HusbandryOwnershipStore ownership;
+    /** A relaxed save has been committed and no synced commit or checkpoint has followed it yet. */
+    private volatile boolean unsynced;
 
     private HusbandryRepository(SqliteDatabase database) {
         this.database = database;
@@ -260,29 +264,115 @@ public final class HusbandryRepository {
     }
 
     public void upsertAnimals(Collection<HusbandryAnimal> animals) {
-        if (animals == null || animals.isEmpty()) {
+        List<HusbandryAnimal> valid = valid(animals);
+        if (valid.isEmpty()) {
             return;
         }
+        database.runTransaction(connection -> writeAnimals(connection, valid));
+    }
+
+    private static List<HusbandryAnimal> valid(Collection<HusbandryAnimal> animals) {
         List<HusbandryAnimal> valid = new ArrayList<>();
+        if (animals == null) {
+            return valid;
+        }
         for (HusbandryAnimal animal : animals) {
             if (animal == null || animal.uuid() == null) {
                 continue;
             }
             valid.add(animal);
         }
-        if (valid.isEmpty()) {
+        return valid;
+    }
+
+    private static void writeAnimals(Connection connection, List<HusbandryAnimal> valid) {
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_ANIMAL)) {
+            for (HusbandryAnimal animal : valid) {
+                bindAnimal(statement, animal);
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new SqliteDatabaseException("Failed to upsert animals", e);
+        }
+    }
+
+    /**
+     * The routine state of loaded animals and the entity copies taken with it, in one transaction:
+     * the animals first, since a copy is only stored for an animal that has a row.
+     *
+     * <p>A {@code relaxed} save is committed without its own disk sync, which is what a save on the
+     * server thread costs. A crash or kill of the server process still loses nothing, because the
+     * commit already reached the operating system. The next synced commit on this database (any
+     * save that is not relaxed, an ownership or estate change) or {@link #syncRelaxed()} puts it on
+     * disk, so an operating-system crash or power loss can only roll back relaxed saves made since
+     * then. Every other write keeps {@code synchronous=FULL}.
+     */
+    public void saveLoaded(Collection<HusbandryAnimal> animals, Map<UUID, byte[]> snapshots, long savedAt,
+            boolean relaxed) {
+        List<HusbandryAnimal> valid = valid(animals);
+        Map<UUID, byte[]> copies = snapshots == null ? Map.of() : snapshots;
+        if (valid.isEmpty() && copies.isEmpty()) {
             return;
         }
-        database.runTransaction(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(UPSERT_ANIMAL)) {
-                for (HusbandryAnimal animal : valid) {
-                    bindAnimal(statement, animal);
-                    statement.executeUpdate();
-                }
-            } catch (SQLException e) {
-                throw new SqliteDatabaseException("Failed to upsert animals", e);
+        Consumer<Connection> work = connection -> {
+            writeAnimals(connection, valid);
+            writeSnapshots(connection, copies, savedAt);
+        };
+        if (!relaxed) {
+            database.runTransaction(work);
+            unsynced = false;
+            return;
+        }
+        // One lock for the level change, the transaction and the change back: no other thread's
+        // write can run between them and be committed without its sync.
+        synchronized (database) {
+            synchronous("NORMAL");
+            RuntimeException failure = null;
+            try {
+                database.runTransaction(work);
+                unsynced = true;
+            } catch (RuntimeException e) {
+                failure = e;
             }
-        });
+            try {
+                synchronous("FULL");
+            } catch (RuntimeException restore) {
+                // Never leave a connection that commits without syncing: ownership and estate
+                // changes rely on it. Husbandry then stays closed until the plugin restarts.
+                try {
+                    database.close();
+                } catch (RuntimeException closing) {
+                    restore.addSuppressed(closing);
+                }
+                if (failure == null) {
+                    throw new SqliteDatabaseException("Could not restore synced husbandry commits", restore);
+                }
+                failure.addSuppressed(restore);
+            }
+            if (failure != null) {
+                throw failure;
+            }
+        }
+    }
+
+    /** Sets how commits on this connection reach the disk. Only possible outside a transaction. */
+    void synchronous(String level) {
+        database.execute("PRAGMA synchronous=" + level);
+    }
+
+    /** The connection's {@code PRAGMA synchronous} level (2 = FULL, 1 = NORMAL). For tests. */
+    int synchronousLevel() {
+        return queryOne("PRAGMA synchronous", result -> result.getInt(1)).orElseThrow();
+    }
+
+    /** Puts relaxed saves on disk when no synced commit has followed them. */
+    public void syncRelaxed() {
+        if (!unsynced) {
+            return;
+        }
+        // SQLite syncs the write-ahead log before a checkpoint copies it into the database.
+        checkpointWal(false);
+        unsynced = false;
     }
 
     public Optional<HusbandryAnimal> getAnimal(UUID uuid) {
@@ -395,20 +485,25 @@ public final class HusbandryRepository {
         if (snapshots == null || snapshots.isEmpty()) {
             return;
         }
-        database.runTransaction(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(UPSERT_SNAPSHOT)) {
-                for (Map.Entry<UUID, byte[]> snapshot : snapshots.entrySet()) {
-                    if (snapshot.getKey() == null || snapshot.getValue() == null) {
-                        continue;
-                    }
-                    String uuid = snapshot.getKey().toString();
-                    bindParams(statement, uuid, snapshot.getValue(), savedAt, uuid);
-                    statement.executeUpdate();
+        database.runTransaction(connection -> writeSnapshots(connection, snapshots, savedAt));
+    }
+
+    private static void writeSnapshots(Connection connection, Map<UUID, byte[]> snapshots, long savedAt) {
+        if (snapshots.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_SNAPSHOT)) {
+            for (Map.Entry<UUID, byte[]> snapshot : snapshots.entrySet()) {
+                if (snapshot.getKey() == null || snapshot.getValue() == null) {
+                    continue;
                 }
-            } catch (SQLException e) {
-                throw new SqliteDatabaseException("Failed to upsert snapshots", e);
+                String uuid = snapshot.getKey().toString();
+                bindParams(statement, uuid, snapshot.getValue(), savedAt, uuid);
+                statement.executeUpdate();
             }
-        });
+        } catch (SQLException e) {
+            throw new SqliteDatabaseException("Failed to upsert snapshots", e);
+        }
     }
 
     public Optional<HusbandrySnapshot> getSnapshot(UUID uuid) {

@@ -70,7 +70,20 @@ public final class HusbandryTickTask {
             }
         }
         if (dirty.isEmpty()) {
+            // Nothing loaded to save: the load and unload saves since the last tick still get synced.
+            try {
+                repository.syncRelaxed();
+            } catch (SqliteDatabaseException ex) {
+                Bukkit.getLogger().severe("[Cooking] Failed to sync husbandry saves: " + ex.getMessage());
+            }
             return;
+        }
+        try {
+            // One synced commit a minute: it also puts the relaxed load and unload saves on disk.
+            repository.saveLoaded(dirty, snapshots, now, false);
+            return;
+        } catch (SqliteDatabaseException together) {
+            // A failing snapshot must not cost the animals their save: write the two apart.
         }
         try {
             repository.upsertAnimals(dirty);

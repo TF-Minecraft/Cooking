@@ -3,7 +3,15 @@ package net.tfminecraft.cooking.husbandry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -12,11 +20,15 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.InOrder;
+
+import net.tfminecraft.tlibs.database.SqliteDatabaseException;
 
 class HusbandryRepositoryTest {
 
@@ -296,6 +308,121 @@ class HusbandryRepositoryTest {
         } finally {
             repository.close();
         }
+    }
+
+    @Test
+    void loadedSaveStoresAnimalsAndTheirSnapshotsTogetherWhetherRelaxedOrSynced(@TempDir Path tempDir) {
+        HusbandryRepository repository = HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile());
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            HusbandryAnimal horse = animal(UUID.randomUUID(), "HORSE", "Drake Maye", 200);
+            UUID noRow = UUID.randomUUID();
+            // The horse's row is new in this very save: its snapshot must still be stored.
+            repository.saveLoaded(List.of(cow, horse), Map.of(horse.uuid(), new byte[] {7}, noRow, new byte[] {5}), 100L, true);
+            assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care());
+            assertTrue(Arrays.equals(new byte[] {7}, repository.getSnapshot(horse.uuid()).orElseThrow().data()));
+            assertEquals(100L, repository.getSnapshot(horse.uuid()).orElseThrow().savedAt());
+            assertTrue(repository.getSnapshot(noRow).isEmpty());
+            assertEquals(2, repository.synchronousLevel(), "a relaxed save must hand the connection back fully synced");
+
+            cow.setCare(40);
+            repository.saveLoaded(List.of(cow), Map.of(horse.uuid(), new byte[] {8}), 200L, false);
+            assertEquals(40, repository.getAnimal(cow.uuid()).orElseThrow().care());
+            assertTrue(Arrays.equals(new byte[] {8}, repository.getSnapshot(horse.uuid()).orElseThrow().data()));
+            assertEquals(2, repository.synchronousLevel());
+
+            // Nothing to write, null collections and rows without an id are all quiet no-ops.
+            repository.saveLoaded(null, null, 300L, true);
+            repository.saveLoaded(List.of(), Map.of(), 300L, false);
+            repository.saveLoaded(Arrays.asList((HusbandryAnimal) null), null, 300L, true);
+            repository.saveLoaded(null, Map.of(horse.uuid(), new byte[] {9}), 300L, true);
+            assertTrue(Arrays.equals(new byte[] {9}, repository.getSnapshot(horse.uuid()).orElseThrow().data()));
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void aRelaxedSaveLowersTheSyncLevelOnlyWhileItRuns(@TempDir Path tempDir) {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            InOrder order = inOrder(repository);
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+            order.verify(repository).synchronous("NORMAL");
+            order.verify(repository).synchronous("FULL");
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            verify(repository, times(1)).synchronous("NORMAL");
+            verify(repository, times(1)).synchronous("FULL");
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void aFailedRelaxedSaveWritesNothingAndStillRestoresSyncedCommits(@TempDir Path tempDir) throws Exception {
+        File dbFile = tempDir.resolve("husbandry.db").toFile();
+        HusbandryRepository repository = spy(HusbandryRepository.open(dbFile));
+        try (Connection db = DriverManager.getConnection("jdbc:sqlite:" + dbFile)) {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            repository.upsertAnimal(cow);
+            db.createStatement().execute(
+                    "CREATE TRIGGER reject_snapshots BEFORE INSERT ON snapshots BEGIN SELECT RAISE(FAIL,'no snapshots'); END");
+            cow.setCare(77);
+            assertThrows(SqliteDatabaseException.class,
+                    () -> repository.saveLoaded(List.of(cow), Map.of(cow.uuid(), new byte[] {1}), 100L, true));
+            assertEquals(12, repository.getAnimal(cow.uuid()).orElseThrow().care(), "the animal rolled back with its snapshot");
+            assertEquals(2, repository.synchronousLevel());
+            // A failed relaxed save left nothing behind to sync.
+            repository.syncRelaxed();
+            verify(repository, never()).checkpointWal(anyBoolean());
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void relaxedSavesAreSyncedOnceByACheckpointUnlessASyncedSaveCameFirst(@TempDir Path tempDir) {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        try {
+            HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+            repository.syncRelaxed();
+            verify(repository, never()).checkpointWal(false);
+
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+            repository.syncRelaxed();
+            repository.syncRelaxed();
+            verify(repository, times(1)).checkpointWal(false);
+
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, false);
+            repository.syncRelaxed();
+            verify(repository, times(1)).checkpointWal(false);
+
+            // A checkpoint that fails leaves the saves marked, so the next minute tries again.
+            repository.saveLoaded(List.of(cow), Map.of(), 100L, true);
+            doThrow(new SqliteDatabaseException("busy")).doCallRealMethod().when(repository).checkpointWal(false);
+            assertThrows(SqliteDatabaseException.class, repository::syncRelaxed);
+            repository.syncRelaxed();
+            verify(repository, times(3)).checkpointWal(false);
+            repository.syncRelaxed();
+            verify(repository, times(3)).checkpointWal(false);
+        } finally {
+            repository.close();
+        }
+    }
+
+    @Test
+    void aConnectionThatCannotGoBackToSyncedCommitsIsClosed(@TempDir Path tempDir) {
+        HusbandryRepository repository = spy(HusbandryRepository.open(tempDir.resolve("husbandry.db").toFile()));
+        HusbandryAnimal cow = animal(UUID.randomUUID(), "COW", "Bess", 12);
+        doThrow(new SqliteDatabaseException("level stuck")).when(repository).synchronous("FULL");
+        SqliteDatabaseException failure = assertThrows(SqliteDatabaseException.class,
+                () -> repository.saveLoaded(List.of(cow), Map.of(), 100L, true));
+        assertEquals("Could not restore synced husbandry commits", failure.getMessage());
+        // Closed rather than left committing without syncs: every later use fails loudly.
+        assertThrows(SqliteDatabaseException.class, () -> repository.getAnimal(cow.uuid()));
+        assertThrows(SqliteDatabaseException.class, () -> repository.upsertAnimal(cow));
     }
 
     private static HusbandryAnimal animal(UUID uuid, String type, String name, int care) {

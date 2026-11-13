@@ -65,7 +65,7 @@ class HusbandryRuntimeCoverageTest {
         assertTrue(f.repository.getSnapshot(animal.uuid()).isEmpty());
     }
 
-    @Test void oneEntitiesEventSavesItsAnimalsAndSnapshotsInOneWriteEach() {
+    @Test void oneEntitiesEventSavesItsAnimalsAndSnapshotsInOneRelaxedWrite() {
         Cow first = f.spawn(Cow.class), second = f.spawn(Cow.class);
         HusbandryAnimal a = f.record(first), b = f.record(second); f.own(a, f.player); f.own(b, f.player);
         UnsafeValues unsafe = mock(UnsafeValues.class);
@@ -76,12 +76,15 @@ class HusbandryRuntimeCoverageTest {
             bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe);
             lifecycle.onEntitiesUnload(new EntitiesUnloadEvent(first.getChunk(), List.of(first, second, f.spawn(ItemDisplay.class))));
         }
-        verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 2));
-        verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 2), anyLong());
+        verify(f.repository).saveLoaded(argThat(animals -> animals.size() == 2), argThat(copies -> copies.size() == 2), anyLong(), eq(true));
+        verify(f.repository, never()).upsertAnimals(any()); verify(f.repository, never()).upsertSnapshots(any(), anyLong());
         assertArrayEquals(new byte[]{2}, f.repository.getSnapshot(b.uuid()).orElseThrow().data());
+        assertNotNull(f.repository.getAnimal(a.uuid()).orElseThrow().unloadedAt());
+        assertEquals(2, f.repository.synchronousLevel());
         clearInvocations(f.repository);
         lifecycle.onEntitiesLoad(new EntitiesLoadEvent(first.getChunk(), List.of(first, second)));
-        verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 2));
+        verify(f.repository).saveLoaded(argThat(animals -> animals.size() == 2), argThat(Map::isEmpty), anyLong(), eq(true));
+        verify(f.repository, never()).upsertAnimals(any());
         assertNull(f.repository.getAnimal(a.uuid()).orElseThrow().unloadedAt());
         assertNull(f.repository.getAnimal(b.uuid()).orElseThrow().unloadedAt());
     }
@@ -92,6 +95,7 @@ class HusbandryRuntimeCoverageTest {
         UnsafeValues unsafe = mock(UnsafeValues.class);
         when(unsafe.serializeEntity(first, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{1});
         when(unsafe.serializeEntity(second, EntitySerializationFlag.FORCE)).thenReturn(new byte[]{2});
+        doThrow(new SqliteDatabaseException("together")).when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
         doThrow(new SqliteDatabaseException("batch")).when(f.repository).upsertAnimals(argThat(animals -> animals != null && animals.size() > 1));
         doThrow(new SqliteDatabaseException("bad row")).when(f.repository).upsertAnimals(
                 argThat(animals -> animals != null && animals.size() == 1 && animals.iterator().next().uuid().equals(a.uuid())));
@@ -286,14 +290,26 @@ class HusbandryRuntimeCoverageTest {
         ItemDisplay display = f.spawn(ItemDisplay.class); HusbandryAnimal nonLiving = new HusbandryAnimal(display.getUniqueId(), "ITEM_DISPLAY", "Display"); HusbandryEntities.putLoaded(nonLiving);
         UnsafeValues unsafe = mock(UnsafeValues.class); when(unsafe.serializeEntity(horse)).thenReturn(new byte[]{3}); when(unsafe.serializeEntity(refused)).thenThrow(new IllegalArgumentException("unavailable"));
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe); HusbandryTickTask.start(); HusbandryTickTask.start(); f.server.getScheduler().performTicks(1200);
+            bukkit.when(Bukkit::getUnsafe).thenReturn(unsafe); clearInvocations(f.repository); HusbandryTickTask.start(); HusbandryTickTask.start(); f.server.getScheduler().performTicks(1200);
             assertEquals(1, f.repository.getAnimal(animal.uuid()).orElseThrow().care()); assertEquals(unchanged, notVisited.lastProcessedAt()); assertArrayEquals(new byte[]{3}, f.repository.getSnapshot(animal.uuid()).orElseThrow().data()); assertTrue(f.repository.getSnapshot(cannotCapture.uuid()).isEmpty());
             assertTrue(HusbandryEntities.getLoaded(gone.uuid()).isEmpty()); assertTrue(HusbandryEntities.getLoaded(nonLiving.uuid()).isEmpty());
+            // The minute's save is one synced commit, which is what puts the relaxed load and unload saves on disk.
+            verify(f.repository).saveLoaded(argThat(animals -> animals.size() == 3), argThat(copies -> copies.size() == 1), anyLong(), eq(false));
+            verify(f.repository, never()).upsertAnimals(any()); verify(f.repository, never()).syncRelaxed();
+            // A save that fails as a whole falls back to the animals and the snapshots apart.
+            doThrow(new SqliteDatabaseException("snapshot row")).doCallRealMethod().when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
+            animal.setCare(55); f.server.getScheduler().performTicks(1200);
+            verify(f.repository).upsertAnimals(argThat(animals -> animals.size() == 3)); verify(f.repository).upsertSnapshots(argThat(copies -> copies.size() == 1), anyLong());
+            assertTrue(f.repository.getAnimal(animal.uuid()).orElseThrow().care() >= 55);
+            doThrow(new SqliteDatabaseException("together")).when(f.repository).saveLoaded(any(), any(), anyLong(), anyBoolean());
             doThrow(new SqliteDatabaseException("tick write failure")).when(f.repository).upsertAnimals(anyList());
             doThrow(new SqliteDatabaseException("snapshot write failure")).when(f.repository).upsertSnapshots(anyMap(), anyLong());
             assertDoesNotThrow(() -> f.server.getScheduler().performTicks(1200));
             when(f.plugin.getHusbandryRepository()).thenReturn(null); f.server.getScheduler().performTicks(1200); when(f.plugin.getHusbandryRepository()).thenReturn(f.repository);
-            HusbandryEntities.clearLoaded(); f.server.getScheduler().performTicks(1200); HusbandryTickTask.stop(); HusbandryTickTask.stop();
+            // With nothing loaded there is no save to ride on: the tick syncs what load and unload left, and survives a failure.
+            HusbandryEntities.clearLoaded(); f.server.getScheduler().performTicks(1200); verify(f.repository).syncRelaxed();
+            doThrow(new SqliteDatabaseException("checkpoint")).when(f.repository).syncRelaxed(); assertDoesNotThrow(() -> f.server.getScheduler().performTicks(1200));
+            HusbandryTickTask.stop(); HusbandryTickTask.stop();
             Cooking.plugin = null; HusbandryTickTask.start(); Cooking.plugin = f.plugin;
         }
     }
