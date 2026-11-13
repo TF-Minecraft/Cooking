@@ -147,7 +147,12 @@ public final class HusbandryLifecycleListener implements Listener {
         unload(List.of(entity));
     }
 
-    /** Saves every animal of one entities event in a single transaction instead of one per animal. */
+    /**
+     * Saves every animal of one entities event, and the entity copies taken with them, in a single
+     * relaxed transaction ({@link HusbandryRepository#saveLoaded}): chunks load and unload all the
+     * time, and each synced commit holds the server thread for a disk sync. The once-a-minute
+     * husbandry tick puts these saves on disk ({@link HusbandryRepository#syncRelaxed}).
+     */
     private static void load(Iterable<? extends Entity> entities) {
         Writes writes = new Writes();
         try {
@@ -241,7 +246,7 @@ public final class HusbandryLifecycleListener implements Listener {
         }
     }
 
-    /** Rows queued by one load or unload pass; animals are written before their snapshots, as before. */
+    /** Rows queued by one load or unload pass; animals are written before their snapshots. */
     private static final class Writes {
         private final List<HusbandryAnimal> animals = new ArrayList<>();
         private final Map<UUID, byte[]> snapshots = new HashMap<>();
@@ -255,6 +260,15 @@ public final class HusbandryLifecycleListener implements Listener {
         void flush() {
             if (repository == null) {
                 return;
+            }
+            try {
+                repository.saveLoaded(animals, snapshots, System.currentTimeMillis(), true);
+                return;
+            } catch (SqliteDatabaseException together) {
+                // One bad row rolls back the whole pass. Save the animals and the snapshots apart,
+                // each fully synced as before, so only the rows that still fail are lost.
+                Bukkit.getLogger().warning("[Cooking] Husbandry save of a chunk pass failed as a whole, saving row by row: "
+                        + together.getMessage());
             }
             try {
                 repository.upsertAnimals(animals);

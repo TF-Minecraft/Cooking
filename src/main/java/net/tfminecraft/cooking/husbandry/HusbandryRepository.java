@@ -1,6 +1,7 @@
 package net.tfminecraft.cooking.husbandry;
 
 import java.io.File;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +14,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Consumer;
 
 import net.tfminecraft.tlibs.database.SqliteDatabase;
 import net.tfminecraft.tlibs.database.SqliteDatabaseException;
@@ -122,6 +124,13 @@ public final class HusbandryRepository {
 
     private final SqliteDatabase database;
     private HusbandryOwnershipStore ownership;
+    /**
+     * A relaxed save has been committed and no complete checkpoint from {@link #syncRelaxed()} has
+     * followed it yet. Only that checkpoint clears this. A later synced commit usually puts the
+     * relaxed save on disk too, but not always: a commit that changes no page (the same rows
+     * written again) writes nothing and so syncs nothing. Read and written under the database's lock.
+     */
+    private boolean unsynced;
 
     private HusbandryRepository(SqliteDatabase database) {
         this.database = database;
@@ -260,29 +269,153 @@ public final class HusbandryRepository {
     }
 
     public void upsertAnimals(Collection<HusbandryAnimal> animals) {
-        if (animals == null || animals.isEmpty()) {
+        List<HusbandryAnimal> valid = valid(animals);
+        if (valid.isEmpty()) {
             return;
         }
+        database.runTransaction(connection -> writeAnimals(connection, valid));
+    }
+
+    private static List<HusbandryAnimal> valid(Collection<HusbandryAnimal> animals) {
         List<HusbandryAnimal> valid = new ArrayList<>();
+        if (animals == null) {
+            return valid;
+        }
         for (HusbandryAnimal animal : animals) {
             if (animal == null || animal.uuid() == null) {
                 continue;
             }
             valid.add(animal);
         }
-        if (valid.isEmpty()) {
+        return valid;
+    }
+
+    private static void writeAnimals(Connection connection, List<HusbandryAnimal> valid) {
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_ANIMAL)) {
+            for (HusbandryAnimal animal : valid) {
+                bindAnimal(statement, animal);
+                statement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            throw new SqliteDatabaseException("Failed to upsert animals", e);
+        }
+    }
+
+    /**
+     * The routine state of loaded animals and the entity copies taken with it, in one transaction:
+     * the animals first, since a copy is only stored for an animal that has a row.
+     *
+     * <p>A {@code relaxed} save is committed without its own disk sync, which is what a save on the
+     * server thread costs. A crash or kill of the server process still loses nothing, because the
+     * commit already reached the operating system. {@link #syncRelaxed()} puts it on disk, and the
+     * once-a-minute husbandry tick calls that, so an operating-system crash or power loss can only
+     * roll back relaxed saves made since then. Every other write keeps {@code synchronous=FULL}.
+     */
+    public void saveLoaded(Collection<HusbandryAnimal> animals, Map<UUID, byte[]> snapshots, long savedAt,
+            boolean relaxed) {
+        List<HusbandryAnimal> valid = valid(animals);
+        Map<UUID, byte[]> copies = snapshots == null ? Map.of() : snapshots;
+        if (valid.isEmpty() && copies.isEmpty()) {
             return;
         }
-        database.runTransaction(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(UPSERT_ANIMAL)) {
-                for (HusbandryAnimal animal : valid) {
-                    bindAnimal(statement, animal);
-                    statement.executeUpdate();
-                }
-            } catch (SQLException e) {
-                throw new SqliteDatabaseException("Failed to upsert animals", e);
+        Consumer<Connection> work = connection -> {
+            writeAnimals(connection, valid);
+            writeSnapshots(connection, copies, savedAt);
+        };
+        // One lock for the level change, the transaction and the change back: no other thread's
+        // write can run between them and be committed without its sync.
+        synchronized (database) {
+            if (!relaxed) {
+                // Relaxed saves before this stay marked: this commit syncs the log only if it
+                // changes a page, and rows written again unchanged change none.
+                database.runTransaction(work);
+                return;
             }
-        });
+            Throwable failure = null;
+            try {
+                // Inside the try: a switch that fails after it took effect is undone below as well.
+                synchronous("NORMAL");
+                // Marked before the commit, not after: TLibs can still throw once the commit has
+                // gone through, and a spare checkpoint after a save that rolled back costs little.
+                unsynced = true;
+                database.runTransaction(work);
+            } catch (Throwable e) {
+                // Errors too: TLibs rolls back and rethrows them, and the level must still go back.
+                failure = e;
+                throw e;
+            } finally {
+                restoreSynced(failure);
+            }
+        }
+    }
+
+    /**
+     * Back to synced commits after a relaxed save, whatever became of it. A connection that cannot
+     * be switched back is closed: ownership and estate changes rely on their sync, so husbandry
+     * then fails loudly until the plugin restarts instead of committing without one.
+     */
+    private void restoreSynced(Throwable failure) {
+        try {
+            synchronous("FULL");
+        } catch (Throwable restore) {
+            try {
+                closeDatabase();
+            } catch (Throwable closing) {
+                restore.addSuppressed(closing);
+            }
+            if (failure == null) {
+                throw new SqliteDatabaseException("Could not restore synced husbandry commits", restore);
+            }
+            // The save's own failure is the one reported; this one travels with it.
+            failure.addSuppressed(restore);
+        }
+    }
+
+    /** Sets how commits on this connection reach the disk. Only possible outside a transaction. */
+    void synchronous(String level) {
+        database.execute("PRAGMA synchronous=" + level);
+    }
+
+    /** The connection's {@code PRAGMA synchronous} level (2 = FULL, 1 = NORMAL). For tests. */
+    int synchronousLevel() {
+        return queryOne("PRAGMA synchronous", result -> result.getInt(1)).orElseThrow();
+    }
+
+    void closeDatabase() {
+        database.close();
+    }
+
+    /**
+     * Puts relaxed saves on disk, if any are waiting. They stay marked until a checkpoint has
+     * copied the whole log, so one that could not is tried again.
+     *
+     * @return whether no relaxed save is waiting any more
+     */
+    public boolean syncRelaxed() {
+        synchronized (database) {
+            if (unsynced && checkpointedAll()) {
+                unsynced = false;
+            }
+            return !unsynced;
+        }
+    }
+
+    /**
+     * Runs a passive checkpoint and tells whether it copied the whole write-ahead log, which
+     * SQLite only does after syncing that log. A passive checkpoint does not throw when another
+     * connection is in its way: it reports busy, or fewer frames copied than the log holds.
+     */
+    boolean checkpointedAll() {
+        // Columns: busy, frames in the log, frames checkpointed.
+        return queryOne("PRAGMA wal_checkpoint(PASSIVE)",
+                result -> result.getInt(1) == 0 && result.getInt(2) == result.getInt(3)).orElse(false);
+    }
+
+    /** Whether a relaxed save is still waiting for its sync. For tests. */
+    boolean relaxedPending() {
+        synchronized (database) {
+            return unsynced;
+        }
     }
 
     public Optional<HusbandryAnimal> getAnimal(UUID uuid) {
@@ -395,20 +528,25 @@ public final class HusbandryRepository {
         if (snapshots == null || snapshots.isEmpty()) {
             return;
         }
-        database.runTransaction(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(UPSERT_SNAPSHOT)) {
-                for (Map.Entry<UUID, byte[]> snapshot : snapshots.entrySet()) {
-                    if (snapshot.getKey() == null || snapshot.getValue() == null) {
-                        continue;
-                    }
-                    String uuid = snapshot.getKey().toString();
-                    bindParams(statement, uuid, snapshot.getValue(), savedAt, uuid);
-                    statement.executeUpdate();
+        database.runTransaction(connection -> writeSnapshots(connection, snapshots, savedAt));
+    }
+
+    private static void writeSnapshots(Connection connection, Map<UUID, byte[]> snapshots, long savedAt) {
+        if (snapshots.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_SNAPSHOT)) {
+            for (Map.Entry<UUID, byte[]> snapshot : snapshots.entrySet()) {
+                if (snapshot.getKey() == null || snapshot.getValue() == null) {
+                    continue;
                 }
-            } catch (SQLException e) {
-                throw new SqliteDatabaseException("Failed to upsert snapshots", e);
+                String uuid = snapshot.getKey().toString();
+                bindParams(statement, uuid, snapshot.getValue(), savedAt, uuid);
+                statement.executeUpdate();
             }
-        });
+        } catch (SQLException e) {
+            throw new SqliteDatabaseException("Failed to upsert snapshots", e);
+        }
     }
 
     public Optional<HusbandrySnapshot> getSnapshot(UUID uuid) {
