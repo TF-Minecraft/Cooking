@@ -399,10 +399,10 @@ mounts:
   HORSE:
     min-health: 10
     max-health: 27
-    min-speed: 0.0675
-    max-speed: 0.27
+    min-speed: 0.11
+    max-speed: 0.31
     min-jump: 0.24
-    max-jump: 0.8
+    max-jump: 0.93
   DONKEY:
     min-health: 10
     max-health: 20

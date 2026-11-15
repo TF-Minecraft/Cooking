@@ -50,6 +50,10 @@ pot-liquid-display: ia.tfmc_cooking:water
 pot-soup-scoops: 3
 pot-soup-height-divisor: 4
 
+# Cooked food (cooked, boiled or burnt) stays fresh at most this many days, however long the raw
+# food keeps; a type's own cooked-freshness in types.yml replaces it. 0 turns the cap off.
+cooked-freshness: 3
+
 ladle: ia.tfmc_cooking:ladle
 masher: ia.tfmc_cooking:masher
 
