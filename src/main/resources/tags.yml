@@ -4,7 +4,7 @@
 # stars: added to inherited quality while this step is active. Negative lowers the star rating.
 # effects: status effects eating a food at this step gives, as "<effect> <seconds> [level]" (Minecraft effect ids,
 #   level 1 = I), e.g. - "poison 10 1". They apply even when the track is hidden.
-# Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 1.25 days).
+# Age values are seconds at age.freshness 1.0 (stale = 1 day, rotten = 1.5 days).
 # Per-type duration is types.yml age.freshness (higher = lasts longer).
 freshness:
   ageable: true
@@ -15,11 +15,11 @@ freshness:
   stale:
     name: "#c3db81Stale"
     value: 86400
-    nutrition-mult: 0.8
+    nutrition-mult: 1.0
     quality-reduce: 0.25
   rotten:
     name: "#0a6935Rotten"
-    value: 108000
+    value: 129600
     nutrition-mult: 0.05
     food-mult: 0.6
     quality-reduce: 0.75

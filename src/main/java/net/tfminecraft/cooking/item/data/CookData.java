@@ -107,9 +107,13 @@ public class CookData {
         boolean changed = false;
         if(currentTime == p.getTime()) {
             changed = true;
+            // Age it to now at the raw pace first: cooked food ages faster (config.yml cooked-freshness), and the
+            // time before this moment was spent raw.
+            item.updateAge();
             item.getTagTrack("cooked").setValue(p.getTag());
         } else if(currentTime == p.getBurnTime()) {
             changed = true;
+            item.updateAge();
             item.getTagTrack("cooked").setValue(2);
         }
         return changed;
