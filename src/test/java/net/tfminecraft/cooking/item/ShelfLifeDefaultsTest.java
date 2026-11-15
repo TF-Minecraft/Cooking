@@ -53,6 +53,12 @@ class ShelfLifeDefaultsTest {
     }
 
     @Test
+    void cookedIngredientsKeepTheirOwnDays() {
+        assertEquals(14.0, TYPES.getDouble("roux.cooked-freshness", -1));
+        assertEquals(28.0, TYPES.getDouble("roasted_cocoa_beans.cooked-freshness", -1));
+    }
+
+    @Test
     void cookedFoodSoupAndSauceLastThreeDays() {
         assertEquals(3.0, CONFIG.getDouble("cooked-freshness", -1));
         assertEquals(3.0, freshness("soup"));

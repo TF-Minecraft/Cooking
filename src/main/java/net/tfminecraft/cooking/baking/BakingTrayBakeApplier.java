@@ -75,6 +75,8 @@ public final class BakingTrayBakeApplier {
             return false;
         }
 
+        // Age it to now at the pace it had before the bake (cooked-freshness), then change its step.
+        foodItem.updateAge();
         cookedTrack.setValue(toValue);
         foodItem.addOrModifyTrack(cookedTrack);
         ItemStack updated = ItemUpdater.applyItemUpdate(item, foodItem, tray.getId());

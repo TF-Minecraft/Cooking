@@ -636,6 +636,8 @@ sauce:
 # name the sauce; the Thick tag does: Thick Garlic Sauce.
 roux:
   name: "#d9a95bRoux"
+  # An ingredient, not a dish: keeps its own 14 days once cooked (config.yml cooked-freshness is for cooked dishes).
+  cooked-freshness: 14
   model: roux
   category: thickener
   food: 6
@@ -866,7 +868,8 @@ grilled_mushroom:
     freshness: 14
 
 ###Popcorn: chopped corn popped in the frying pan (vegetable_chopped_2 output). Burnt, it stays popcorn.
-# A light snack, a little less filling than the chopped corn it came from; dry, it keeps three times as long.
+# A light snack, a little less filling than the chopped corn it came from. Popped, it is cooked food and keeps
+# config.yml cooked-freshness (3 days).
 # Toppings put in a popcorn machine (popcorn-machines.yml) name it: Salted Caramel Popcorn (naming.yml prefix-tracks).
 popcorn:
   name: "#f3e3a6{prefixes}Popcorn"
@@ -914,6 +917,8 @@ cocoa_beans:
 
 roasted_cocoa_beans:
   name: "#5c3a21Roasted Cocoa Beans"
+  # An ingredient, not a dish: keeps its own 28 days once roasted (config.yml cooked-freshness is for cooked dishes).
+  cooked-freshness: 28
   model: roasted_cocoa_beans
   food: 3
   nutrition: 3
