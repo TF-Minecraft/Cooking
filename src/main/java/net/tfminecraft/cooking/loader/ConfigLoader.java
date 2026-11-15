@@ -70,6 +70,7 @@ public class ConfigLoader {
         ItemCache.potLiquidDisplay = config.getString("pot-liquid-display", "ia.tfmc_cooking:water");
         ItemCache.potSoupScoops = Math.max(1, config.getInt("pot-soup-scoops", 3));
         ItemCache.potSoupHeightDivisor = Math.max(1, config.getInt("pot-soup-height-divisor", 4));
+        ItemCache.cookedFreshness = config.getDouble("cooked-freshness", 3.0);
 
         ItemCache.ladle = config.getString("ladle", "none");
         ItemCache.masher = config.getString("masher", "none");

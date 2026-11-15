@@ -37,6 +37,8 @@ public class ItemCache {
     public static String potWaterInput;
     public static String potLiquidDisplay;
     public static int potSoupScoops = 3;
+    /** config.yml cooked-freshness: cooked food's freshness multiplier cap (days fresh); 0 or less turns it off. */
+    public static double cookedFreshness = 3.0;
     public static int potSoupHeightDivisor = 4;
 
     public static String flour;
