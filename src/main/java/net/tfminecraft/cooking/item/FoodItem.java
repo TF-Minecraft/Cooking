@@ -7,6 +7,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
 import net.tfminecraft.tlibs.objects.api.subapi.StringFormatter;
+import net.tfminecraft.cooking.cache.ItemCache;
 import net.tfminecraft.cooking.item.data.CookData;
 import net.tfminecraft.cooking.item.data.OverrideData;
 import net.tfminecraft.cooking.item.model.FoodModel;
@@ -28,6 +29,8 @@ import net.tfminecraft.cooking.enums.Tag;
 import java.util.*;
 
 public class FoodItem {
+    private static final String FRESHNESS_TRACK = "freshness";
+    private static final String COOKED_TRACK = "cooked";
 
     private final String id;
     private final String name;
@@ -64,6 +67,8 @@ public class FoodItem {
     private Map<String, OverrideData> overrides = new HashMap<>();
     private Map<String, Double> age = new HashMap<>();
     private Map<String, Double> ageRemainder = new HashMap<>();
+    /** types.yml cooked-freshness: this type's freshness once cooked, in place of config.yml's; null = use config.yml's. */
+    private Double cookedFreshness;
     private Map<String, Map<String, String>> tagLabels = new HashMap<>();
     private List<String> ingredients = new ArrayList<>();
     private IngredientLineage lineage = IngredientLineage.empty();
@@ -128,6 +133,9 @@ public class FoodItem {
         }
 
         this.age.putAll(readAge(config.getConfigurationSection("age")));
+        if (config.contains("cooked-freshness")) {
+            this.cookedFreshness = config.getDouble("cooked-freshness");
+        }
 
         ConfigurationSection labelSec = config.getConfigurationSection("tag-labels");
         if (labelSec != null) {
@@ -184,6 +192,7 @@ public class FoodItem {
         this.overrides = new HashMap<>(other.overrides);
         this.age = new HashMap<>(other.age);
         this.ageRemainder = new HashMap<>(other.ageRemainder);
+        this.cookedFreshness = other.cookedFreshness;
         this.tagLabels = new HashMap<>();
         for (Map.Entry<String, Map<String, String>> entry : other.tagLabels.entrySet()) {
             this.tagLabels.put(entry.getKey(), new HashMap<>(entry.getValue()));
@@ -417,7 +426,31 @@ public class FoodItem {
     public void setOrigin(String o) { origin = o; }
     public String getOrigin() { return origin; }
 
+    /**
+     * How slowly this food ages on a track (types.yml age, an origin override first). Once the food is cooked (its cooked
+     * track is past Raw: cooked, boiled or burnt), freshness ages at most as slowly as the cooked cap, so cooked food
+     * lasts that many days however long its raw ingredient keeps. The stored age is in units of the multiplier, so
+     * switching to the cap keeps the share of freshness already used: cooking never makes food fresher.
+     */
     public double resolveAgeMultiplier(String trackId) {
+        double base = resolveTypeAgeMultiplier(trackId);
+        if (!FRESHNESS_TRACK.equalsIgnoreCase(trackId) || !isCooked()) {
+            return base;
+        }
+        double cap = cookedFreshness != null ? cookedFreshness : ItemCache.cookedFreshness;
+        if (!Double.isFinite(cap) || cap <= 0) {
+            return base;
+        }
+        return Math.min(base, cap);
+    }
+
+    /** True when the food carries a cooked track past its first (Raw) step. */
+    public boolean isCooked() {
+        TagTrack cooked = tags.get(COOKED_TRACK);
+        return cooked != null && cooked.getValue() > 0;
+    }
+
+    private double resolveTypeAgeMultiplier(String trackId) {
         if (trackId == null) {
             return AgeScale.DEFAULT;
         }
