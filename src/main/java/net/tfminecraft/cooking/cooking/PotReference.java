@@ -364,6 +364,8 @@ public class PotReference extends CookingReference {
             item.addOrModifyTrack(cooked);
             return;
         }
+        // Age it to now at its pace before boiling (cooked-freshness), then mark it boiled.
+        item.updateAge();
         cooked.forceSetValue(3);
     }
 

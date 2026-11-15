@@ -14,6 +14,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import net.tfminecraft.cooking.cache.ItemCache;
+import net.tfminecraft.cooking.cooking.PotReference;
+import net.tfminecraft.cooking.enums.Method;
 import net.tfminecraft.cooking.item.tag.TagTrack;
 import net.tfminecraft.cooking.loader.ConfigLoader;
 import net.tfminecraft.cooking.loader.TrackLoader;
@@ -112,6 +114,53 @@ class CookedFreshnessCapTest {
         food.updateAge();
         // 3 h at multiplier 3 = 10800 / 3 = 3600 units: the stored value only grows, now at the cooked pace
         assertEquals(43200 + 3600, food.getTagTrack("freshness").getValue());
+    }
+
+    static final long WEEK_MS = 7L * 86400_000L;
+
+    /** Raw meat (14 days) on a frying pan, cooked after 2 ticks, with its clock a week behind. */
+    static FoodItem panMeatAWeekBehind() {
+        MemoryConfiguration extra = new MemoryConfiguration();
+        extra.set("cooking-options.frying_pan.tag", 1);
+        extra.set("cooking-options.frying_pan.time", 2);
+        extra.set("cooking-options.frying_pan.burn", 4);
+        FoodItem food = new FoodItem(meat(extra));
+        food.getTagTrack("freshness").forceSetValue(0);
+        food.setAgeRemainder("freshness", 0);
+        food.setLastUpdate(System.currentTimeMillis() - WEEK_MS);
+        return food;
+    }
+
+    @Test void timeSpentRawIsChargedAtTheRawPaceWhenTheFoodCooks() {
+        FoodItem food = panMeatAWeekBehind();
+        food.getCookData().start(Method.FRYING_PAN);
+        food.getCookData().tick();
+        assertFalse(food.isCooked());
+        food.getCookData().tick();
+        assertTrue(food.isCooked());
+        // a week at 14 days = 604800 / 14 = 43200 units (half way to Stale), not 604800 / 3 = 201600 (past Rotten)
+        int value = food.getTagTrack("freshness").getValue();
+        assertTrue(value >= 43200 && value <= 43201, "freshness " + value);
+        assertEquals(3, food.resolveAgeMultiplier("freshness"));
+    }
+
+    @Test void burningAlsoSettlesTheTimeBeforeIt() {
+        FoodItem food = panMeatAWeekBehind();
+        food.getCookData().start(Method.FRYING_PAN);
+        food.getCookData().tick(); food.getCookData().tick();
+        food.setLastUpdate(System.currentTimeMillis() - 3L * 3600_000L); // 3 hours cooked, unsettled
+        int before = food.getTagTrack("freshness").getValue();
+        food.getCookData().tick(); food.getCookData().tick();
+        assertEquals(2, food.getTagTrack("cooked").getValue()); // CookData burns to value 2
+        assertEquals(before + 3600, food.getTagTrack("freshness").getValue()); // 10800 s at the cooked pace 3
+    }
+
+    @Test void boilingInThePotSettlesTheRawTimeFirst() {
+        FoodItem food = panMeatAWeekBehind();
+        PotReference.markBoiled(food);
+        assertTrue(food.isCooked());
+        int value = food.getTagTrack("freshness").getValue();
+        assertTrue(value >= 43200 && value <= 43201, "freshness " + value);
     }
 
     @Test void configLoaderReadsTheCapAndDefaultsToThreeDays(@TempDir Path dir) throws Exception {
